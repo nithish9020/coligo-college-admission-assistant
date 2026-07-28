@@ -1,6 +1,6 @@
-# DTE AI Chatbot — SIH 2025 (Problem Statement 1631)
+# Coligo — TNEA AI Admission Assistant
 
-> AI-powered student assistance chatbot for the Department of Technical Education, Government of Rajasthan. Centralized 24/7 virtual assistant handling admission queries, fee structures, cutoff predictions, scholarship info, and college data across hundreds of engineering and polytechnic institutes.
+> AI-powered student assistance chatbot for **Tamil Nadu Engineering Admissions (TNEA)** counselling. Centralized 24/7 virtual assistant over WhatsApp handling admission queries, fee structures, cutoff marks and ranks, scholarship info, and college data for Tamil Nadu engineering institutes. The current knowledge base covers Sri Krishna College of Engineering and Technology (SKCET), Coimbatore.
 
 ---
 
@@ -19,18 +19,45 @@ report.
 | `GET /health`, `GET /health/detailed` | ✅ Live |
 | Swagger UI at `/docs`, ReDoc at `/redoc`, `GET /openapi.json` | ✅ Live |
 | Structured request/service logging (`structlog`) | ✅ Live |
-| WhatsApp webhook trigger: `GET`/`POST /webhook`, signature verification, admin-vs-student routing (logged only) | ✅ Live |
-| WhatsApp *replies* (sending messages back via the Graph API) | ❌ Not built yet — no chat/LLM service exists to generate one |
-| Pytest suite (`api/tests/`) covering all of the above | ✅ Live |
-| Database, Redis, Celery, RAG pipeline | ❌ Not built yet |
+| WhatsApp webhook trigger: `GET`/`POST /webhook`, signature verification, admin-vs-student routing | ✅ Live |
+| WhatsApp replies — student message → RAG answer → sent back via Graph API | ✅ Live (verified end to end) |
+| Document ingestion: `POST /documents/process` (PDF → chunks → Gemini embeddings → pgvector) | ✅ Live |
+| RAG chat: `POST /chat` (embed query → pgvector search → Gemini answer + sources) | ✅ Live |
+| PostgreSQL + pgvector via Docker Compose | ✅ Live (`docker compose up -d`) |
+| Admin command execution (`/ingest`, `/stats`, `/refresh`) | ❌ Detected and logged only, not executed |
+| Redis, Celery background jobs | ❌ Not built yet |
 | React frontend (`app/` is currently an empty placeholder) | ❌ Not built yet |
-| Docker Compose, CI workflow, Alembic migrations | ❌ Not built yet |
+| CI workflow, Alembic migrations | ❌ Not built yet (tables auto-create at startup in dev) |
 
 If you just want to run what's here and poke at it with Swagger, skip ahead
 to [Quick Start — Run What's Actually Here](#quick-start--run-whats-actually-here).
 Everything under [Local Development Setup](#local-development-setup) further
 down describes the *full planned* stack, which needs pieces that don't exist
-in this repo yet (`backend/`, `frontend/`, `alembic/`, `docker-compose.yml`).
+in this repo yet (`backend/`, `frontend/`, `alembic/`).
+
+### Knowledge base
+
+[`data/skcet_tnea_knowledge_base.pdf`](data/) is the seed corpus. It was
+compiled from official SKCET sources — the
+[academics](https://skcet.ac.in/academics/ug-pg-doctorate/),
+[admission procedure](https://skcet.ac.in/admissions/admission-procedure/)
+and [cut-off marks](https://skcet.ac.in/cut-off-marks/) pages, including the
+2024-2025 and 2023-2024 cut-off PDFs — plus the TNEA counselling process
+(cutoff formula, tie-breaking, community categories).
+
+Cutoff figures were transcribed from the official tables and verified
+cell-by-cell against them. Blank cells in the source (no admission recorded
+for that community) are written as "not available" rather than guessed, so
+the assistant never invents a cutoff. Ingest it with:
+
+```bash
+curl -X POST http://localhost:8000/documents/process \
+  -H "Content-Type: application/json" \
+  -d '{"document_ref": "/app/data/skcet_tnea_knowledge_base.pdf"}'
+```
+
+(Use `/app/data/...` when the API runs in Docker — `./data` is mounted
+there; use the host path when running the API with `make dev`.)
 
 ---
 
@@ -59,27 +86,36 @@ in this repo yet (`backend/`, `frontend/`, `alembic/`, `docker-compose.yml`).
 
 ## Quick Start — Run What's Actually Here
 
-These are the real commands for the repo as it exists today — no Docker,
-no database, no `backend/` subfolder. This is the fastest way to see the
-API and Swagger docs working.
+These are the real commands for the repo as it exists today.
+
+### Option A — everything in Docker (recommended)
+
+Runs Postgres+pgvector and the API together. Tables and the `vector`
+extension are created automatically at startup in development.
 
 ```bash
-# 1. Clone and enter the repo
 git clone https://github.com/your-org/coligo.git
 cd coligo
+cp .env.example .env      # then fill in GEMINI_API_KEY + WHATSAPP_* values
+docker compose up -d      # API on :8000, Postgres on :5432
+docker compose logs -f api
+```
+
+### Option B — API on the host, database in Docker
+
+```bash
+# 1. Start just the database
+docker compose up -d postgres
 
 # 2. One-command setup: creates .venv (via uv), installs deps + pre-commit hooks
 make setup
 
-# 3. Copy env defaults (optional — the app runs fine with built-in defaults)
+# 3. Copy env defaults, then fill in your API keys
 cp .env.example .env
 
 # 4. Run the dev server with hot reload
 make dev
 # equivalent to: source .venv/bin/activate && uvicorn api.main:app --reload --port 8000
-
-# 5. Run the test suite
-make test
 ```
 
 Then open in a browser:
@@ -87,14 +123,29 @@ Then open in a browser:
 - **ReDoc** (read-only, nicer for sharing): http://localhost:8000/redoc
 - **Raw OpenAPI schema**: http://localhost:8000/openapi.json
 
-Try the two live endpoints straight from the Swagger UI, or via curl:
+### Testing the full flow
 
 ```bash
+# Health
 curl http://localhost:8000/health
-curl http://localhost:8000/health/detailed
+
+# 1. Ingest a PDF: extract -> chunk -> embed (Gemini) -> store in pgvector
+curl -X POST http://localhost:8000/documents/process \
+  -H "Content-Type: application/json" \
+  -d '{"document_ref": "/absolute/path/to/your.pdf"}'
+# also accepts an https:// URL to a PDF
+
+# 2. Ask a question: embed query -> pgvector search -> Gemini answer + sources
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is the cutoff rank for CSE?"}'
+
+# 3. Inspect what was stored
+docker exec coligo_postgres psql -U dte -d dte_chatbot \
+  -c "SELECT id, document_id, chunk_index, vector_dims(embedding) FROM document_chunks;"
 ```
 
-You can also exercise the WhatsApp webhook trigger locally without any Meta
+You can also exercise the WhatsApp webhook locally without any Meta
 credentials configured (signature verification auto-skips — with a logged
 warning — when `WHATSAPP_APP_SECRET` is unset):
 
@@ -102,11 +153,17 @@ warning — when `WHATSAPP_APP_SECRET` is unset):
 # Verification handshake (what Meta calls once when you register the URL)
 curl "http://localhost:8000/webhook?hub.mode=subscribe&hub.verify_token=<your WHATSAPP_VERIFY_TOKEN>&hub.challenge=12345"
 
-# Simulate an incoming text message event
+# Simulate an incoming text message — runs the full RAG pipeline and, if
+# WHATSAPP_ACCESS_TOKEN/PHONE_NUMBER_ID are set, sends a real WhatsApp reply
 curl -X POST http://localhost:8000/webhook \
   -H "Content-Type: application/json" \
-  -d '{"object":"whatsapp_business_account","entry":[{"id":"1","changes":[{"value":{"messaging_product":"whatsapp","messages":[{"from":"919876543210","id":"wamid.test","timestamp":"1690000000","type":"text","text":{"body":"hello"}}]},"field":"messages"}]}]}'
+  -d '{"object":"whatsapp_business_account","entry":[{"id":"1","changes":[{"value":{"messaging_product":"whatsapp","messages":[{"from":"919876543210","id":"wamid.test","timestamp":"1690000000","type":"text","text":{"body":"What is the hostel fee?"}}]},"field":"messages"}]}]}'
 ```
+
+To receive messages from real phones, Meta needs a public HTTPS URL —
+expose port 8000 with `ngrok http 8000` and register
+`https://<subdomain>.ngrok-free.dev/webhook` in the Meta App Dashboard
+(WhatsApp → Configuration), then subscribe to the `messages` webhook field.
 
 Watch the terminal running `make dev` while you do this — every request
 prints a structured log line (method, path, status, duration), plus a log
@@ -123,15 +180,15 @@ not by activating the venv and calling `pip` directly.
 
 ## Project Overview
 
-**Problem:** During admission season, DTE Rajasthan receives thousands of identical queries from students, parents, and other stakeholders — about admissions, fees, cutoffs, scholarships, hostel availability, and placements. Colleges handle this manually via phone, email, and walk-ins, consuming significant staff time.
+**Problem:** During TNEA counselling season, engineering colleges in Tamil Nadu receive thousands of identical queries from students and parents — about admission procedure, fees, cutoff marks and closing ranks per community, scholarships, hostel availability, and placements. Colleges handle this manually via phone, email, and walk-ins, consuming significant staff time.
 
-**Solution:** Centralized AI chatbot deployed across WhatsApp, web widget, and voice IVR. Uses Retrieval-Augmented Generation (RAG) over a vector database of DTE college data to answer queries accurately, in both English and Hindi, 24/7.
+**Solution:** Centralized AI chatbot on WhatsApp. Uses Retrieval-Augmented Generation (RAG) over a pgvector database of official college documents to answer queries accurately, grounded in real cutoff tables and admission procedures, 24/7.
 
 **Key differentiators over a generic FAQ bot:**
-- Cutoff predictor — given a JEE rank + category, returns ranked college + branch recommendations based on 3 years of REAP allotment data
-- Hindi/Hinglish native handling — no separate NLP pipeline, LLM handles it natively
+- Community-aware cutoff answers — OC, BC, BCM, MBC, SC, SCA and ST cutoffs differ, and answers are grounded in the college's own published cutoff tables rather than generic advice
+- Grounded, not generative — answers cite the source document and decline when the context doesn't cover the question
+- Tamil/Tanglish native handling — no separate NLP pipeline, the LLM handles it natively
 - Two-attempt escalation with human handoff — confidence-scored, not binary fail/pass
-- Admin CMS — DTE officers update data without touching code
 - Analytics dashboard — query heatmap by district, escalation patterns, low-confidence clusters
 
 ---
@@ -316,7 +373,6 @@ concepts you already know onto what you'll see in `api/`:
 | **`npm install`** | **`uv pip install --python .venv -e ".[dev]"`** (or `make install-deps`) | `uv` is this repo's package manager — faster equivalent of `npm`/`pnpm`, but for Python. |
 | **`npm run dev` / `pnpm dev` / `nodemon`** | **`make dev`** (→ `uvicorn api.main:app --reload --port 8000`) | Hot-reloading dev server, same purpose as nodemon/`pnpm dev` watching Express. |
 | **ESLint + Prettier** | **Ruff** (`ruff check`, `ruff format`) | One tool doing both lint + format, instead of two separate Node packages. |
-| **Jest + Supertest** | **Pytest + httpx / `TestClient`** (`api/tests/`) | Supertest hits your Express app in-process; FastAPI's `TestClient` does the same thing against the ASGI app. |
 | **pino** (+ `pino-http` middleware, `pino-pretty`) | **structlog** (`api/core/logging.py`) + `RequestLoggingMiddleware` (`api/core/middleware.py`) | Same shape: a `logger.info("event", key=value)` structured-logging call per layer, an HTTP access-log middleware, and colored pretty-printing in dev vs. single-line JSON in prod. `get_logger(__name__)` in any router/service ≈ a pino child logger scoped to that module. |
 | **`swagger-jsdoc` + `swagger-ui-express`** (manual JSDoc comments → spec) | **Auto-generated OpenAPI** at `/docs`, `/redoc`, `/openapi.json` | Biggest workflow difference (ADR-008): in Express you hand-annotate routes to build the spec; FastAPI derives the spec automatically from your Pydantic schemas and type hints — it can't drift out of sync with the code. |
 | **React + Vite frontend** | **Same** — `app/` (currently empty, reserved) | The frontend plan is unchanged from a typical MERN app: React talking to a JSON/REST API over HTTP. |
@@ -351,7 +407,7 @@ dte-chatbot/
 │   │   │   ├── embedder.py         # Gemini embedding calls
 │   │   │   ├── ingestion.py        # PDF parse → chunk → embed → upsert
 │   │   │   ├── escalation.py       # Confidence scoring + escalation logic
-│   │   │   ├── cutoff.py           # REAP data query → rank-to-college mapping
+│   │   │   ├── cutoff.py           # TNEA cutoff query → rank-to-college mapping
 │   │   │   ├── whatsapp.py         # WhatsApp Cloud API send/receive helpers
 │   │   │   ├── session.py          # Conversation history via Redis
 │   │   │   └── analytics.py        # Query logging, heatmap aggregation
@@ -359,7 +415,7 @@ dte-chatbot/
 │   │   ├── models/                 # SQLAlchemy ORM models
 │   │   │   ├── __init__.py
 │   │   │   ├── college.py          # College, branch, seat matrix
-│   │   │   ├── allotment.py        # REAP historical allotment (3 years)
+│   │   │   ├── allotment.py        # TNEA historical allotment (3 years)
 │   │   │   ├── document.py         # Ingested document metadata
 │   │   │   ├── ticket.py           # Escalation tickets
 │   │   │   └── query_log.py        # Analytics: every query logged
@@ -435,9 +491,9 @@ dte-chatbot/
 │
 ├── data/                           # Data ingestion scripts (teammate 3 owns this)
 │   ├── scrapers/
-│   │   └── dte_scraper.py          # Scrape DTE website college data
+│   │   └── college_scraper.py      # Scrape college website data
 │   ├── parsers/
-│   │   └── reap_csv_parser.py      # Parse REAP allotment CSV (3 years)
+│   │   └── tnea_csv_parser.py      # Parse TNEA allotment CSV (3 years)
 │   ├── seeds/
 │   │   └── seed_colleges.sql       # Initial college data seed
 │   └── README.md                   # How to run ingestion scripts
@@ -1086,16 +1142,16 @@ Before demo day, verify every item.
 
 ### Data
 - [ ] At minimum: 50 college records seeded
-- [ ] At minimum: 2 years of REAP allotment data loaded
-- [ ] At minimum: 10 DTE PDFs ingested (fee structure, scholarship schemes)
+- [ ] At minimum: 2 years of TNEA cutoff data loaded
+- [ ] At minimum: 10 college PDFs ingested (fee structure, scholarship schemes)
 - [ ] Redis reachable from backend container
 - [ ] pgvector extension installed and verified: `SELECT * FROM pg_extension WHERE extname='vector'`
 
 ### Demo
 - [ ] Demo script updated and rehearsed
 - [ ] Fallback screenshots ready if WhatsApp API is slow
-- [ ] Hindi query demo working: "Rajasthan mein BE CS ke liye kitni rank chahiye"
-- [ ] Cutoff predictor demo working with real 2024 REAP data
+- [ ] Tamil/Tanglish query demo working: "SKCET la CSE ku enna cutoff venum"
+- [ ] Cutoff predictor demo working with real 2024-2025 TNEA data
 - [ ] Escalation flow demo working (trigger with unknown college name)
 - [ ] Admin CMS demo: update a fee, show it reflected in bot response
 - [ ] Analytics dashboard showing at least 7 days of synthetic query data

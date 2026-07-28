@@ -13,11 +13,25 @@ class Settings(BaseSettings):
     REDOC_URL: str = "/redoc"
     OPENAPI_URL: str = "/openapi.json"
 
+    # Database Settings
+    DATABASE_URL: str = "postgresql+asyncpg://dte:dte_secret@localhost:5432/dte_chatbot"
+
+    # Gemini API Settings
+    GEMINI_API_KEY: str | None = None
+    GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
+    GEMINI_LLM_MODEL: str = "gemini-3.5-flash-lite"
+
+    # RAG Settings
+    CHUNK_SIZE: int = 512
+    CHUNK_OVERLAP: int = 50
+    RAG_TOP_K: int = 5
+
     # WhatsApp Cloud API (Meta) — see README "WhatsApp Integration"
     WHATSAPP_PHONE_NUMBER_ID: str = ""
     WHATSAPP_ACCESS_TOKEN: str = ""
     WHATSAPP_VERIFY_TOKEN: str = ""
     WHATSAPP_APP_SECRET: str = ""
+    WHATSAPP_API_VERSION: str = "v21.0"
     ADMIN_NUMBERS: str = ""
 
     model_config = SettingsConfigDict(

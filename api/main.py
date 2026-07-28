@@ -14,7 +14,7 @@ from api.core.exceptions import (
 )
 from api.core.logging import configure_logging, get_logger
 from api.core.middleware import RequestLoggingMiddleware
-from api.routers import document_router, health_router, whatsapp_router
+from api.routers import chat_router, document_router, health_router, whatsapp_router
 
 configure_logging()
 logger = get_logger(__name__)
@@ -25,6 +25,23 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     logger.info(
         "app_started", environment=settings.ENVIRONMENT, docs_url=settings.DOCS_URL
     )
+    if settings.ENVIRONMENT == "development":
+        from sqlalchemy import text
+
+        import api.models  # noqa: F401
+        from api.core.database import Base, engine
+
+        logger.info("initializing_database_tables_at_startup")
+        try:
+            async with engine.begin() as conn:
+                # Create vector extension if not present
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                # Create all mapped tables
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("database_tables_initialized_successfully")
+        except Exception as e:
+            logger.error("database_table_initialization_failed", error=str(e))
+
     yield
     logger.info("app_stopped")
 
@@ -66,6 +83,7 @@ app.add_middleware(RequestLoggingMiddleware)
 # Include Routers
 app.include_router(health_router)
 app.include_router(document_router)
+app.include_router(chat_router)
 app.include_router(whatsapp_router)
 
 

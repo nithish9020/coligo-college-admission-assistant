@@ -1,1 +1,3 @@
-"""Database models and ORM entity definitions."""
+from api.models.document import Document, DocumentChunk
+
+__all__ = ["Document", "DocumentChunk"]
