@@ -18,11 +18,13 @@ class Settings(BaseSettings):
 
     # Gemini API Settings
     GEMINI_API_KEY: str | None = None
-    GEMINI_EMBEDDING_MODEL: str = "text-embedding-005"
+    GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
 
     # RAG Settings
     CHUNK_SIZE: int = 512
     CHUNK_OVERLAP: int = 50
+    GEMINI_LLM_MODEL: str = "gemini-3.5-flash-lite"
+    RAG_TOP_K: int = 5
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
