@@ -1,19 +1,9 @@
 import email.message
-import io
 import urllib.error
 from unittest.mock import MagicMock, mock_open, patch
 
-import pytest
 from fastapi.testclient import TestClient
 from pypdf.errors import PdfReadError
-
-from api.core.exceptions import (
-    CorruptedDocumentError,
-    DocumentNotFoundError,
-    EmptyDocumentTextError,
-    InvalidDocumentRefError,
-)
-from api.services.document_service import process_document
 
 
 def test_process_document_validation_invalid_extension(client: TestClient) -> None:

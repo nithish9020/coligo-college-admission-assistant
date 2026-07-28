@@ -14,7 +14,7 @@ from api.core.exceptions import (
 )
 from api.core.logging import configure_logging, get_logger
 from api.core.middleware import RequestLoggingMiddleware
-from api.routers import document_router, health_router
+from api.routers import document_router, health_router, whatsapp_router
 
 configure_logging()
 logger = get_logger(__name__)
@@ -39,6 +39,7 @@ counseling, RAG document search, and user interactions.
 
 #### Key Features:
 * 🩺 **Health Checks**: Endpoint `/health` and `/health/detailed` for monitoring.
+* 💬 **WhatsApp Webhook**: `/webhook` receives and routes Meta Cloud API events.
 * 📚 **Interactive Swagger Documentation**: Available at `/docs`.
 * 📖 **ReDoc Documentation**: Available at `/redoc`.
 """,
@@ -65,6 +66,7 @@ app.add_middleware(RequestLoggingMiddleware)
 # Include Routers
 app.include_router(health_router)
 app.include_router(document_router)
+app.include_router(whatsapp_router)
 
 
 # Register global exception handlers for document processing errors
