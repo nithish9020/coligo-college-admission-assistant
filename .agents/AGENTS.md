@@ -18,17 +18,26 @@ What actually exists today, verified by running it:
 - A minimal **FastAPI** backend under `api/` with health endpoints
   (`/health`, `/health/detailed`) and interactive docs correctly mounted at
   `/docs` (Swagger UI), `/redoc` (ReDoc), and `/openapi.json`.
-- A WhatsApp Cloud API webhook **trigger** (`GET`/`POST /webhook` in
-  `api/routers/whatsapp.py`): verification handshake, `X-Hub-Signature-256`
-  verification, message extraction, and admin-vs-student routing — but it
-  only logs the routing decision, it does **not send replies**. There's no
-  `chat_service`/LLM to generate a reply with yet, and admin commands
-  (`/ingest`, `/stats`, `/refresh`) are detected/logged but not executed.
-- A pytest suite under `api/tests/` that exercises all of the above
-  (`make test`).
-- No database, no Redis, no Celery, no React frontend, no Docker, no CI
-  workflow, and no `alembic/` — these are all future work tracked only as
-  prose/ADRs in `README.md`.
+- A **WhatsApp Cloud API** integration (`api/routers/whatsapp.py` +
+  `api/services/whatsapp_service.py`): `GET /webhook` verification
+  handshake, `POST /webhook` with `X-Hub-Signature-256` verification,
+  message extraction, admin-vs-student routing, and outbound replies via
+  `send_text()`. Student text messages run the RAG pipeline and get a real
+  answer sent back. Admin commands (`/ingest`, `/stats`, `/refresh`) are
+  detected/logged but **not executed** — they need ingest/analytics
+  services that don't exist yet.
+- **Document ingestion** (`POST /documents/process`): PDF → text → chunks →
+  Gemini embeddings → pgvector, with SHA-256 chunk deduplication.
+- **RAG chat** (`POST /chat` and the WhatsApp path): embed query →
+  pgvector cosine search → Gemini generation, returning answer + sources.
+- **PostgreSQL + pgvector** via `docker-compose.yml`. In development the
+  `vector` extension and all tables are created automatically at startup
+  (`api/main.py` lifespan) — there is no Alembic migration setup.
+- **No test suite** — tests were intentionally removed from this project.
+  Verify changes by running the stack and exercising endpoints (see §4).
+- No Redis, no Celery, no React frontend, no CI workflow, and no
+  `alembic/` — these remain future work tracked as prose/ADRs in
+  `README.md`.
 - `app/` is an empty placeholder package reserved for a future
   frontend/UI app; it has no routes or components yet.
 
@@ -43,26 +52,35 @@ subsystem nobody asked for yet.
 ```
 coligo/
 ├── api/                     # The actual FastAPI backend (this is real)
-│   ├── main.py              # App init, middleware, docs config, router mounts
+│   ├── main.py              # App init, middleware, docs, router mounts, DB bootstrap
 │   ├── core/
 │   │   ├── config.py        # Settings via pydantic-settings, reads .env
+│   │   ├── database.py      # Async SQLAlchemy engine/session + get_db dependency
+│   │   ├── exceptions.py    # Document processing exception hierarchy
 │   │   ├── logging.py       # structlog setup — pino-equivalent structured logging
 │   │   └── middleware.py    # RequestLoggingMiddleware — pino-http equivalent
 │   ├── routers/              # One module per feature; mounted in main.py
 │   │   ├── health.py
-│   │   └── whatsapp.py       # GET/POST /webhook — Meta Cloud API trigger
+│   │   ├── document.py       # POST /documents/process — PDF ingestion
+│   │   ├── chat.py           # POST /chat — RAG query over HTTP
+│   │   └── whatsapp.py       # GET/POST /webhook — Meta Cloud API
 │   ├── schemas/              # Pydantic v2 request/response DTOs
-│   │   ├── health.py
-│   │   └── whatsapp.py       # Meta webhook payload DTOs + flattened ParsedMessage
 │   ├── services/              # Business logic layer
 │   │   ├── health_service.py
-│   │   └── whatsapp_service.py  # signature verify, extract_message, admin routing
-│   ├── models/                 # DB/ORM entities (empty scaffold so far — no DB wired up yet)
-│   └── tests/                   # pytest + FastAPI TestClient
+│   │   ├── pdf_extractor.py     # PDF bytes -> text (pypdf)
+│   │   ├── chunker.py           # text -> overlapping chunks + SHA-256
+│   │   ├── embedding_service.py # Gemini batchEmbedContents (768-dim)
+│   │   ├── document_service.py  # fetch -> extract -> chunk -> embed -> store
+│   │   ├── llm_service.py       # Gemini generateContent
+│   │   ├── rag_service.py       # embed query -> pgvector search -> LLM answer
+│   │   └── whatsapp_service.py  # signature verify, parse, routing, send_text
+│   └── models/                 # SQLAlchemy ORM: Document, DocumentChunk (pgvector)
 ├── app/                      # Reserved for a future frontend/UI app — empty today
+├── docker-compose.yml        # postgres (pgvector) + api
+├── Dockerfile                # API image
 ├── .env.example              # Copy to .env; never commit .env
-├── pyproject.toml            # Deps + tool config (ruff, mypy, pytest)
-├── Makefile                  # make setup / lint / format / check / test / dev
+├── pyproject.toml            # Deps + tool config (ruff, mypy)
+├── Makefile                  # make setup / lint / format / check / dev
 └── .pre-commit-config.yaml   # ruff lint+format, whitespace/EOF/yaml/json checks
 ```
 
@@ -97,12 +115,20 @@ coligo/
   repository/DB layer yet to add logging to; when one is added, give it the
   same `get_logger(__name__)` treatment.
 
-## 4. Running the API and testing it with Swagger
+## 4. Running and verifying the stack
+
+The API needs PostgreSQL+pgvector. Either run everything in Docker:
 
 ```bash
-source .venv/bin/activate
-uvicorn api.main:app --reload --port 8000
-# or: make dev
+docker compose up -d          # postgres + api
+docker compose logs -f api
+```
+
+...or run just the database in Docker and the API on the host:
+
+```bash
+docker compose up -d postgres
+make dev                      # uvicorn --reload on :8000
 ```
 
 Then open:
@@ -110,18 +136,21 @@ Then open:
 - ReDoc: http://localhost:8000/redoc
 - Raw OpenAPI schema: http://localhost:8000/openapi.json
 
-This is generated automatically from the Pydantic schemas and route
+The spec is generated automatically from the Pydantic schemas and route
 docstrings/`summary=` fields in `api/routers/*.py` — there is no manual
 OpenAPI YAML to keep in sync (see ADR-008 in `README.md`).
 
-Automated verification lives in `api/tests/test_docs.py` (asserts `/docs`
-and `/redoc` return 200 and that `/openapi.json` lists the expected paths)
-and `api/tests/test_health.py` (asserts the health payloads). Run both with:
+**There is no test suite** — it was intentionally removed. Verify changes
+by running the stack and exercising the real endpoints (see README's
+"Testing the full flow"), and inspect stored data directly:
 
 ```bash
-make test
-# or directly: .venv/bin/python -m pytest -v
+docker exec coligo_postgres psql -U dte -d dte_chatbot \
+  -c "SELECT id, document_id, chunk_index, vector_dims(embedding) FROM document_chunks;"
 ```
+
+Always run `make check` (ruff lint+format via pre-commit) and
+`.venv/bin/mypy api/` before committing.
 
 ## 5. Developer workflow for adding a new endpoint
 
@@ -133,20 +162,31 @@ make test
    Swagger docs actually useful).
 4. Mount it in `api/main.py` via `app.include_router(...)`, and re-export it
    from `api/routers/__init__.py` the same way `health_router` is done.
-5. Add a test in `api/tests/test_<feature>.py` using the `client` fixture
-   from `api/tests/conftest.py`.
-6. Run `make check && make test` before committing.
+5. If it touches the database, take `db: AsyncSession = Depends(get_db)`
+   from `api/core/database.py` rather than creating a session yourself.
+6. Run `make check` and `.venv/bin/mypy api/`, then exercise the endpoint
+   against the running stack before committing.
 
 ## 6. Known gaps (don't assume these are done just because README says so)
 
-- `.env` is not created by default — copy `.env.example` first.
-- No database/ORM wiring yet — `api/models/` is an empty package.
+- `.env` is not created by default — copy `.env.example` first and fill in
+  `GEMINI_API_KEY` plus the `WHATSAPP_*` values. Without `GEMINI_API_KEY`
+  both ingestion and chat fail (embedding/LLM calls raise).
 - No CI workflow file exists (`README.md`'s `.github/workflows/ci.yml` is
   aspirational, not present in `.github/` — there is no `.github/` here).
 - No frontend exists under `app/` yet.
-- WhatsApp webhook receives and routes events but **does not reply** —
-  `whatsapp_service.send_text()` (an outbound Graph API call) doesn't exist
-  yet; building it needs a `chat_service` to generate the reply content
-  first. Admin commands are matched/logged in `whatsapp_service.py` but
-  none of them actually run (`/ingest` needs S3 + Celery, `/stats` needs
-  the analytics table, `/refresh` needs the RAG pipeline — none exist yet).
+- No Alembic migrations — tables are created at startup via
+  `Base.metadata.create_all` and **only when `ENVIRONMENT=development`**.
+  A production deploy currently has no schema-creation path.
+- Admin commands are matched/logged in `whatsapp_service.py` but none of
+  them actually run (`/ingest` needs S3 + Celery, `/stats` needs an
+  analytics table, `/refresh` needs a reindex path — none exist yet).
+- `document_service.process_document` dedupes chunks **globally** by
+  SHA-256. If two different `document_ref`s have identical content, the
+  second document row is created with **zero chunks**, so it can never be
+  retrieved or cited as a source. Deleting the first document cascade-
+  deletes the shared chunks, leaving both effectively empty.
+- The webhook replies synchronously: the RAG round-trip (2 Gemini calls +
+  a Graph API send) runs before Meta gets its 200, taking ~4s in practice.
+  Meta's webhook timeout is short, so slow queries risk retries and
+  duplicate replies. Moving the reply to a background task is the fix.
