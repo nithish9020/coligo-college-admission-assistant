@@ -1,13 +1,20 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from api.core import settings
+from api.core.exceptions import (
+    CorruptedDocumentError,
+    DocumentNotFoundError,
+    EmptyDocumentTextError,
+    InvalidDocumentRefError,
+)
 from api.core.logging import configure_logging, get_logger
 from api.core.middleware import RequestLoggingMiddleware
-from api.routers import health_router
+from api.routers import document_router, health_router
 
 configure_logging()
 logger = get_logger(__name__)
@@ -57,6 +64,48 @@ app.add_middleware(RequestLoggingMiddleware)
 
 # Include Routers
 app.include_router(health_router)
+app.include_router(document_router)
+
+
+# Register global exception handlers for document processing errors
+@app.exception_handler(InvalidDocumentRefError)
+async def invalid_document_ref_handler(
+    request: Request, exc: InvalidDocumentRefError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": str(exc)},
+    )
+
+
+@app.exception_handler(DocumentNotFoundError)
+async def document_not_found_handler(
+    request: Request, exc: DocumentNotFoundError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": str(exc)},
+    )
+
+
+@app.exception_handler(CorruptedDocumentError)
+async def corrupted_document_handler(
+    request: Request, exc: CorruptedDocumentError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(exc)},
+    )
+
+
+@app.exception_handler(EmptyDocumentTextError)
+async def empty_document_text_handler(
+    request: Request, exc: EmptyDocumentTextError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": str(exc)},
+    )
 
 
 @app.get("/", include_in_schema=False)
