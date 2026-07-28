@@ -13,6 +13,17 @@ class Settings(BaseSettings):
     REDOC_URL: str = "/redoc"
     OPENAPI_URL: str = "/openapi.json"
 
+    # Database Settings
+    DATABASE_URL: str = "postgresql+asyncpg://dte:dte_secret@localhost:5432/dte_chatbot"
+
+    # Gemini API Settings
+    GEMINI_API_KEY: str | None = None
+    GEMINI_EMBEDDING_MODEL: str = "text-embedding-005"
+
+    # RAG Settings
+    CHUNK_SIZE: int = 512
+    CHUNK_OVERLAP: int = 50
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
