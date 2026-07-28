@@ -7,11 +7,18 @@ keep the other in sync or just point it back here.
 
 ## 1. What this repo actually is right now
 
-Read this section before trusting the big narrative in `README.md`. The
-README documents the **target product vision** for a SIH 2025 hackathon
-project (DTE Rajasthan admissions chatbot: RAG over pgvector, WhatsApp
-integration, Celery workers, Docker Compose, a React frontend, Railway
-deploy). None of that exists in this repo yet.
+This project is a **TNEA (Tamil Nadu Engineering Admissions) counselling
+assistant** — not Rajasthan/DTE. It answers student questions about TNEA
+counselling and Tamil Nadu engineering college admissions over WhatsApp,
+grounded in official college documents. The seed knowledge base covers Sri
+Krishna College of Engineering and Technology (SKCET), Coimbatore
+(`data/skcet_tnea_knowledge_base.pdf`). Keep the domain language (TNEA,
+cutoff marks out of 200, communities OC/BC/BCM/MBC/SC/SCA/ST) consistent
+in prompts, docs and sample data.
+
+Read this section before trusting the big narrative in `README.md` — it
+documents the **target product vision** (Celery workers, React frontend,
+Railway deploy, escalation/analytics), much of which does not exist yet.
 
 What actually exists today, verified by running it:
 
