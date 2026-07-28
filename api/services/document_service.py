@@ -37,7 +37,7 @@ def _fetch_from_url(url: str) -> bytes:
         )
         # Using a 10-second timeout to prevent blocking indefinitely
         with urllib.request.urlopen(req, timeout=10) as response:
-            return response.read()
+            return bytes(response.read())
     except urllib.error.HTTPError as e:
         logger.error(
             "url_fetch_http_error", url=url, status_code=e.code, reason=e.reason
