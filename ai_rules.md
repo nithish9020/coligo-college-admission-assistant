@@ -1,5 +1,10 @@
 # Coligo Monorepo AI Assistant Guidelines (`ai_rules.md`)
 
+> **Canonical file:** [`.agents/AGENTS.md`](.agents/AGENTS.md) has the full,
+> up-to-date picture (verified repo state, gaps, Swagger testing workflow).
+> This file is a short mirror for tools that only read `ai_rules.md` — keep
+> it in sync with `.agents/AGENTS.md` rather than letting it drift.
+
 This repository follows strict modular conventions for FastAPI and Python monorepo development.
 
 ## 📁 Repository Map
