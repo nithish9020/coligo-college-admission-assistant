@@ -101,6 +101,18 @@ docker compose up -d      # API on :8000, Postgres on :5432
 docker compose logs -f api
 ```
 
+Don't run this at the same time as `make dev` — both bind host port 8000 and
+Docker will fail with `address already in use`. Either stop the `make dev`
+server, or put the container on another port:
+
+```bash
+API_PORT=8001 docker compose up -d
+```
+
+If container DNS ever breaks (`Temporary failure in name resolution` for
+`postgres` or the Gemini API), `docker compose down && docker compose up -d`
+recreates the network and clears it. `docker compose restart` alone does not.
+
 ### Option B — API on the host, database in Docker
 
 ```bash
