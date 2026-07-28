@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     WHATSAPP_ACCESS_TOKEN: str = ""
     WHATSAPP_VERIFY_TOKEN: str = ""
     WHATSAPP_APP_SECRET: str = ""
+    WHATSAPP_API_VERSION: str = "v21.0"
     ADMIN_NUMBERS: str = ""
 
     model_config = SettingsConfigDict(

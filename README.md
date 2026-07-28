@@ -19,11 +19,15 @@ report.
 | `GET /health`, `GET /health/detailed` | ✅ Live |
 | Swagger UI at `/docs`, ReDoc at `/redoc`, `GET /openapi.json` | ✅ Live |
 | Structured request/service logging (`structlog`) | ✅ Live |
-| WhatsApp webhook trigger: `GET`/`POST /webhook`, signature verification, admin-vs-student routing (logged only) | ✅ Live |
-| WhatsApp *replies* (sending messages back via the Graph API) | ❌ Not built yet — no chat/LLM service exists to generate one |
-| Database, Redis, Celery, RAG pipeline | ❌ Not built yet |
+| WhatsApp webhook trigger: `GET`/`POST /webhook`, signature verification, admin-vs-student routing | ✅ Live |
+| WhatsApp replies — student message → RAG answer → sent back via Graph API | ✅ Live (verified end to end) |
+| Document ingestion: `POST /documents/process` (PDF → chunks → Gemini embeddings → pgvector) | ✅ Live |
+| RAG chat: `POST /chat` (embed query → pgvector search → Gemini answer + sources) | ✅ Live |
+| PostgreSQL + pgvector via Docker Compose | ✅ Live (`docker compose up -d`) |
+| Admin command execution (`/ingest`, `/stats`, `/refresh`) | ❌ Detected and logged only, not executed |
+| Redis, Celery background jobs | ❌ Not built yet |
 | React frontend (`app/` is currently an empty placeholder) | ❌ Not built yet |
-| Docker Compose, CI workflow, Alembic migrations | ❌ Not built yet |
+| CI workflow, Alembic migrations | ❌ Not built yet (tables auto-create at startup in dev) |
 
 If you just want to run what's here and poke at it with Swagger, skip ahead
 to [Quick Start — Run What's Actually Here](#quick-start--run-whats-actually-here).
@@ -58,19 +62,31 @@ in this repo yet (`backend/`, `frontend/`, `alembic/`, `docker-compose.yml`).
 
 ## Quick Start — Run What's Actually Here
 
-These are the real commands for the repo as it exists today — no Docker,
-no database, no `backend/` subfolder. This is the fastest way to see the
-API and Swagger docs working.
+These are the real commands for the repo as it exists today.
+
+### Option A — everything in Docker (recommended)
+
+Runs Postgres+pgvector and the API together. Tables and the `vector`
+extension are created automatically at startup in development.
 
 ```bash
-# 1. Clone and enter the repo
 git clone https://github.com/your-org/coligo.git
 cd coligo
+cp .env.example .env      # then fill in GEMINI_API_KEY + WHATSAPP_* values
+docker compose up -d      # API on :8000, Postgres on :5432
+docker compose logs -f api
+```
+
+### Option B — API on the host, database in Docker
+
+```bash
+# 1. Start just the database
+docker compose up -d postgres
 
 # 2. One-command setup: creates .venv (via uv), installs deps + pre-commit hooks
 make setup
 
-# 3. Copy env defaults (optional — the app runs fine with built-in defaults)
+# 3. Copy env defaults, then fill in your API keys
 cp .env.example .env
 
 # 4. Run the dev server with hot reload
@@ -83,14 +99,29 @@ Then open in a browser:
 - **ReDoc** (read-only, nicer for sharing): http://localhost:8000/redoc
 - **Raw OpenAPI schema**: http://localhost:8000/openapi.json
 
-Try the two live endpoints straight from the Swagger UI, or via curl:
+### Testing the full flow
 
 ```bash
+# Health
 curl http://localhost:8000/health
-curl http://localhost:8000/health/detailed
+
+# 1. Ingest a PDF: extract -> chunk -> embed (Gemini) -> store in pgvector
+curl -X POST http://localhost:8000/documents/process \
+  -H "Content-Type: application/json" \
+  -d '{"document_ref": "/absolute/path/to/your.pdf"}'
+# also accepts an https:// URL to a PDF
+
+# 2. Ask a question: embed query -> pgvector search -> Gemini answer + sources
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is the cutoff rank for CSE?"}'
+
+# 3. Inspect what was stored
+docker exec coligo_postgres psql -U dte -d dte_chatbot \
+  -c "SELECT id, document_id, chunk_index, vector_dims(embedding) FROM document_chunks;"
 ```
 
-You can also exercise the WhatsApp webhook trigger locally without any Meta
+You can also exercise the WhatsApp webhook locally without any Meta
 credentials configured (signature verification auto-skips — with a logged
 warning — when `WHATSAPP_APP_SECRET` is unset):
 
@@ -98,11 +129,17 @@ warning — when `WHATSAPP_APP_SECRET` is unset):
 # Verification handshake (what Meta calls once when you register the URL)
 curl "http://localhost:8000/webhook?hub.mode=subscribe&hub.verify_token=<your WHATSAPP_VERIFY_TOKEN>&hub.challenge=12345"
 
-# Simulate an incoming text message event
+# Simulate an incoming text message — runs the full RAG pipeline and, if
+# WHATSAPP_ACCESS_TOKEN/PHONE_NUMBER_ID are set, sends a real WhatsApp reply
 curl -X POST http://localhost:8000/webhook \
   -H "Content-Type: application/json" \
-  -d '{"object":"whatsapp_business_account","entry":[{"id":"1","changes":[{"value":{"messaging_product":"whatsapp","messages":[{"from":"919876543210","id":"wamid.test","timestamp":"1690000000","type":"text","text":{"body":"hello"}}]},"field":"messages"}]}]}'
+  -d '{"object":"whatsapp_business_account","entry":[{"id":"1","changes":[{"value":{"messaging_product":"whatsapp","messages":[{"from":"919876543210","id":"wamid.test","timestamp":"1690000000","type":"text","text":{"body":"What is the hostel fee?"}}]},"field":"messages"}]}]}'
 ```
+
+To receive messages from real phones, Meta needs a public HTTPS URL —
+expose port 8000 with `ngrok http 8000` and register
+`https://<subdomain>.ngrok-free.dev/webhook` in the Meta App Dashboard
+(WhatsApp → Configuration), then subscribe to the `messages` webhook field.
 
 Watch the terminal running `make dev` while you do this — every request
 prints a structured log line (method, path, status, duration), plus a log

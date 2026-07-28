@@ -36,14 +36,14 @@ class DocumentProcessResponse(BaseModel):
     inserted_chunks: int = Field(
         ...,
         description=(
-            "Number of new chunks successfully " "generated and inserted into database"
+            "Number of new chunks successfully generated and inserted into database"
         ),
         examples=[8],
     )
     skipped_chunks: int = Field(
         ...,
         description=(
-            "Number of duplicate chunks skipped " "(due to existing SHA-256 hashes)"
+            "Number of duplicate chunks skipped (due to existing SHA-256 hashes)"
         ),
         examples=[2],
     )

@@ -27,15 +27,7 @@ async def generate_response_from_llm(prompt: str) -> str:
     )
 
     # Construct generation payload matching Gemini API specification
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": prompt}
-                ]
-            }
-        ]
-    }
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
     logger.debug("sending_prompt_to_llm", model=settings.GEMINI_LLM_MODEL)
 
@@ -56,19 +48,14 @@ async def generate_response_from_llm(prompt: str) -> str:
 
         response_data = response.json()
         candidates = response_data.get("candidates", [])
-        
+
         if not candidates:
             logger.warning("gemini_llm_returned_no_candidates")
-            raise DocumentProcessingError(
-                "Gemini LLM API returned no candidates."
-            )
+            raise DocumentProcessingError("Gemini LLM API returned no candidates.")
 
         # Extract generated response text content
-        generated_text = (
-            candidates[0]
-            .get("content", {})
-            .get("parts", [{}])[0]
-            .get("text", "")
+        generated_text = str(
+            candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
         )
 
         return generated_text.strip()
