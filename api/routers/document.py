@@ -17,11 +17,14 @@ logger = get_logger(__name__)
 async def process_document_endpoint(
     request: DocumentProcessRequest,
 ) -> DocumentProcessResponse:
-    """Process a PDF document by reference (local path or URL) and return its extracted text.
+    """Process a PDF document by reference (local path or URL) and return its
+    extracted text.
 
     - **document_ref**: File path or URL to the target PDF document.
     """
-    logger.info("process_document_endpoint_requested", document_ref=request.document_ref)
+    logger.info(
+        "process_document_endpoint_requested", document_ref=request.document_ref
+    )
     extracted_text = process_document(request.document_ref)
     return DocumentProcessResponse(
         document_ref=request.document_ref,

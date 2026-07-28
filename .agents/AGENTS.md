@@ -15,14 +15,20 @@ deploy). None of that exists in this repo yet.
 
 What actually exists today, verified by running it:
 
-- A minimal **FastAPI** backend under `api/` with two live endpoints
+- A minimal **FastAPI** backend under `api/` with health endpoints
   (`/health`, `/health/detailed`) and interactive docs correctly mounted at
   `/docs` (Swagger UI), `/redoc` (ReDoc), and `/openapi.json`.
-- A pytest suite under `api/tests/` that exercises those endpoints and
-  asserts the docs routes respond (`make test`).
-- No database, no Redis, no Celery, no WhatsApp webhook, no React frontend,
-  no Docker, no CI workflow, and no `alembic/` — these are all future work
-  tracked only as prose/ADRs in `README.md`.
+- A WhatsApp Cloud API webhook **trigger** (`GET`/`POST /webhook` in
+  `api/routers/whatsapp.py`): verification handshake, `X-Hub-Signature-256`
+  verification, message extraction, and admin-vs-student routing — but it
+  only logs the routing decision, it does **not send replies**. There's no
+  `chat_service`/LLM to generate a reply with yet, and admin commands
+  (`/ingest`, `/stats`, `/refresh`) are detected/logged but not executed.
+- A pytest suite under `api/tests/` that exercises all of the above
+  (`make test`).
+- No database, no Redis, no Celery, no React frontend, no Docker, no CI
+  workflow, and no `alembic/` — these are all future work tracked only as
+  prose/ADRs in `README.md`.
 - `app/` is an empty placeholder package reserved for a future
   frontend/UI app; it has no routes or components yet.
 
@@ -43,10 +49,14 @@ coligo/
 │   │   ├── logging.py       # structlog setup — pino-equivalent structured logging
 │   │   └── middleware.py    # RequestLoggingMiddleware — pino-http equivalent
 │   ├── routers/              # One module per feature; mounted in main.py
-│   │   └── health.py
+│   │   ├── health.py
+│   │   └── whatsapp.py       # GET/POST /webhook — Meta Cloud API trigger
 │   ├── schemas/              # Pydantic v2 request/response DTOs
-│   │   └── health.py
-│   ├── services/              # Business logic layer (empty scaffold so far)
+│   │   ├── health.py
+│   │   └── whatsapp.py       # Meta webhook payload DTOs + flattened ParsedMessage
+│   ├── services/              # Business logic layer
+│   │   ├── health_service.py
+│   │   └── whatsapp_service.py  # signature verify, extract_message, admin routing
 │   ├── models/                 # DB/ORM entities (empty scaffold so far — no DB wired up yet)
 │   └── tests/                   # pytest + FastAPI TestClient
 ├── app/                      # Reserved for a future frontend/UI app — empty today
@@ -134,3 +144,9 @@ make test
 - No CI workflow file exists (`README.md`'s `.github/workflows/ci.yml` is
   aspirational, not present in `.github/` — there is no `.github/` here).
 - No frontend exists under `app/` yet.
+- WhatsApp webhook receives and routes events but **does not reply** —
+  `whatsapp_service.send_text()` (an outbound Graph API call) doesn't exist
+  yet; building it needs a `chat_service` to generate the reply content
+  first. Admin commands are matched/logged in `whatsapp_service.py` but
+  none of them actually run (`/ingest` needs S3 + Celery, `/stats` needs
+  the analytics table, `/refresh` needs the RAG pipeline — none exist yet).

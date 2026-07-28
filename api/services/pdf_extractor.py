@@ -1,4 +1,5 @@
 import io
+
 import pypdf
 from pypdf.errors import PdfReadError
 
@@ -21,7 +22,7 @@ def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
         logger.debug("pdf_opened_successfully", page_count=num_pages)
 
         extracted_pages = []
-        for idx, page in enumerate(reader.pages):
+        for page in reader.pages:
             text = page.extract_text()
             if text:
                 extracted_pages.append(text)
