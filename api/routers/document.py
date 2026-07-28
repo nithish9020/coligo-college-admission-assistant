@@ -20,7 +20,8 @@ async def process_document_endpoint(
     request: DocumentProcessRequest,
     db: AsyncSession = Depends(get_db),
 ) -> DocumentProcessResponse:
-    """Process a PDF document by reference (local path or URL).
+    """Process a PDF document by reference (local path or URL) and return its
+    extracted text.
 
     - **document_ref**: File path or URL to the target PDF document.
     """

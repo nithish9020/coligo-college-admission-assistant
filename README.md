@@ -18,8 +18,10 @@ report.
 |---|---|
 | `GET /health`, `GET /health/detailed` | ✅ Live |
 | Swagger UI at `/docs`, ReDoc at `/redoc`, `GET /openapi.json` | ✅ Live |
-| Pytest suite (`api/tests/`) covering the above | ✅ Live |
-| Database, Redis, Celery, WhatsApp webhook, RAG pipeline | ❌ Not built yet |
+| Structured request/service logging (`structlog`) | ✅ Live |
+| WhatsApp webhook trigger: `GET`/`POST /webhook`, signature verification, admin-vs-student routing (logged only) | ✅ Live |
+| WhatsApp *replies* (sending messages back via the Graph API) | ❌ Not built yet — no chat/LLM service exists to generate one |
+| Database, Redis, Celery, RAG pipeline | ❌ Not built yet |
 | React frontend (`app/` is currently an empty placeholder) | ❌ Not built yet |
 | Docker Compose, CI workflow, Alembic migrations | ❌ Not built yet |
 
@@ -74,9 +76,6 @@ cp .env.example .env
 # 4. Run the dev server with hot reload
 make dev
 # equivalent to: source .venv/bin/activate && uvicorn api.main:app --reload --port 8000
-
-# 5. Run the test suite
-make test
 ```
 
 Then open in a browser:
@@ -89,6 +88,20 @@ Try the two live endpoints straight from the Swagger UI, or via curl:
 ```bash
 curl http://localhost:8000/health
 curl http://localhost:8000/health/detailed
+```
+
+You can also exercise the WhatsApp webhook trigger locally without any Meta
+credentials configured (signature verification auto-skips — with a logged
+warning — when `WHATSAPP_APP_SECRET` is unset):
+
+```bash
+# Verification handshake (what Meta calls once when you register the URL)
+curl "http://localhost:8000/webhook?hub.mode=subscribe&hub.verify_token=<your WHATSAPP_VERIFY_TOKEN>&hub.challenge=12345"
+
+# Simulate an incoming text message event
+curl -X POST http://localhost:8000/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"object":"whatsapp_business_account","entry":[{"id":"1","changes":[{"value":{"messaging_product":"whatsapp","messages":[{"from":"919876543210","id":"wamid.test","timestamp":"1690000000","type":"text","text":{"body":"hello"}}]},"field":"messages"}]}]}'
 ```
 
 Watch the terminal running `make dev` while you do this — every request
@@ -299,7 +312,6 @@ concepts you already know onto what you'll see in `api/`:
 | **`npm install`** | **`uv pip install --python .venv -e ".[dev]"`** (or `make install-deps`) | `uv` is this repo's package manager — faster equivalent of `npm`/`pnpm`, but for Python. |
 | **`npm run dev` / `pnpm dev` / `nodemon`** | **`make dev`** (→ `uvicorn api.main:app --reload --port 8000`) | Hot-reloading dev server, same purpose as nodemon/`pnpm dev` watching Express. |
 | **ESLint + Prettier** | **Ruff** (`ruff check`, `ruff format`) | One tool doing both lint + format, instead of two separate Node packages. |
-| **Jest + Supertest** | **Pytest + httpx / `TestClient`** (`api/tests/`) | Supertest hits your Express app in-process; FastAPI's `TestClient` does the same thing against the ASGI app. |
 | **pino** (+ `pino-http` middleware, `pino-pretty`) | **structlog** (`api/core/logging.py`) + `RequestLoggingMiddleware` (`api/core/middleware.py`) | Same shape: a `logger.info("event", key=value)` structured-logging call per layer, an HTTP access-log middleware, and colored pretty-printing in dev vs. single-line JSON in prod. `get_logger(__name__)` in any router/service ≈ a pino child logger scoped to that module. |
 | **`swagger-jsdoc` + `swagger-ui-express`** (manual JSDoc comments → spec) | **Auto-generated OpenAPI** at `/docs`, `/redoc`, `/openapi.json` | Biggest workflow difference (ADR-008): in Express you hand-annotate routes to build the spec; FastAPI derives the spec automatically from your Pydantic schemas and type hints — it can't drift out of sync with the code. |
 | **React + Vite frontend** | **Same** — `app/` (currently empty, reserved) | The frontend plan is unchanged from a typical MERN app: React talking to a JSON/REST API over HTTP. |
@@ -500,6 +512,17 @@ Student: "meri rank 45000 hai OBC category, CS milega?"
 
 ## WhatsApp Integration
 
+> **Implementation status:** the webhook *trigger* is live —
+> `api/routers/whatsapp.py` implements `GET /webhook` (Meta's verification
+> handshake) and `POST /webhook` (receives events, verifies
+> `X-Hub-Signature-256` via `api/services/whatsapp_service.py`, extracts the
+> message, and logs an `admin_message_received` or `student_message_received`
+> structured log line). It does **not** send replies yet, and admin commands
+> are detected/logged but not executed — both need a `chat_service` /
+> `ingest_service` that don't exist yet (see status table above). The
+> pseudocode below is the target end state; treat it as a design reference,
+> not what's currently running.
+
 ### Setup
 
 1. Create a Meta Developer account at `developers.facebook.com`
@@ -509,6 +532,13 @@ Student: "meri rank 45000 hai OBC category, CS milega?"
 5. Set webhook verify token (any string) — matches `WHATSAPP_VERIFY_TOKEN` in env
 6. Business verification required to exceed 250 conversations/24h
 
+Fill in `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`,
+`WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, and `ADMIN_NUMBERS` in your
+`.env` (see `.env.example` for where to find each value in the Meta App
+Dashboard). Registering the webhook URL with Meta requires a public HTTPS
+endpoint (ngrok tunnel for local dev, or a deployed host) — not needed just
+to run and test the endpoint locally.
+
 ### Free tier limits (as of 2026)
 
 - **1,000 service conversations/month free** — service = user-initiated, you reply
@@ -517,6 +547,10 @@ Student: "meri rank 45000 hai OBC category, CS milega?"
 - Document size limit: 100MB per file
 
 ### Webhook handler routing logic
+
+Target end state (pseudocode) — for the actual implemented version (logs the
+routing decision, doesn't call these services yet since they don't exist),
+see `api/routers/whatsapp.py` and `api/services/whatsapp_service.py`:
 
 ```python
 @router.post("/webhook")
