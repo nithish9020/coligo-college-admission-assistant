@@ -35,6 +35,9 @@ dev = [
 [tool.ruff]
 target-version = "py310"
 line-length = 88
+# data/ holds one-off corpus-generation scripts whose wide numeric tables
+# are more readable unwrapped than reflowed to 88 columns.
+extend-exclude = ["data"]
 
 [tool.ruff.lint]
 select = [

@@ -1,6 +1,6 @@
-# DTE AI Chatbot — SIH 2025 (Problem Statement 1631)
+# Coligo — TNEA AI Admission Assistant
 
-> AI-powered student assistance chatbot for the Department of Technical Education, Government of Rajasthan. Centralized 24/7 virtual assistant handling admission queries, fee structures, cutoff predictions, scholarship info, and college data across hundreds of engineering and polytechnic institutes.
+> AI-powered student assistance chatbot for **Tamil Nadu Engineering Admissions (TNEA)** counselling. Centralized 24/7 virtual assistant over WhatsApp handling admission queries, fee structures, cutoff marks and ranks, scholarship info, and college data for Tamil Nadu engineering institutes. The current knowledge base covers Sri Krishna College of Engineering and Technology (SKCET), Coimbatore.
 
 ---
 
@@ -33,7 +33,31 @@ If you just want to run what's here and poke at it with Swagger, skip ahead
 to [Quick Start — Run What's Actually Here](#quick-start--run-whats-actually-here).
 Everything under [Local Development Setup](#local-development-setup) further
 down describes the *full planned* stack, which needs pieces that don't exist
-in this repo yet (`backend/`, `frontend/`, `alembic/`, `docker-compose.yml`).
+in this repo yet (`backend/`, `frontend/`, `alembic/`).
+
+### Knowledge base
+
+[`data/skcet_tnea_knowledge_base.pdf`](data/) is the seed corpus. It was
+compiled from official SKCET sources — the
+[academics](https://skcet.ac.in/academics/ug-pg-doctorate/),
+[admission procedure](https://skcet.ac.in/admissions/admission-procedure/)
+and [cut-off marks](https://skcet.ac.in/cut-off-marks/) pages, including the
+2024-2025 and 2023-2024 cut-off PDFs — plus the TNEA counselling process
+(cutoff formula, tie-breaking, community categories).
+
+Cutoff figures were transcribed from the official tables and verified
+cell-by-cell against them. Blank cells in the source (no admission recorded
+for that community) are written as "not available" rather than guessed, so
+the assistant never invents a cutoff. Ingest it with:
+
+```bash
+curl -X POST http://localhost:8000/documents/process \
+  -H "Content-Type: application/json" \
+  -d '{"document_ref": "/app/data/skcet_tnea_knowledge_base.pdf"}'
+```
+
+(Use `/app/data/...` when the API runs in Docker — `./data` is mounted
+there; use the host path when running the API with `make dev`.)
 
 ---
 
@@ -156,15 +180,15 @@ not by activating the venv and calling `pip` directly.
 
 ## Project Overview
 
-**Problem:** During admission season, DTE Rajasthan receives thousands of identical queries from students, parents, and other stakeholders — about admissions, fees, cutoffs, scholarships, hostel availability, and placements. Colleges handle this manually via phone, email, and walk-ins, consuming significant staff time.
+**Problem:** During TNEA counselling season, engineering colleges in Tamil Nadu receive thousands of identical queries from students and parents — about admission procedure, fees, cutoff marks and closing ranks per community, scholarships, hostel availability, and placements. Colleges handle this manually via phone, email, and walk-ins, consuming significant staff time.
 
-**Solution:** Centralized AI chatbot deployed across WhatsApp, web widget, and voice IVR. Uses Retrieval-Augmented Generation (RAG) over a vector database of DTE college data to answer queries accurately, in both English and Hindi, 24/7.
+**Solution:** Centralized AI chatbot on WhatsApp. Uses Retrieval-Augmented Generation (RAG) over a pgvector database of official college documents to answer queries accurately, grounded in real cutoff tables and admission procedures, 24/7.
 
 **Key differentiators over a generic FAQ bot:**
-- Cutoff predictor — given a JEE rank + category, returns ranked college + branch recommendations based on 3 years of REAP allotment data
-- Hindi/Hinglish native handling — no separate NLP pipeline, LLM handles it natively
+- Community-aware cutoff answers — OC, BC, BCM, MBC, SC, SCA and ST cutoffs differ, and answers are grounded in the college's own published cutoff tables rather than generic advice
+- Grounded, not generative — answers cite the source document and decline when the context doesn't cover the question
+- Tamil/Tanglish native handling — no separate NLP pipeline, the LLM handles it natively
 - Two-attempt escalation with human handoff — confidence-scored, not binary fail/pass
-- Admin CMS — DTE officers update data without touching code
 - Analytics dashboard — query heatmap by district, escalation patterns, low-confidence clusters
 
 ---
@@ -383,7 +407,7 @@ dte-chatbot/
 │   │   │   ├── embedder.py         # Gemini embedding calls
 │   │   │   ├── ingestion.py        # PDF parse → chunk → embed → upsert
 │   │   │   ├── escalation.py       # Confidence scoring + escalation logic
-│   │   │   ├── cutoff.py           # REAP data query → rank-to-college mapping
+│   │   │   ├── cutoff.py           # TNEA cutoff query → rank-to-college mapping
 │   │   │   ├── whatsapp.py         # WhatsApp Cloud API send/receive helpers
 │   │   │   ├── session.py          # Conversation history via Redis
 │   │   │   └── analytics.py        # Query logging, heatmap aggregation
@@ -391,7 +415,7 @@ dte-chatbot/
 │   │   ├── models/                 # SQLAlchemy ORM models
 │   │   │   ├── __init__.py
 │   │   │   ├── college.py          # College, branch, seat matrix
-│   │   │   ├── allotment.py        # REAP historical allotment (3 years)
+│   │   │   ├── allotment.py        # TNEA historical allotment (3 years)
 │   │   │   ├── document.py         # Ingested document metadata
 │   │   │   ├── ticket.py           # Escalation tickets
 │   │   │   └── query_log.py        # Analytics: every query logged
@@ -467,9 +491,9 @@ dte-chatbot/
 │
 ├── data/                           # Data ingestion scripts (teammate 3 owns this)
 │   ├── scrapers/
-│   │   └── dte_scraper.py          # Scrape DTE website college data
+│   │   └── college_scraper.py      # Scrape college website data
 │   ├── parsers/
-│   │   └── reap_csv_parser.py      # Parse REAP allotment CSV (3 years)
+│   │   └── tnea_csv_parser.py      # Parse TNEA allotment CSV (3 years)
 │   ├── seeds/
 │   │   └── seed_colleges.sql       # Initial college data seed
 │   └── README.md                   # How to run ingestion scripts
@@ -1118,16 +1142,16 @@ Before demo day, verify every item.
 
 ### Data
 - [ ] At minimum: 50 college records seeded
-- [ ] At minimum: 2 years of REAP allotment data loaded
-- [ ] At minimum: 10 DTE PDFs ingested (fee structure, scholarship schemes)
+- [ ] At minimum: 2 years of TNEA cutoff data loaded
+- [ ] At minimum: 10 college PDFs ingested (fee structure, scholarship schemes)
 - [ ] Redis reachable from backend container
 - [ ] pgvector extension installed and verified: `SELECT * FROM pg_extension WHERE extname='vector'`
 
 ### Demo
 - [ ] Demo script updated and rehearsed
 - [ ] Fallback screenshots ready if WhatsApp API is slow
-- [ ] Hindi query demo working: "Rajasthan mein BE CS ke liye kitni rank chahiye"
-- [ ] Cutoff predictor demo working with real 2024 REAP data
+- [ ] Tamil/Tanglish query demo working: "SKCET la CSE ku enna cutoff venum"
+- [ ] Cutoff predictor demo working with real 2024-2025 TNEA data
 - [ ] Escalation flow demo working (trigger with unknown college name)
 - [ ] Admin CMS demo: update a fee, show it reflected in bot response
 - [ ] Analytics dashboard showing at least 7 days of synthetic query data
