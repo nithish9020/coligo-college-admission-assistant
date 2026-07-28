@@ -4,8 +4,37 @@
 
 ---
 
+## ⚠️ Current Implementation Status
+
+Most of this document describes the **target architecture** — where the
+project is headed across the SIH timeline (RAG, pgvector, WhatsApp, Celery,
+React frontend, Docker, Railway). Read it as a design doc, not a status
+report.
+
+**What actually exists and runs today** is a minimal FastAPI backend at
+[`api/`](api/) with:
+
+| Piece | Status |
+|---|---|
+| `GET /health`, `GET /health/detailed` | ✅ Live |
+| Swagger UI at `/docs`, ReDoc at `/redoc`, `GET /openapi.json` | ✅ Live |
+| Pytest suite (`api/tests/`) covering the above | ✅ Live |
+| Database, Redis, Celery, WhatsApp webhook, RAG pipeline | ❌ Not built yet |
+| React frontend (`app/` is currently an empty placeholder) | ❌ Not built yet |
+| Docker Compose, CI workflow, Alembic migrations | ❌ Not built yet |
+
+If you just want to run what's here and poke at it with Swagger, skip ahead
+to [Quick Start — Run What's Actually Here](#quick-start--run-whats-actually-here).
+Everything under [Local Development Setup](#local-development-setup) further
+down describes the *full planned* stack, which needs pieces that don't exist
+in this repo yet (`backend/`, `frontend/`, `alembic/`, `docker-compose.yml`).
+
+---
+
 ## Table of Contents
 
+- [Current Implementation Status](#-current-implementation-status)
+- [Quick Start — Run What's Actually Here](#quick-start--run-whats-actually-here)
 - [Project Overview](#project-overview)
 - [Architecture Decisions (ADR)](#architecture-decisions-adr)
 - [System Architecture](#system-architecture)
@@ -22,6 +51,56 @@
 - [API Reference](#api-reference)
 - [Team & Task Management](#team--task-management)
 - [Production Checklist](#production-checklist)
+
+---
+
+## Quick Start — Run What's Actually Here
+
+These are the real commands for the repo as it exists today — no Docker,
+no database, no `backend/` subfolder. This is the fastest way to see the
+API and Swagger docs working.
+
+```bash
+# 1. Clone and enter the repo
+git clone https://github.com/your-org/coligo.git
+cd coligo
+
+# 2. One-command setup: creates .venv (via uv), installs deps + pre-commit hooks
+make setup
+
+# 3. Copy env defaults (optional — the app runs fine with built-in defaults)
+cp .env.example .env
+
+# 4. Run the dev server with hot reload
+make dev
+# equivalent to: source .venv/bin/activate && uvicorn api.main:app --reload --port 8000
+
+# 5. Run the test suite
+make test
+```
+
+Then open in a browser:
+- **Swagger UI** (interactive, "Try it out" buttons): http://localhost:8000/docs
+- **ReDoc** (read-only, nicer for sharing): http://localhost:8000/redoc
+- **Raw OpenAPI schema**: http://localhost:8000/openapi.json
+
+Try the two live endpoints straight from the Swagger UI, or via curl:
+
+```bash
+curl http://localhost:8000/health
+curl http://localhost:8000/health/detailed
+```
+
+Watch the terminal running `make dev` while you do this — every request
+prints a structured log line (method, path, status, duration), plus a log
+line from the router and one from the service it called underneath. This is
+`structlog`, the closest Python equivalent to pino; see the MERN → this
+stack table below for the mapping.
+
+Note this repo's `.venv` is managed by [`uv`](https://github.com/astral-sh/uv)
+and intentionally has no `pip` binary inside it — always install packages
+with `uv pip install --python .venv ...` (or just `make install-deps`),
+not by activating the venv and calling `pip` directly.
 
 ---
 
@@ -198,6 +277,33 @@ Every non-trivial decision is logged here. Written before building, not after.
 | Formatting | Black | latest | Zero-config formatter |
 | Type checking | mypy | latest | Static type safety |
 | Testing | Pytest + httpx | latest | Async test client for FastAPI |
+
+---
+
+## MERN → This Stack: Equivalence Cheat Sheet
+
+The team's primary background is MERN (MongoDB, Express, React, Node). ADR-001
+explains why this project uses Python + FastAPI instead of Express — but the
+*shape* of the architecture is nearly identical. Use this table to map
+concepts you already know onto what you'll see in `api/`:
+
+| MERN concept | This stack's equivalent | Notes |
+|---|---|---|
+| **Express** (`app.js`, routes, middleware) | **FastAPI** (`api/main.py`, `api/routers/`) | Same job: define routes, mount middleware, start an ASGI/HTTP server. |
+| **Express route handler** (`router.get('/health', ...)`) | **FastAPI route handler** (`@router.get("/health")` in `api/routers/health.py`) | FastAPI adds typed params/response validation for free — no manual `req.body` shape-checking. |
+| **Mongoose schema** (`new Schema({...})`) | **Pydantic schema** (`api/schemas/health.py`, `BaseModel`) | Both validate/shape data. Pydantic schemas here validate request/response payloads, not DB documents (there's no DB wired up yet). |
+| **Mongoose model / MongoDB document** | **SQLAlchemy model** (planned, `api/models/` — empty today) | This project targets **PostgreSQL + pgvector** (ADR-002), not MongoDB — the "M" in MERN becomes "P" (Postgres) here. |
+| **`.env` + `dotenv`** | **`.env` + `pydantic-settings`** (`api/core/config.py`) | Same idea: typed, validated settings loaded from environment instead of raw `process.env.X` strings. |
+| **`controllers/` (business logic)** | **`api/services/`** | Where logic lives so route handlers stay thin, same separation MERN teams use. |
+| **`package.json`** | **`pyproject.toml`** | Declares dependencies, dev tooling config, and build metadata in one file. |
+| **`npm install`** | **`uv pip install --python .venv -e ".[dev]"`** (or `make install-deps`) | `uv` is this repo's package manager — faster equivalent of `npm`/`pnpm`, but for Python. |
+| **`npm run dev` / `pnpm dev` / `nodemon`** | **`make dev`** (→ `uvicorn api.main:app --reload --port 8000`) | Hot-reloading dev server, same purpose as nodemon/`pnpm dev` watching Express. |
+| **ESLint + Prettier** | **Ruff** (`ruff check`, `ruff format`) | One tool doing both lint + format, instead of two separate Node packages. |
+| **Jest + Supertest** | **Pytest + httpx / `TestClient`** (`api/tests/`) | Supertest hits your Express app in-process; FastAPI's `TestClient` does the same thing against the ASGI app. |
+| **pino** (+ `pino-http` middleware, `pino-pretty`) | **structlog** (`api/core/logging.py`) + `RequestLoggingMiddleware` (`api/core/middleware.py`) | Same shape: a `logger.info("event", key=value)` structured-logging call per layer, an HTTP access-log middleware, and colored pretty-printing in dev vs. single-line JSON in prod. `get_logger(__name__)` in any router/service ≈ a pino child logger scoped to that module. |
+| **`swagger-jsdoc` + `swagger-ui-express`** (manual JSDoc comments → spec) | **Auto-generated OpenAPI** at `/docs`, `/redoc`, `/openapi.json` | Biggest workflow difference (ADR-008): in Express you hand-annotate routes to build the spec; FastAPI derives the spec automatically from your Pydantic schemas and type hints — it can't drift out of sync with the code. |
+| **React + Vite frontend** | **Same** — `app/` (currently empty, reserved) | The frontend plan is unchanged from a typical MERN app: React talking to a JSON/REST API over HTTP. |
+| **npm scripts in `package.json`** | **`Makefile`** targets (`make setup/lint/format/check/test/dev`) | Same purpose: named shortcuts for common dev tasks. |
 
 ---
 
@@ -430,8 +536,9 @@ async def whatsapp_webhook(payload: WhatsAppPayload):
         return await chat_service.handle_query(message)
 
     # Unsupported message type
-    await whatsapp_service.send_text(sender,
-        "I can only answer text questions. Please type your query.")
+    await whatsapp_service.send_text(
+        sender, "I can only answer text questions. Please type your query."
+    )
 ```
 
 ### Admin commands (from whitelisted numbers only)
@@ -476,11 +583,11 @@ User query (text)
 ### Chunking strategy
 
 ```python
-CHUNK_SIZE = 512        # tokens
-CHUNK_OVERLAP = 50      # tokens — prevents context loss at boundaries
-EMBEDDING_DIM = 768     # Gemini text-embedding-004
+CHUNK_SIZE = 512  # tokens
+CHUNK_OVERLAP = 50  # tokens — prevents context loss at boundaries
+EMBEDDING_DIM = 768  # Gemini text-embedding-004
 TOP_K_DEFAULT = 5
-TOP_K_BROAD = 8         # used on second attempt
+TOP_K_BROAD = 8  # used on second attempt
 CONFIDENCE_THRESHOLD = 0.75
 ```
 
@@ -582,6 +689,13 @@ LLM_CACHE_TTL=86400                         # seconds (24h)
 ---
 
 ## Local Development Setup
+
+> **This section describes the full target stack** (separate `backend/`
+> and `frontend/` folders, Postgres, Redis, Celery, Alembic migrations —
+> none of which exist in this repo yet). If you just want to run the
+> current FastAPI skeleton and try Swagger, use
+> [Quick Start — Run What's Actually Here](#quick-start--run-whats-actually-here)
+> instead.
 
 ### Prerequisites
 
@@ -827,7 +941,9 @@ jobs:
 
 ## API Reference
 
-All routes auto-documented at `/docs`. Key endpoints:
+All routes auto-documented at `/docs`. **Only `GET /health` and
+`GET /health/detailed` exist today** — everything else below is planned; the
+table shows the target surface once the RAG/WhatsApp/admin pieces are built.
 
 | Method | Path | Description | Auth |
 |---|---|---|---|
@@ -848,13 +964,14 @@ All routes auto-documented at `/docs`. Key endpoints:
 class ChatRequest(BaseModel):
     message: str
     language: Literal["en", "hi", "auto"] = "auto"
-    session_id: str | None = None     # for conversation history
+    session_id: str | None = None  # for conversation history
+
 
 # Response (streaming SSE)
 class StreamChunk(BaseModel):
     type: Literal["token", "done", "error"]
     content: str
-    metadata: dict | None = None      # on "done": sources, confidence, ticket_id
+    metadata: dict | None = None  # on "done": sources, confidence, ticket_id
 ```
 
 ---
