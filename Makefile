@@ -1,4 +1,4 @@
-.PHONY: venv install-deps install-hooks setup lint format check test dev clean
+.PHONY: venv install-deps install-hooks setup lint format check dev clean
 
 # Create virtual environment if it does not exist
 venv:
@@ -27,10 +27,6 @@ format:
 # Run pre-commit checks on all files
 check:
 	.venv/bin/pre-commit run --all-files
-
-# Run the test suite (pytest + httpx against the FastAPI app)
-test:
-	.venv/bin/python -m pytest -v
 
 # Start the local dev server with hot reload + Swagger UI at /docs
 # --no-access-log: our own RequestLoggingMiddleware logs every request

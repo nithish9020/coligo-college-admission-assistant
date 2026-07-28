@@ -28,6 +28,25 @@ class DocumentProcessResponse(BaseModel):
         description="The document reference that was processed",
         examples=["/path/to/college_catalog.pdf"],
     )
+    total_chunks: int = Field(
+        ...,
+        description="Total number of chunks generated from the document",
+        examples=[10],
+    )
+    inserted_chunks: int = Field(
+        ...,
+        description=(
+            "Number of new chunks successfully generated and inserted into database"
+        ),
+        examples=[8],
+    )
+    skipped_chunks: int = Field(
+        ...,
+        description=(
+            "Number of duplicate chunks skipped (due to existing SHA-256 hashes)"
+        ),
+        examples=[2],
+    )
     extracted_text: str = Field(
         ...,
         description="The full extracted text from the PDF document",
