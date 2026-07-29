@@ -23,6 +23,7 @@ report.
 | WhatsApp replies — student message → RAG answer → sent back via Graph API | ✅ Live (verified end to end) |
 | Document ingestion: `POST /documents/process` (PDF → chunks → Gemini embeddings → pgvector) | ✅ Live |
 | RAG chat: `POST /chat` (embed query → pgvector search → Gemini answer + sources) | ✅ Live |
+| Conversation memory — multi-turn follow-ups on WhatsApp and `/chat` | ✅ Live (24h window, last 6 turns) |
 | PostgreSQL + pgvector via Docker Compose | ✅ Live (`docker compose up -d`) |
 | Admin command execution (`/ingest`, `/stats`, `/refresh`) | ❌ Detected and logged only, not executed |
 | Redis, Celery background jobs | ❌ Not built yet |
@@ -660,6 +661,50 @@ async def whatsapp_webhook(payload: WhatsAppPayload):
 ---
 
 ## RAG Pipeline
+
+### Conversation memory
+
+Chats are multi-turn. Each incoming message is tied to a conversation via a
+namespaced `session_key` — `whatsapp:<phone>` for WhatsApp (automatic), or
+`web:<session_id>` for `/chat` when the caller supplies `session_id`. Omit
+`session_id` and `/chat` stays stateless, exactly as before.
+
+A thread stays live for `CONVERSATION_TTL_HOURS` (default 24, matching
+WhatsApp's own service-conversation window) since its last message; after that
+a new thread starts. The last `CONVERSATION_MAX_TURNS` (default 6, ~3
+exchanges) are rendered into the prompt.
+
+The important part is **query rewriting**. Retrieval embeds the question, so a
+bare follow-up like *"what about ECE?"* would match nothing useful. When
+history exists, `api/services/query_rewriter.py` first condenses it into a
+standalone question:
+
+```
+User: What is the OC cutoff for CSE at SKCET?
+Bot:  192 (rank 5640).
+User: what about ECE?
+      → condensed to "What is the OC cutoff for ECE at SKCET?"
+      → embeds THAT, retrieves the ECE chunk, answers correctly
+```
+
+The condensed form is used only for retrieval; the user's original wording is
+what reaches the answering prompt. Set `ENABLE_QUERY_REWRITING=false` to skip
+the extra LLM call (follow-ups then retrieve poorly). History is never a hard
+dependency: if the database read/write or the rewrite fails, it is logged and
+the pipeline falls back to answering statelessly.
+
+Stored turns live in `conversations` / `conversation_messages`:
+
+```bash
+docker exec coligo_postgres psql -U dte -d dte_chatbot -c \
+  "SELECT c.session_key, m.role, left(m.content,60), m.created_at
+     FROM conversations c JOIN conversation_messages m ON m.conversation_id=c.id
+    ORDER BY m.id;"
+```
+
+> **Data note:** this persists phone numbers alongside message content. There
+> is currently no retention/cleanup job and no deletion path — a scheduled
+> purge of old conversations is worthwhile before this handles real students.
 
 ### Ingestion path (runs on data update)
 

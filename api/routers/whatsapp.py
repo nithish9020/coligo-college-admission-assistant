@@ -44,7 +44,9 @@ async def _answer_student(db: AsyncSession, message: ParsedMessage) -> None:
     fallback, so the webhook can still ack Meta with 200.
     """
     try:
-        answer, sources = await handle_rag_query(db, message.text or "")
+        answer, sources = await handle_rag_query(
+            db, message.text or "", session_key=f"whatsapp:{message.sender}"
+        )
         logger.info(
             "rag_answer_generated", sender=message.sender, source_count=len(sources)
         )
