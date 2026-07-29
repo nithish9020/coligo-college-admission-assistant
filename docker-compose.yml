@@ -25,7 +25,18 @@ services:
       # network the database is reachable as "postgres", not localhost.
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dte}:${POSTGRES_PASSWORD:-dte_secret}@postgres:5432/${POSTGRES_DB:-dte_chatbot}
     ports:
-      - "8000:8000"
+      # Host port is overridable: `API_PORT=8001 docker compose up -d` avoids
+      # clashing with a `make dev` server already holding 8000 on the host.
+      - "${API_PORT:-8000}:8000"
+    # Explicit upstream resolvers. On hosts running systemd-resolved (Ubuntu,
+    # Mint, Fedora) /etc/resolv.conf points at the 127.0.0.53 stub, which is
+    # meaningless inside a container - it resolves to the container's own
+    # loopback, so every lookup (postgres, Gemini, graph.facebook.com) fails
+    # with "Temporary failure in name resolution". Pinning real resolvers here
+    # makes the stack work regardless of the host's DNS setup.
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     depends_on:
       postgres:
         condition: service_healthy
