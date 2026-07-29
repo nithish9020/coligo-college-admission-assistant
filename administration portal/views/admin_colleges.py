@@ -1,5 +1,4 @@
 import streamlit as st
-
 from utils.api_client import (
     APIError,
     download_brochure,
@@ -26,11 +25,11 @@ def _render_college_list() -> None:
         st.info("No colleges have registered yet.")
         return
 
-    search = st.text_input("\U0001F50D Search colleges...", placeholder="Search by name")
+    search = st.text_input(
+        "\U0001f50d Search colleges...", placeholder="Search by name"
+    )
     if search:
-        colleges = [
-            c for c in colleges if search.lower() in c["college_name"].lower()
-        ]
+        colleges = [c for c in colleges if search.lower() in c["college_name"].lower()]
 
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
     header = st.columns([2.5, 2.5, 1, 1, 1, 1])
@@ -73,9 +72,14 @@ def _render_college_detail(college_id: int) -> None:
         badge("Active" if detail["is_active"] else "Inactive"), unsafe_allow_html=True
     )
 
-    tabs = st.tabs(["Overview", f"Courses ({detail['course_count']})",
-                     f"Brochures ({detail['brochure_count']})",
-                     f"Facilities ({detail['facility_count']})"])
+    tabs = st.tabs(
+        [
+            "Overview",
+            f"Courses ({detail['course_count']})",
+            f"Brochures ({detail['brochure_count']})",
+            f"Facilities ({detail['facility_count']})",
+        ]
+    )
 
     with tabs[0]:
         st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
@@ -96,8 +100,10 @@ def _render_college_detail(college_id: int) -> None:
         with col2:
             st.markdown("**Address**")
             address_parts = [
-                detail.get("address"), detail.get("city"),
-                detail.get("state"), detail.get("pincode"),
+                detail.get("address"),
+                detail.get("city"),
+                detail.get("state"),
+                detail.get("pincode"),
             ]
             st.write(", ".join(p for p in address_parts if p) or "-")
             st.markdown("**Accreditation**")
@@ -163,7 +169,7 @@ def _render_college_detail(college_id: int) -> None:
                     try:
                         pdf_bytes = download_brochure(token, b["id"])
                         st.download_button(
-                            "\U0001F441️",
+                            "\U0001f441️",
                             data=pdf_bytes,
                             file_name=f"{b['title']}.pdf",
                             mime="application/pdf",

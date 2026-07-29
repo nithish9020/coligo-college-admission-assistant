@@ -1,5 +1,4 @@
 import streamlit as st
-
 from utils.api_client import APIError, get_my_profile, list_brochures, list_courses
 from utils.styling import render_stat_row
 
@@ -16,7 +15,7 @@ def render_college_dashboard() -> None:
         return
 
     st.title("Dashboard")
-    st.caption(f"Welcome back, {profile['college_name']} \U0001F44B")
+    st.caption(f"Welcome back, {profile['college_name']} \U0001f44b")
 
     published = sum(1 for c in courses if c["status"] == "published")
     render_stat_row(
@@ -43,10 +42,10 @@ def render_college_dashboard() -> None:
         if st.button("➕ Add New Course", use_container_width=True):
             st.session_state.nav = "Courses"
             st.rerun()
-        if st.button("\U0001F4C4 Upload Brochure", use_container_width=True):
+        if st.button("\U0001f4c4 Upload Brochure", use_container_width=True):
             st.session_state.nav = "Brochures"
             st.rerun()
-        if st.button("\U0001F4DD Edit College Profile", use_container_width=True):
+        if st.button("\U0001f4dd Edit College Profile", use_container_width=True):
             st.session_state.nav = "College Profile"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)

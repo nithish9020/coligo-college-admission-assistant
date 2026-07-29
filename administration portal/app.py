@@ -1,5 +1,4 @@
 import streamlit as st
-
 from utils.auth import init_session_state, is_authenticated
 from utils.styling import inject_base_css
 from views.admin_colleges import render_admin_colleges
@@ -17,7 +16,7 @@ init_session_state()
 
 st.set_page_config(
     page_title="Coligo Admin Portal",
-    page_icon="\U0001F393",
+    page_icon="\U0001f393",
     layout="wide",
     initial_sidebar_state="expanded" if is_authenticated() else "collapsed",
 )

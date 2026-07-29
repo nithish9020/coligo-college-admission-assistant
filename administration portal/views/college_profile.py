@@ -1,5 +1,4 @@
 import streamlit as st
-
 from utils.api_client import APIError, get_my_profile, update_my_profile, upload_logo
 
 COLLEGE_TYPES = ["Private", "Government", "Autonomous", "Deemed University"]
@@ -32,9 +31,9 @@ def render_college_profile() -> None:
         logo_col, upload_col = st.columns([1, 3])
         with logo_col:
             if profile.get("logo_path"):
-                st.markdown("\U0001F3EB **Logo uploaded**")
+                st.markdown("\U0001f3eb **Logo uploaded**")
             else:
-                st.markdown("\U0001F3EB No logo yet")
+                st.markdown("\U0001f3eb No logo yet")
         with upload_col:
             logo_file = st.file_uploader(
                 "Change Logo", type=["png", "jpg", "jpeg"], key="logo_uploader"
@@ -53,7 +52,9 @@ def render_college_profile() -> None:
                     st.error(e.message)
 
         with st.form("basic_info_form"):
-            college_name = st.text_input("College Name *", value=profile["college_name"])
+            college_name = st.text_input(
+                "College Name *", value=profile["college_name"]
+            )
             col1, col2 = st.columns(2)
             with col1:
                 current_type = profile.get("college_type") or COLLEGE_TYPES[0]
@@ -65,7 +66,8 @@ def render_college_profile() -> None:
                     else 0,
                 )
                 affiliated_university = st.text_input(
-                    "Affiliated University", value=_text(profile, "affiliated_university")
+                    "Affiliated University",
+                    value=_text(profile, "affiliated_university"),
                 )
             with col2:
                 established_year = st.number_input(

@@ -11,9 +11,7 @@ logger = get_logger(__name__)
 
 async def list_facilities(db: AsyncSession, college_id: int) -> list[Facility]:
     query = (
-        select(Facility)
-        .where(Facility.college_id == college_id)
-        .order_by(Facility.id)
+        select(Facility).where(Facility.college_id == college_id).order_by(Facility.id)
     )
     return list((await db.execute(query)).scalars().all())
 
@@ -22,8 +20,10 @@ async def _get_owned_facility(
     db: AsyncSession, facility_id: int, college_id: int
 ) -> Facility:
     facility = (
-        await db.execute(select(Facility).where(Facility.id == facility_id))
-    ).scalars().first()
+        (await db.execute(select(Facility).where(Facility.id == facility_id)))
+        .scalars()
+        .first()
+    )
     if facility is None:
         raise ResourceNotFoundError(f"Facility with id {facility_id} not found")
     if facility.college_id != college_id:

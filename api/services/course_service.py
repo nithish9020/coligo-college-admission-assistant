@@ -16,8 +16,10 @@ async def list_courses(db: AsyncSession, college_id: int) -> list[Course]:
 
 async def get_course(db: AsyncSession, course_id: int) -> Course:
     course = (
-        await db.execute(select(Course).where(Course.id == course_id))
-    ).scalars().first()
+        (await db.execute(select(Course).where(Course.id == course_id)))
+        .scalars()
+        .first()
+    )
     if course is None:
         raise ResourceNotFoundError(f"Course with id {course_id} not found")
     return course

@@ -1,5 +1,4 @@
 import streamlit as st
-
 from utils.api_client import (
     APIError,
     delete_brochure,
@@ -22,12 +21,14 @@ def render_brochures() -> None:
     with st.form("upload_brochure_form", clear_on_submit=True):
         col1, col2 = st.columns([2, 1])
         with col1:
-            title = st.text_input("Brochure Title *", placeholder="e.g. College Prospectus 2026")
+            title = st.text_input(
+                "Brochure Title *", placeholder="e.g. College Prospectus 2026"
+            )
         with col2:
             category = st.selectbox("Category", CATEGORIES)
         pdf_file = st.file_uploader("PDF File *", type=["pdf"])
 
-        if st.form_submit_button("\U0001F4E4 Upload Brochure", type="primary"):
+        if st.form_submit_button("\U0001f4e4 Upload Brochure", type="primary"):
             if not title or pdf_file is None:
                 st.error("Title and a PDF file are both required.")
             else:
@@ -54,7 +55,9 @@ def render_brochures() -> None:
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
     header = st.columns([3, 1.5, 1, 1.5, 2])
     for col, label in zip(
-        header, ["Brochure Title", "Category", "Size", "Uploaded On", "Action"], strict=False
+        header,
+        ["Brochure Title", "Category", "Size", "Uploaded On", "Action"],
+        strict=False,
     ):
         col.markdown(f"**{label}**")
 
@@ -63,7 +66,10 @@ def render_brochures() -> None:
         row = st.columns([3, 1.5, 1, 1.5, 2])
         if st.session_state.get(edit_key):
             new_title = row[0].text_input(
-                "Title", value=b["title"], key=f"bro_title_{b['id']}", label_visibility="collapsed"
+                "Title",
+                value=b["title"],
+                key=f"bro_title_{b['id']}",
+                label_visibility="collapsed",
             )
             new_cat = row[1].selectbox(
                 "Category",
@@ -101,7 +107,7 @@ def render_brochures() -> None:
                     try:
                         pdf_bytes = download_brochure(token, b["id"])
                         st.download_button(
-                            "\U0001F441️",
+                            "\U0001f441️",
                             data=pdf_bytes,
                             file_name=f"{b['title']}.pdf",
                             mime="application/pdf",
@@ -112,7 +118,7 @@ def render_brochures() -> None:
                 if e_col.button("✏️", key=f"edit_bro_{b['id']}"):
                     st.session_state[edit_key] = True
                     st.rerun()
-                if d_col.button("\U0001F5D1️", key=f"del_bro_{b['id']}"):
+                if d_col.button("\U0001f5d1️", key=f"del_bro_{b['id']}"):
                     try:
                         delete_brochure(token, b["id"])
                         st.rerun()

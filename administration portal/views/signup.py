@@ -1,5 +1,4 @@
 import streamlit as st
-
 from utils.api_client import APIError, signup_college
 from utils.auth import log_in
 
@@ -9,14 +8,16 @@ HERO_HTML = """
             min-height:520px; color:white; display:flex; flex-direction:column;
             justify-content:space-between;">
   <div>
-    <div style="font-size:2rem;">\U0001F393</div>
+    <div style="font-size:2rem;">\U0001f393</div>
     <h2 style="color:white; margin-top:1rem;">Register Your College</h2>
     <p style="color:#C9C4E8; font-size:0.95rem; line-height:1.5;">
       Create your college account to manage profile, courses,
       infrastructure and brochures.
     </p>
   </div>
-  <div style="color:#9089B8; font-size:0.8rem;">© 2026 Coligo. All rights reserved.</div>
+  <div style="color:#9089B8; font-size:0.8rem;">
+    © 2026 Coligo. All rights reserved.
+  </div>
 </div>
 """
 
