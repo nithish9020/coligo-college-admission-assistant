@@ -26,6 +26,16 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 50
     RAG_TOP_K: int = 5
 
+    # Conversation memory. TTL matches WhatsApp's own 24h service-conversation
+    # window: a student returning the next day starts a fresh thread.
+    # MAX_TURNS caps how much history reaches the prompt (6 = ~3 exchanges).
+    CONVERSATION_TTL_HOURS: int = 24
+    CONVERSATION_MAX_TURNS: int = 6
+    # Condense follow-ups into standalone questions before embedding. Costs one
+    # extra LLM call per message that has history; disable to save Gemini quota
+    # at the cost of follow-up questions retrieving the wrong chunks.
+    ENABLE_QUERY_REWRITING: bool = True
+
     # WhatsApp Cloud API (Meta) — see README "WhatsApp Integration"
     WHATSAPP_PHONE_NUMBER_ID: str = ""
     WHATSAPP_ACCESS_TOKEN: str = ""
