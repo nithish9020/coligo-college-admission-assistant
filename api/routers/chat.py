@@ -23,8 +23,20 @@ async def chat_endpoint(
     """Submit a query to the AI counseling assistant.
 
     The assistant retrieves relevant PDF document context from the database using
-    semantic search, and generates a grounded response using Gemini-1.5-Flash.
+    semantic search, and generates a grounded response using Gemini.
+
+    Pass the same `session_id` across requests to hold a multi-turn
+    conversation; omit it for a one-off, stateless question.
     """
-    logger.info("chat_endpoint_requested", message_length=len(request.message))
-    response_text, sources = await handle_rag_query(db, request.message)
-    return ChatResponse(response=response_text, sources=sources)
+    logger.info(
+        "chat_endpoint_requested",
+        message_length=len(request.message),
+        session_id=request.session_id,
+    )
+    session_key = f"web:{request.session_id}" if request.session_id else None
+    response_text, sources = await handle_rag_query(
+        db, request.message, session_key=session_key
+    )
+    return ChatResponse(
+        response=response_text, sources=sources, session_id=request.session_id
+    )
