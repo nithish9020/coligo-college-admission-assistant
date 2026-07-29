@@ -30,8 +30,10 @@ async def _get_owned_brochure(
     db: AsyncSession, brochure_id: int, college_id: int
 ) -> Brochure:
     brochure = (
-        await db.execute(select(Brochure).where(Brochure.id == brochure_id))
-    ).scalars().first()
+        (await db.execute(select(Brochure).where(Brochure.id == brochure_id)))
+        .scalars()
+        .first()
+    )
     if brochure is None:
         raise ResourceNotFoundError(f"Brochure with id {brochure_id} not found")
     if brochure.college_id != college_id:
@@ -45,8 +47,10 @@ async def get_brochure_for_download(
     """Fetch a brochure. If college_id is provided, ownership is enforced
     (college users); admins pass college_id=None to download any brochure."""
     brochure = (
-        await db.execute(select(Brochure).where(Brochure.id == brochure_id))
-    ).scalars().first()
+        (await db.execute(select(Brochure).where(Brochure.id == brochure_id)))
+        .scalars()
+        .first()
+    )
     if brochure is None:
         raise ResourceNotFoundError(f"Brochure with id {brochure_id} not found")
     if college_id is not None and brochure.college_id != college_id:
@@ -86,9 +90,7 @@ async def upload_brochure(
     db.add(brochure)
     await db.commit()
     await db.refresh(brochure)
-    logger.info(
-        "brochure_uploaded", college_id=college_id, brochure_id=brochure.id
-    )
+    logger.info("brochure_uploaded", college_id=college_id, brochure_id=brochure.id)
     return brochure
 
 

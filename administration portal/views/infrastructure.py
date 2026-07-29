@@ -1,5 +1,4 @@
 import streamlit as st
-
 from utils.api_client import (
     APIError,
     create_facility,
@@ -86,7 +85,9 @@ def render_infrastructure() -> None:
                 if e_col.button("✏️ Edit", key=f"edit_btn_facility_{facility['id']}"):
                     st.session_state[edit_key] = True
                     st.rerun()
-                if d_col.button("\U0001F5D1️ Delete", key=f"del_facility_{facility['id']}"):
+                if d_col.button(
+                    "\U0001f5d1️ Delete", key=f"del_facility_{facility['id']}"
+                ):
                     try:
                         delete_facility(token, facility["id"])
                         st.rerun()

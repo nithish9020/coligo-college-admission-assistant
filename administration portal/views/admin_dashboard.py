@@ -1,5 +1,4 @@
 import streamlit as st
-
 from utils.api_client import APIError, list_colleges
 from utils.styling import badge, render_stat_row
 
@@ -38,7 +37,14 @@ def render_admin_dashboard() -> None:
         header = st.columns([2.5, 2, 1, 1, 1, 1])
         for col, label in zip(
             header,
-            ["College Name", "Contact Person", "Courses", "Brochures", "Status", "Action"],
+            [
+                "College Name",
+                "Contact Person",
+                "Courses",
+                "Brochures",
+                "Status",
+                "Action",
+            ],
             strict=False,
         ):
             col.markdown(f"**{label}**")

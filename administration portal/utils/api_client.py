@@ -165,13 +165,9 @@ def delete_brochure(token: str, brochure_id: int) -> None:
 def download_brochure(token: str, brochure_id: int) -> bytes:
     url = f"{API_BASE_URL}/brochures/{brochure_id}/download"
     try:
-        resp = requests.get(
-            url, headers=_auth_headers(token), timeout=REQUEST_TIMEOUT
-        )
+        resp = requests.get(url, headers=_auth_headers(token), timeout=REQUEST_TIMEOUT)
     except requests.exceptions.ConnectionError as e:
-        raise APIError(
-            f"Could not reach the backend API at {API_BASE_URL}."
-        ) from e
+        raise APIError(f"Could not reach the backend API at {API_BASE_URL}.") from e
     if resp.status_code >= 400:
         raise APIError("Failed to download brochure", resp.status_code)
     return resp.content

@@ -1,5 +1,4 @@
 import streamlit as st
-
 from utils.api_client import (
     APIError,
     create_course,
@@ -23,9 +22,7 @@ def _course_form(existing: dict | None) -> None:
             program_level = st.selectbox(
                 "Program Level *",
                 PROGRAM_LEVELS,
-                index=PROGRAM_LEVELS.index(existing["program_level"])
-                if is_edit
-                else 0,
+                index=PROGRAM_LEVELS.index(existing["program_level"]) if is_edit else 0,
             )
             course_name = st.text_input(
                 "Course Name *", value=existing["course_name"] if is_edit else ""
@@ -45,7 +42,8 @@ def _course_form(existing: dict | None) -> None:
                 step=1,
             )
             department = st.text_input(
-                "Department", value=(existing.get("department") or "") if is_edit else ""
+                "Department",
+                value=(existing.get("department") or "") if is_edit else "",
             )
             status_options = ["published", "draft"]
             current_status = existing["status"] if is_edit else "draft"
@@ -122,9 +120,7 @@ def render_courses() -> None:
         existing = None
         if editing_id != "new":
             try:
-                existing = next(
-                    c for c in list_courses(token) if c["id"] == editing_id
-                )
+                existing = next(c for c in list_courses(token) if c["id"] == editing_id)
             except (APIError, StopIteration) as e:
                 st.error(getattr(e, "message", "Course not found."))
                 st.session_state.course_editing_id = None
@@ -157,7 +153,9 @@ def render_courses() -> None:
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
     header = st.columns([3, 1, 1.2, 1, 1.3, 1])
     for col, label in zip(
-        header, ["Course Name", "Program", "Duration", "Intake", "Status", "Action"], strict=False
+        header,
+        ["Course Name", "Program", "Duration", "Intake", "Status", "Action"],
+        strict=False,
     ):
         col.markdown(f"**{label}**")
 
@@ -173,7 +171,7 @@ def render_courses() -> None:
             if e_col.button("✏️", key=f"edit_course_{course['id']}"):
                 st.session_state.course_editing_id = course["id"]
                 st.rerun()
-            if d_col.button("\U0001F5D1️", key=f"delete_course_{course['id']}"):
+            if d_col.button("\U0001f5d1️", key=f"delete_course_{course['id']}"):
                 try:
                     delete_course(token, course["id"])
                     st.rerun()

@@ -1,19 +1,18 @@
 import streamlit as st
-
 from utils.auth import log_out
 from utils.styling import PRIMARY
 
 COLLEGE_NAV = [
-    ("Dashboard", "\U0001F3E0"),
-    ("College Profile", "\U0001F3EB"),
-    ("Courses", "\U0001F4D8"),
-    ("Infrastructure", "\U0001F3D7"),
-    ("Brochures", "\U0001F4C4"),
+    ("Dashboard", "\U0001f3e0"),
+    ("College Profile", "\U0001f3eb"),
+    ("Courses", "\U0001f4d8"),
+    ("Infrastructure", "\U0001f3d7"),
+    ("Brochures", "\U0001f4c4"),
 ]
 
 ADMIN_NAV = [
-    ("Dashboard", "\U0001F3E0"),
-    ("Colleges", "\U0001F3EB"),
+    ("Dashboard", "\U0001f3e0"),
+    ("Colleges", "\U0001f3eb"),
 ]
 
 
@@ -46,7 +45,7 @@ def render_sidebar() -> None:
         st.markdown(
             """
             <div class="coligo-brand">
-                <div style="font-size:1.6rem;">\U0001F393</div>
+                <div style="font-size:1.6rem;">\U0001f393</div>
                 <div class="coligo-brand-title">Coligo Admin Portal</div>
             </div>
             """,
@@ -62,6 +61,6 @@ def render_sidebar() -> None:
             _render_nav(ADMIN_NAV)
 
         st.markdown("<div style='margin-top:2rem;'></div>", unsafe_allow_html=True)
-        if st.button("\U0001F6AA  Logout", key="nav_logout", use_container_width=True):
+        if st.button("\U0001f6aa  Logout", key="nav_logout", use_container_width=True):
             log_out()
             st.rerun()

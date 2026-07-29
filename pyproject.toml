@@ -54,6 +54,14 @@ select = [
 ]
 ignore = ["B008"]
 
+[tool.ruff.lint.per-file-ignores]
+# Streamlit view functions are long, linear UI code: each one walks through
+# form state, create-vs-edit modes and delete confirmations in sequence.
+# Splitting them to satisfy the complexity limit would fragment the page
+# layout without making it easier to follow. Everything under api/ stays
+# subject to the full rule set.
+"administration portal/**" = ["C901"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
