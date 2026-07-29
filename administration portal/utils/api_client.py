@@ -1,0 +1,177 @@
+"""Thin wrapper around the Coligo FastAPI backend for the Streamlit admin portal."""
+
+import os
+
+import requests
+
+API_BASE_URL = os.environ.get("COLIGO_API_BASE_URL", "http://localhost:8000")
+REQUEST_TIMEOUT = 30
+
+
+class APIError(Exception):
+    """Raised when the backend returns a non-2xx response."""
+
+    def __init__(self, message: str, status_code: int | None = None):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+
+
+def _auth_headers(token: str | None) -> dict:
+    return {"Authorization": f"Bearer {token}"} if token else {}
+
+
+def _handle_response(resp: requests.Response):
+    if resp.status_code >= 400:
+        try:
+            detail = resp.json().get("detail", resp.text)
+        except ValueError:
+            detail = resp.text or f"Request failed with status {resp.status_code}"
+        raise APIError(detail, resp.status_code)
+    if resp.status_code == 204 or not resp.content:
+        return None
+    return resp.json()
+
+
+def _request(method: str, path: str, token: str | None = None, **kwargs):
+    url = f"{API_BASE_URL}{path}"
+    try:
+        resp = requests.request(
+            method, url, headers=_auth_headers(token), timeout=REQUEST_TIMEOUT, **kwargs
+        )
+    except requests.exceptions.ConnectionError as e:
+        raise APIError(
+            f"Could not reach the backend API at {API_BASE_URL}. "
+            "Is the FastAPI server running?"
+        ) from e
+    except requests.exceptions.Timeout as e:
+        raise APIError("The backend API took too long to respond.") from e
+    return _handle_response(resp)
+
+
+# ---------------------------------------------------------------------------
+# Auth
+# ---------------------------------------------------------------------------
+
+
+def signup_college(college_name: str, email: str, password: str) -> dict:
+    return _request(
+        "POST",
+        "/auth/signup",
+        json={"college_name": college_name, "email": email, "password": password},
+    )
+
+
+def login(email: str, password: str) -> dict:
+    return _request("POST", "/auth/login", json={"email": email, "password": password})
+
+
+# ---------------------------------------------------------------------------
+# College profile
+# ---------------------------------------------------------------------------
+
+
+def get_my_profile(token: str) -> dict:
+    return _request("GET", "/colleges/me", token=token)
+
+
+def update_my_profile(token: str, data: dict) -> dict:
+    return _request("PUT", "/colleges/me", token=token, json=data)
+
+
+def upload_logo(token: str, filename: str, content: bytes, content_type: str) -> dict:
+    files = {"file": (filename, content, content_type)}
+    return _request("POST", "/colleges/me/logo", token=token, files=files)
+
+
+def list_colleges(token: str) -> list:
+    return _request("GET", "/colleges", token=token)
+
+
+def get_college_detail(token: str, college_id: int) -> dict:
+    return _request("GET", f"/colleges/{college_id}", token=token)
+
+
+# ---------------------------------------------------------------------------
+# Courses
+# ---------------------------------------------------------------------------
+
+
+def list_courses(token: str, college_id: int | None = None) -> list:
+    params = {"college_id": college_id} if college_id is not None else None
+    return _request("GET", "/courses", token=token, params=params)
+
+
+def create_course(token: str, data: dict) -> dict:
+    return _request("POST", "/courses", token=token, json=data)
+
+
+def update_course(token: str, course_id: int, data: dict) -> dict:
+    return _request("PUT", f"/courses/{course_id}", token=token, json=data)
+
+
+def delete_course(token: str, course_id: int) -> None:
+    return _request("DELETE", f"/courses/{course_id}", token=token)
+
+
+# ---------------------------------------------------------------------------
+# Facilities / Infrastructure
+# ---------------------------------------------------------------------------
+
+
+def list_facilities(token: str, college_id: int | None = None) -> list:
+    params = {"college_id": college_id} if college_id is not None else None
+    return _request("GET", "/facilities", token=token, params=params)
+
+
+def create_facility(token: str, data: dict) -> dict:
+    return _request("POST", "/facilities", token=token, json=data)
+
+
+def update_facility(token: str, facility_id: int, data: dict) -> dict:
+    return _request("PUT", f"/facilities/{facility_id}", token=token, json=data)
+
+
+def delete_facility(token: str, facility_id: int) -> None:
+    return _request("DELETE", f"/facilities/{facility_id}", token=token)
+
+
+# ---------------------------------------------------------------------------
+# Brochures
+# ---------------------------------------------------------------------------
+
+
+def list_brochures(token: str, college_id: int | None = None) -> list:
+    params = {"college_id": college_id} if college_id is not None else None
+    return _request("GET", "/brochures", token=token, params=params)
+
+
+def upload_brochure(
+    token: str, title: str, category: str | None, filename: str, content: bytes
+) -> dict:
+    files = {"file": (filename, content, "application/pdf")}
+    data = {"title": title, "category": category or ""}
+    return _request("POST", "/brochures", token=token, data=data, files=files)
+
+
+def update_brochure(token: str, brochure_id: int, data: dict) -> dict:
+    return _request("PUT", f"/brochures/{brochure_id}", token=token, json=data)
+
+
+def delete_brochure(token: str, brochure_id: int) -> None:
+    return _request("DELETE", f"/brochures/{brochure_id}", token=token)
+
+
+def download_brochure(token: str, brochure_id: int) -> bytes:
+    url = f"{API_BASE_URL}/brochures/{brochure_id}/download"
+    try:
+        resp = requests.get(
+            url, headers=_auth_headers(token), timeout=REQUEST_TIMEOUT
+        )
+    except requests.exceptions.ConnectionError as e:
+        raise APIError(
+            f"Could not reach the backend API at {API_BASE_URL}."
+        ) from e
+    if resp.status_code >= 400:
+        raise APIError("Failed to download brochure", resp.status_code)
+    return resp.content

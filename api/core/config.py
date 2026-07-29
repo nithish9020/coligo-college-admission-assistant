@@ -34,6 +34,20 @@ class Settings(BaseSettings):
     WHATSAPP_API_VERSION: str = "v21.0"
     ADMIN_NUMBERS: str = ""
 
+    # Administration Portal — Auth Settings
+    JWT_SECRET_KEY: str = "change-this-secret-key-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_MINUTES: int = 1440
+
+    # Administration Portal — Fixed Platform Admin Login
+    ADMIN_EMAIL: str = "admin@coligo.com"
+    ADMIN_PASSWORD: str = "coligo@123"
+
+    # Administration Portal — File Uploads
+    UPLOAD_DIR: str = "uploads"
+    MAX_LOGO_SIZE_MB: int = 2
+    MAX_BROCHURE_SIZE_MB: int = 10
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
