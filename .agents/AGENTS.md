@@ -37,6 +37,18 @@ What actually exists today, verified by running it:
   Gemini embeddings → pgvector, with SHA-256 chunk deduplication.
 - **RAG chat** (`POST /chat` and the WhatsApp path): embed query →
   pgvector cosine search → Gemini generation, returning answer + sources.
+- **Conversation memory** (`api/services/conversation_service.py`,
+  `api/models/conversation.py`): multi-turn chats keyed by a namespaced
+  `session_key` — `whatsapp:<phone>` (automatic) or `web:<session_id>` (only
+  when `/chat` is given a `session_id`; without one it stays stateless).
+  Threads expire after `CONVERSATION_TTL_HOURS` (24); the last
+  `CONVERSATION_MAX_TURNS` (6) reach the prompt. Crucially,
+  `api/services/query_rewriter.py` condenses follow-ups ("what about ECE?")
+  into standalone questions **before embedding** — without that step
+  retrieval matches on the bare phrase and returns the wrong chunks. The
+  condensed text is used only for retrieval; the user's original wording goes
+  to the answering prompt. History is best-effort: any failure loading,
+  saving, or rewriting is logged and the pipeline answers statelessly.
 - **PostgreSQL + pgvector** via `docker-compose.yml`. In development the
   `vector` extension and all tables are created automatically at startup
   (`api/main.py` lifespan) — there is no Alembic migration setup.
@@ -80,8 +92,11 @@ coligo/
 │   │   ├── document_service.py  # fetch -> extract -> chunk -> embed -> store
 │   │   ├── llm_service.py       # Gemini generateContent
 │   │   ├── rag_service.py       # embed query -> pgvector search -> LLM answer
+│   │   ├── conversation_service.py # session threads, recent turns, history
+│   │   ├── query_rewriter.py    # condense follow-ups into standalone questions
 │   │   └── whatsapp_service.py  # signature verify, parse, routing, send_text
-│   └── models/                 # SQLAlchemy ORM: Document, DocumentChunk (pgvector)
+│   └── models/                 # SQLAlchemy ORM: Document/DocumentChunk (pgvector),
+│                               #   Conversation/ConversationMessage (chat memory)
 ├── app/                      # Reserved for a future frontend/UI app — empty today
 ├── docker-compose.yml        # postgres (pgvector) + api
 ├── Dockerfile                # API image
