@@ -26,3 +26,45 @@ class EmptyDocumentTextError(DocumentProcessingError):
     """Raised when no readable text could be extracted from the document."""
 
     pass
+
+
+class AdministrationPortalError(Exception):
+    """Base exception class for administration portal (auth/college) errors."""
+
+    pass
+
+
+class DuplicateEmailError(AdministrationPortalError):
+    """Raised when signing up with an email that is already registered."""
+
+    pass
+
+
+class InvalidCredentialsError(AdministrationPortalError):
+    """Raised when login credentials are incorrect."""
+
+    pass
+
+
+class NotAuthenticatedError(AdministrationPortalError):
+    """Raised when a request has a missing/invalid/expired auth token."""
+
+    pass
+
+
+class NotAuthorizedError(AdministrationPortalError):
+    """Raised when an authenticated user lacks permission for an action."""
+
+    pass
+
+
+class ResourceNotFoundError(AdministrationPortalError):
+    """Raised when a requested college/course/facility/brochure doesn't exist."""
+
+    pass
+
+
+class InvalidFileError(AdministrationPortalError):
+    """Raised when an uploaded file fails type/size validation."""
+
+    pass

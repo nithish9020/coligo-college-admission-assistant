@@ -61,6 +61,9 @@ db.sqlite3-journal
 instance/
 .webassets-cache
 
+# Administration Portal — uploaded college logos/brochures
+uploads/
+
 # Sphinx documentation
 docs/_build/
 
@@ -91,3 +94,6 @@ dmypy.json
 *.swp
 *.swo
 .DS_Store
+
+# Local Claude Code tool config (machine-specific permissions, not project code)
+.claude/
