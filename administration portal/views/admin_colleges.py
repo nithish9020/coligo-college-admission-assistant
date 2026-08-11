@@ -8,12 +8,19 @@ from utils.api_client import (
     list_courses,
     list_facilities,
 )
-from utils.styling import badge
+from utils.styling import (
+    badge,
+    icon_chip_html,
+    page_header,
+    render_footer,
+    row_icon_html,
+)
 
 
 def _render_college_list() -> None:
-    st.title("Colleges")
-    st.caption("All colleges registered on the platform")
+    page_header(
+        "\U0001f3eb", "Colleges", "All colleges registered on the platform"
+    )
 
     try:
         colleges = list_colleges(st.session_state.token)
@@ -23,10 +30,13 @@ def _render_college_list() -> None:
 
     if not colleges:
         st.info("No colleges have registered yet.")
+        render_footer()
         return
 
     search = st.text_input(
-        "\U0001f50d Search colleges...", placeholder="Search by name"
+        "Search colleges",
+        placeholder="\U0001f50d  Search by name...",
+        label_visibility="collapsed",
     )
     if search:
         colleges = [c for c in colleges if search.lower() in c["college_name"].lower()]
@@ -35,13 +45,20 @@ def _render_college_list() -> None:
     header = st.columns([2.5, 2.5, 1, 1, 1, 1])
     for col, label in zip(
         header,
-        ["College Name", "Contact Email", "Courses", "Brochures", "Status", "Action"],
+        ["COLLEGE NAME", "CONTACT EMAIL", "COURSES", "BROCHURES", "STATUS", "ACTION"],
         strict=False,
     ):
         col.markdown(f"**{label}**")
     for c in colleges:
         row = st.columns([2.5, 2.5, 1, 1, 1, 1])
-        row[0].write(c["college_name"])
+        with row[0]:
+            college_icon = row_icon_html("\U0001f3eb", "purple")
+            st.markdown(
+                f'<div class="coligo-item-row">'
+                f"{college_icon}"
+                f'<span class="coligo-item-title">{c["college_name"]}</span></div>',
+                unsafe_allow_html=True,
+            )
         row[1].write(c["email"])
         row[2].write(c["course_count"])
         row[3].write(c["brochure_count"])
@@ -52,6 +69,7 @@ def _render_college_list() -> None:
             st.session_state.viewing_college_id = c["id"]
             st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
+    render_footer()
 
 
 def _render_college_detail(college_id: int) -> None:
@@ -67,9 +85,14 @@ def _render_college_detail(college_id: int) -> None:
         st.error(e.message)
         return
 
-    st.title(detail["college_name"])
+    detail_icon = icon_chip_html("\U0001f3eb", "purple")
+    detail_badge = badge("Active" if detail["is_active"] else "Inactive")
     st.markdown(
-        badge("Active" if detail["is_active"] else "Inactive"), unsafe_allow_html=True
+        f'<div class="coligo-page-header">'
+        f"{detail_icon}"
+        f'<div><h1>{detail["college_name"]}</h1>'
+        f"{detail_badge}</div></div>",
+        unsafe_allow_html=True,
     )
 
     tabs = st.tabs(
@@ -127,13 +150,21 @@ def _render_college_detail(college_id: int) -> None:
             header = st.columns([3, 1, 1.2, 1, 1.3])
             for col, label in zip(
                 header,
-                ["Course Name", "Program", "Duration", "Intake", "Status"],
+                ["COURSE NAME", "PROGRAM", "DURATION", "INTAKE", "STATUS"],
                 strict=False,
             ):
                 col.markdown(f"**{label}**")
             for course in courses:
                 row = st.columns([3, 1, 1.2, 1, 1.3])
-                row[0].write(course["course_name"])
+                with row[0]:
+                    course_icon = row_icon_html("\U0001f4bb", "purple")
+                    st.markdown(
+                        f'<div class="coligo-item-row">'
+                        f"{course_icon}"
+                        f'<span class="coligo-item-title">'
+                        f'{course["course_name"]}</span></div>',
+                        unsafe_allow_html=True,
+                    )
                 row[1].write(course["program_level"])
                 row[2].write(course.get("duration") or "-")
                 row[3].write(course.get("intake_capacity") or "-")
@@ -155,13 +186,20 @@ def _render_college_detail(college_id: int) -> None:
             header = st.columns([3, 1.5, 1, 1.5, 1])
             for col, label in zip(
                 header,
-                ["Brochure Title", "Category", "Size", "Uploaded On", "Action"],
+                ["BROCHURE TITLE", "CATEGORY", "SIZE", "UPLOADED ON", "ACTION"],
                 strict=False,
             ):
                 col.markdown(f"**{label}**")
             for b in brochures:
                 row = st.columns([3, 1.5, 1, 1.5, 1])
-                row[0].write(b["title"])
+                with row[0]:
+                    brochure_icon = row_icon_html("\U0001f4c4", "orange")
+                    st.markdown(
+                        f'<div class="coligo-item-row">'
+                        f"{brochure_icon}"
+                        f'<span class="coligo-item-title">{b["title"]}</span></div>',
+                        unsafe_allow_html=True,
+                    )
                 row[1].write(b.get("category") or "-")
                 row[2].write(f"{round(b['file_size_bytes'] / (1024 * 1024), 2)} MB")
                 row[3].write(b["uploaded_at"][:10])
@@ -189,11 +227,19 @@ def _render_college_detail(college_id: int) -> None:
             st.info("No facilities added by this college yet.")
         else:
             for f in facilities:
+                facility_icon = row_icon_html("\U0001f3db️", "green")
                 st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
-                st.markdown(f"**{f['name']}**")
+                st.markdown(
+                    f'<div class="coligo-item-row">'
+                    f"{facility_icon}"
+                    f'<span class="coligo-item-title">{f["name"]}</span></div>',
+                    unsafe_allow_html=True,
+                )
                 if f.get("description"):
                     st.caption(f["description"])
                 st.markdown("</div>", unsafe_allow_html=True)
+
+    render_footer()
 
 
 def render_admin_colleges() -> None:

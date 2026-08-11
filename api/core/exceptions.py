@@ -28,6 +28,12 @@ class EmptyDocumentTextError(DocumentProcessingError):
     pass
 
 
+class BrochureExtractionError(DocumentProcessingError):
+    """Raised when OpenAI brochure detail extraction is misconfigured or fails."""
+
+    pass
+
+
 class AdministrationPortalError(Exception):
     """Base exception class for administration portal (auth/college) errors."""
 

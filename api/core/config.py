@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
     GEMINI_LLM_MODEL: str = "gemini-3.5-flash-lite"
 
+    # OpenAI API Settings — used to extract structured college/course/facility
+    # details from uploaded brochure PDFs (administration portal).
+    OPENAI_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+
     # RAG Settings
     CHUNK_SIZE: int = 512
     CHUNK_OVERLAP: int = 50
@@ -47,7 +52,8 @@ class Settings(BaseSettings):
     # Administration Portal — Auth Settings
     JWT_SECRET_KEY: str = "change-this-secret-key-in-production"
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRE_MINUTES: int = 1440
+    # 7 days, to support "remember me" login persistence
+    JWT_EXPIRE_MINUTES: int = 10080
 
     # Administration Portal — Fixed Platform Admin Login
     ADMIN_EMAIL: str = "admin@coligo.com"

@@ -7,6 +7,12 @@ from api.core.deps import AuthenticatedUser, get_current_college, get_current_us
 from api.core.exceptions import NotAuthorizedError
 from api.core.logging import get_logger
 from api.schemas.brochure import BrochureResponse, BrochureUpdate
+from api.schemas.brochure_extraction import (
+    ApplyBrochureExtractionRequest,
+    BrochureExtractionResult,
+)
+from api.schemas.college import CollegeDetailResponse
+from api.services.brochure_extraction_service import extract_brochure_details
 from api.services.brochure_service import (
     delete_brochure,
     get_brochure_for_download,
@@ -14,6 +20,7 @@ from api.services.brochure_service import (
     update_brochure,
     upload_brochure,
 )
+from api.services.college_service import apply_brochure_extraction, get_college_detail
 
 router = APIRouter(prefix="/brochures", tags=["Brochures"])
 logger = get_logger(__name__)
@@ -111,3 +118,41 @@ async def download_brochure(
         media_type="application/pdf",
         filename=f"{brochure.title}.pdf",
     )
+
+
+@router.post(
+    "/{brochure_id}/extract",
+    response_model=BrochureExtractionResult,
+    summary="Extract suggested college/course/facility details from a brochure",
+)
+async def extract_brochure(
+    brochure_id: int,
+    user: AuthenticatedUser = Depends(get_current_college),
+    db: AsyncSession = Depends(get_db),
+) -> BrochureExtractionResult:
+    """Runs OpenAI over the brochure's PDF text and returns a suggestion —
+    nothing is written to the database here. The college reviews/edits the
+    result client-side and confirms it via POST .../apply-extraction."""
+    brochure = await get_brochure_for_download(db, brochure_id, user.college_id)
+    with open(brochure.file_path, "rb") as f:
+        pdf_bytes = f.read()
+    result = await extract_brochure_details(pdf_bytes)
+    return BrochureExtractionResult.model_validate(result)
+
+
+@router.post(
+    "/{brochure_id}/apply-extraction",
+    response_model=CollegeDetailResponse,
+    summary="Apply reviewed brochure extraction results to the college",
+)
+async def apply_extraction(
+    brochure_id: int,
+    data: ApplyBrochureExtractionRequest,
+    user: AuthenticatedUser = Depends(get_current_college),
+    db: AsyncSession = Depends(get_db),
+) -> CollegeDetailResponse:
+    # Confirms the brochure exists and is owned by the caller before writing
+    # anything, even though the extraction payload itself doesn't reference it.
+    await get_brochure_for_download(db, brochure_id, user.college_id)
+    await apply_brochure_extraction(db, user.college_id, data)  # type: ignore[arg-type]
+    return await get_college_detail(db, user.college_id)  # type: ignore[arg-type]

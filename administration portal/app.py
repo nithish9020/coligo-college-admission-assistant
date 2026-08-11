@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.auth import init_session_state, is_authenticated
+from utils.auth import init_session_state, is_authenticated, restore_session_from_cookie
 from utils.styling import inject_base_css
 from views.admin_colleges import render_admin_colleges
 from views.admin_dashboard import render_admin_dashboard
@@ -13,6 +13,7 @@ from views.sidebar import render_sidebar
 from views.signup import render_signup
 
 init_session_state()
+restore_session_from_cookie()
 
 st.set_page_config(
     page_title="Coligo Admin Portal",

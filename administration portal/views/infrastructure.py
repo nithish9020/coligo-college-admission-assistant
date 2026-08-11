@@ -6,13 +6,18 @@ from utils.api_client import (
     list_facilities,
     update_facility,
 )
+from utils.styling import page_header, render_footer, row_icon_html
 
 
 def render_infrastructure() -> None:
     token = st.session_state.token
 
-    st.title("Infrastructure & Facilities")
-    st.caption("List the facilities available at your campus")
+    page_header(
+        "\U0001f3d7",
+        "Infrastructure & Facilities",
+        "List the facilities available at your campus",
+        "green",
+    )
 
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
     with st.form("add_facility_form", clear_on_submit=True):
@@ -45,13 +50,20 @@ def render_infrastructure() -> None:
 
     if not facilities:
         st.info("No facilities added yet.")
+        render_footer()
         return
 
     for facility in facilities:
         st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
         cols = st.columns([3, 1])
         with cols[0]:
-            st.markdown(f"**{facility['name']}**")
+            facility_icon = row_icon_html("\U0001f3db️", "purple")
+            st.markdown(
+                f'<div class="coligo-item-row">'
+                f"{facility_icon}"
+                f'<span class="coligo-item-title">{facility["name"]}</span></div>',
+                unsafe_allow_html=True,
+            )
             if facility.get("description"):
                 st.caption(facility["description"])
         with cols[1]:
@@ -94,3 +106,5 @@ def render_infrastructure() -> None:
                     except APIError as e:
                         st.error(e.message)
         st.markdown("</div>", unsafe_allow_html=True)
+
+    render_footer()

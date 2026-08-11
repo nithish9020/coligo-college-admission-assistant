@@ -33,11 +33,17 @@ def _handle_response(resp: requests.Response):
     return resp.json()
 
 
-def _request(method: str, path: str, token: str | None = None, **kwargs):
+def _request(
+    method: str,
+    path: str,
+    token: str | None = None,
+    timeout: int = REQUEST_TIMEOUT,
+    **kwargs,
+):
     url = f"{API_BASE_URL}{path}"
     try:
         resp = requests.request(
-            method, url, headers=_auth_headers(token), timeout=REQUEST_TIMEOUT, **kwargs
+            method, url, headers=_auth_headers(token), timeout=timeout, **kwargs
         )
     except requests.exceptions.ConnectionError as e:
         raise APIError(
@@ -160,6 +166,20 @@ def update_brochure(token: str, brochure_id: int, data: dict) -> dict:
 
 def delete_brochure(token: str, brochure_id: int) -> None:
     return _request("DELETE", f"/brochures/{brochure_id}", token=token)
+
+
+def extract_brochure(token: str, brochure_id: int) -> dict:
+    """Runs OpenAI extraction over an uploaded brochure. Slower than a normal
+    request (parses a PDF + one LLM call), so it gets a longer timeout."""
+    return _request(
+        "POST", f"/brochures/{brochure_id}/extract", token=token, timeout=90
+    )
+
+
+def apply_brochure_extraction(token: str, brochure_id: int, payload: dict) -> dict:
+    return _request(
+        "POST", f"/brochures/{brochure_id}/apply-extraction", token=token, json=payload
+    )
 
 
 def download_brochure(token: str, brochure_id: int) -> bytes:

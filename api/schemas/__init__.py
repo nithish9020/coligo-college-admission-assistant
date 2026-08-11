@@ -5,6 +5,13 @@ from api.schemas.auth import (
     TokenResponse,
 )
 from api.schemas.brochure import BrochureResponse, BrochureUpdate
+from api.schemas.brochure_extraction import (
+    ApplyBrochureExtractionRequest,
+    BrochureExtractionResult,
+    ExtractedCollegeProfile,
+    ExtractedCourse,
+    ExtractedFacility,
+)
 from api.schemas.chat import ChatRequest, ChatResponse
 from api.schemas.college import (
     CollegeDetailResponse,
@@ -43,4 +50,9 @@ __all__ = [
     "FacilityResponse",
     "BrochureUpdate",
     "BrochureResponse",
+    "ExtractedCollegeProfile",
+    "ExtractedCourse",
+    "ExtractedFacility",
+    "BrochureExtractionResult",
+    "ApplyBrochureExtractionRequest",
 ]
