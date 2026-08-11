@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from api.core import settings
 from api.core.exceptions import (
+    BrochureExtractionError,
     CorruptedDocumentError,
     DocumentNotFoundError,
     DuplicateEmailError,
@@ -145,6 +146,16 @@ async def empty_document_text_handler(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": str(exc)},
+    )
+
+
+@app.exception_handler(BrochureExtractionError)
+async def brochure_extraction_error_handler(
+    request: Request, exc: BrochureExtractionError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_502_BAD_GATEWAY,
         content={"detail": str(exc)},
     )
 

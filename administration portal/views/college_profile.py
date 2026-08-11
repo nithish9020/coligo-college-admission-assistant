@@ -1,5 +1,6 @@
 import streamlit as st
 from utils.api_client import APIError, get_my_profile, update_my_profile, upload_logo
+from utils.styling import page_header, render_footer
 
 COLLEGE_TYPES = ["Private", "Government", "Autonomous", "Deemed University"]
 
@@ -17,8 +18,9 @@ def render_college_profile() -> None:
         st.error(e.message)
         return
 
-    st.title("College Profile")
-    st.caption("Complete your college information")
+    page_header(
+        "\U0001f3eb", "College Profile", "Complete your college information", "blue"
+    )
 
     tabs = st.tabs(
         ["Basic Information", "Contact Information", "Social Links", "Accreditation"]
@@ -190,3 +192,5 @@ def render_college_profile() -> None:
                 except APIError as e:
                     st.error(e.message)
         st.markdown("</div>", unsafe_allow_html=True)
+
+    render_footer()

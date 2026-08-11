@@ -1,6 +1,12 @@
 import streamlit as st
 from utils.api_client import APIError, list_colleges
-from utils.styling import badge, render_stat_row
+from utils.styling import (
+    badge,
+    page_header,
+    render_footer,
+    render_stat_row,
+    row_icon_html,
+)
 
 
 def render_admin_dashboard() -> None:
@@ -10,8 +16,9 @@ def render_admin_dashboard() -> None:
         st.error(e.message)
         return
 
-    st.title("Admin Dashboard")
-    st.caption("Overview across all registered colleges")
+    page_header(
+        "\U0001f3e0", "Admin Dashboard", "Overview across all registered colleges"
+    )
 
     total_courses = sum(c["course_count"] for c in colleges)
     total_brochures = sum(c["brochure_count"] for c in colleges)
@@ -19,16 +26,19 @@ def render_admin_dashboard() -> None:
 
     render_stat_row(
         [
-            ("Total Colleges", len(colleges)),
-            ("Active Colleges", active_colleges),
-            ("Total Courses", total_courses),
-            ("Total Brochures", total_brochures),
+            ("Total Colleges", len(colleges), "\U0001f3eb", "Registered on platform"),
+            ("Active Colleges", active_colleges, "\U0001f464", "Currently active"),
+            ("Total Courses", total_courses, "\U0001f4d8", "Across all colleges"),
+            ("Total Brochures", total_brochures, "\U0001f4c4", "Uploaded in total"),
         ]
     )
 
-    st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:0.3rem'></div>", unsafe_allow_html=True)
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
-    st.markdown("#### Recent Colleges")
+    st.markdown(
+        '<div class="coligo-card-header">\U0001f3eb Recent Colleges</div>',
+        unsafe_allow_html=True,
+    )
 
     recent = sorted(colleges, key=lambda c: c["created_at"], reverse=True)[:5]
     if not recent:
@@ -38,19 +48,26 @@ def render_admin_dashboard() -> None:
         for col, label in zip(
             header,
             [
-                "College Name",
-                "Contact Person",
-                "Courses",
-                "Brochures",
-                "Status",
-                "Action",
+                "COLLEGE NAME",
+                "CONTACT PERSON",
+                "COURSES",
+                "BROCHURES",
+                "STATUS",
+                "ACTION",
             ],
             strict=False,
         ):
             col.markdown(f"**{label}**")
         for c in recent:
             row = st.columns([2.5, 2, 1, 1, 1, 1])
-            row[0].write(c["college_name"])
+            with row[0]:
+                college_icon = row_icon_html("\U0001f3eb", "purple")
+                st.markdown(
+                    f'<div class="coligo-item-row">'
+                    f"{college_icon}"
+                    f'<span class="coligo-item-title">{c["college_name"]}</span></div>',
+                    unsafe_allow_html=True,
+                )
             row[1].write(c.get("contact_person") or "-")
             row[2].write(c["course_count"])
             row[3].write(c["brochure_count"])
@@ -64,3 +81,4 @@ def render_admin_dashboard() -> None:
                 st.rerun()
 
     st.markdown("</div>", unsafe_allow_html=True)
+    render_footer()

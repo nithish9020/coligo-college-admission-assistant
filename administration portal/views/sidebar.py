@@ -1,6 +1,6 @@
 import streamlit as st
 from utils.auth import log_out
-from utils.styling import PRIMARY
+from utils.styling import PRIMARY_BRIGHT, avatar_html
 
 COLLEGE_NAV = [
     ("Dashboard", "\U0001f3e0"),
@@ -16,23 +16,30 @@ ADMIN_NAV = [
 ]
 
 
+def _slug(label: str) -> str:
+    return label.lower().replace(" ", "-")
+
+
 def _render_nav(items: list[tuple[str, str]]) -> None:
     current = st.session_state.nav
     for label, icon in items:
-        if st.button(f"{icon}  {label}", key=f"nav_{label}", use_container_width=True):
-            st.session_state.nav = label
-            st.session_state.viewing_college_id = None
-            st.rerun()
+        with st.container(key=f"navitem-{_slug(label)}"):
+            if st.button(
+                f"{icon}  {label}", key=f"nav_{label}", use_container_width=True
+            ):
+                st.session_state.nav = label
+                st.session_state.viewing_college_id = None
+                st.rerun()
 
-    active_index = next(
-        (i for i, (label, _) in enumerate(items, start=1) if label == current), 1
-    )
+    active_key = f"st-key-navitem-{_slug(current)}"
     st.markdown(
         f"""
         <style>
-        [data-testid="stSidebar"] div.stButton:nth-of-type({active_index}) button {{
-            background: {PRIMARY} !important;
+        .{active_key} button {{
+            background: {PRIMARY_BRIGHT} !important;
             color: white !important;
+            border-color: {PRIMARY_BRIGHT} !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.18);
         }}
         </style>
         """,
@@ -53,14 +60,30 @@ def render_sidebar() -> None:
         )
 
         if st.session_state.role == "college":
-            if st.session_state.college_name:
-                st.caption(f"Signed in as **{st.session_state.college_name}**")
+            name = st.session_state.college_name or "College"
+        else:
+            name = "Admin"
+
+        st.markdown(
+            f"""
+            <div class="coligo-sidebar-user">
+                {avatar_html(name)}
+                <div>
+                    <div class="coligo-sidebar-user-role">Signed in as</div>
+                    <div class="coligo-sidebar-user-name">{name}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if st.session_state.role == "college":
             _render_nav(COLLEGE_NAV)
         else:
-            st.caption("Signed in as **Platform Admin**")
             _render_nav(ADMIN_NAV)
 
         st.markdown("<div style='margin-top:2rem;'></div>", unsafe_allow_html=True)
+        st.markdown("<hr/>", unsafe_allow_html=True)
         if st.button("\U0001f6aa  Logout", key="nav_logout", use_container_width=True):
             log_out()
             st.rerun()

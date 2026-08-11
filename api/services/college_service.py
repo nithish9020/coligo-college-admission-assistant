@@ -8,7 +8,8 @@ from sqlalchemy.orm import selectinload
 from api.core.config import settings
 from api.core.exceptions import InvalidFileError, ResourceNotFoundError
 from api.core.logging import get_logger
-from api.models import College
+from api.models import College, Course, Facility
+from api.schemas.brochure_extraction import ApplyBrochureExtractionRequest
 from api.schemas.college import (
     CollegeDetailResponse,
     CollegeListItem,
@@ -46,6 +47,37 @@ async def update_profile(
     await db.commit()
     await db.refresh(college)
     logger.info("college_profile_updated", college_id=college_id)
+    return college
+
+
+async def apply_brochure_extraction(
+    db: AsyncSession, college_id: int, data: ApplyBrochureExtractionRequest
+) -> College:
+    """Write the college-reviewed subset of a brochure extraction: profile
+    field updates plus new Course/Facility rows. Nothing here is called
+    unless the college has already confirmed it in the review UI."""
+    college = await get_college_by_id(db, college_id)
+
+    if data.college_profile is not None:
+        updates = data.college_profile.model_dump(exclude_unset=True)
+        for field, value in updates.items():
+            setattr(college, field, value)
+
+    for course_data in data.courses:
+        db.add(Course(college_id=college_id, **course_data.model_dump()))
+
+    for facility_data in data.facilities:
+        db.add(Facility(college_id=college_id, **facility_data.model_dump()))
+
+    await db.commit()
+    await db.refresh(college)
+    logger.info(
+        "brochure_extraction_applied",
+        college_id=college_id,
+        profile_updated=data.college_profile is not None,
+        courses_added=len(data.courses),
+        facilities_added=len(data.facilities),
+    )
     return college
 
 

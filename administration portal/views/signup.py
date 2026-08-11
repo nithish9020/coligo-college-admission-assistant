@@ -60,7 +60,7 @@ def render_signup() -> None:
                     token_response = signup_college(
                         college_name.strip(), email.strip(), password
                     )
-                    log_in(token_response)
+                    log_in(token_response, email=email.strip())
                     st.success("Account created successfully!")
                     st.rerun()
                 except APIError as e:
