@@ -180,13 +180,12 @@ def render_courses() -> None:
     )
 
     search = st.text_input(
-        "Search courses", placeholder="\U0001f50d  Search courses...",
+        "Search courses",
+        placeholder="\U0001f50d  Search courses...",
         label_visibility="collapsed",
     )
     if search:
-        courses = [
-            c for c in courses if search.lower() in c["course_name"].lower()
-        ]
+        courses = [c for c in courses if search.lower() in c["course_name"].lower()]
 
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
     header = st.columns([3, 1, 1.2, 1, 1.3, 1])

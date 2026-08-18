@@ -363,7 +363,9 @@ def badge(text: str, kind: str | None = None) -> str:
 
 def pill(text: str, accent: str = "blue") -> str:
     bg, fg = ACCENTS.get(accent, ACCENTS["blue"])
-    return f'<span class="coligo-pill" style="background:{bg};color:{fg};">{text}</span>'
+    return (
+        f'<span class="coligo-pill" style="background:{bg};color:{fg};">{text}</span>'
+    )
 
 
 def icon_chip_html(icon: str, accent: str = "purple", size: str = "") -> str:
@@ -377,7 +379,9 @@ def icon_chip_html(icon: str, accent: str = "purple", size: str = "") -> str:
 
 def row_icon_html(icon: str, accent: str = "purple") -> str:
     bg, fg = ACCENTS.get(accent, ACCENTS["purple"])
-    return f'<div class="coligo-row-icon" style="background:{bg};color:{fg};">{icon}</div>'
+    return (
+        f'<div class="coligo-row-icon" style="background:{bg};color:{fg};">{icon}</div>'
+    )
 
 
 def avatar_html(name: str) -> str:
@@ -401,7 +405,9 @@ def page_header(icon: str, title: str, subtitle: str, accent: str = "purple") ->
     )
 
 
-def stat_card(label: str, value, icon: str = "", accent: str = "purple", sublabel: str = "") -> str:
+def stat_card(
+    label: str, value, icon: str = "", accent: str = "purple", sublabel: str = ""
+) -> str:
     icon_html = icon_chip_html(icon, accent) if icon else ""
     sub_html = f'<div class="coligo-stat-sublabel">{sublabel}</div>' if sublabel else ""
     return (

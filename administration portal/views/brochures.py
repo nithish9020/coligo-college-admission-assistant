@@ -198,8 +198,7 @@ def _render_extraction_review(token: str, brochure_id: int, result: dict) -> Non
                         "eligibility": eligibility or None,
                         "fees": fees or None,
                         "course_details": c.get("course_details") or None,
-                        "career_opportunities": c.get("career_opportunities")
-                        or None,
+                        "career_opportunities": c.get("career_opportunities") or None,
                     },
                 }
             )

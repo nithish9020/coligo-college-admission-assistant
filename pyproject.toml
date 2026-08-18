@@ -61,7 +61,7 @@ ignore = ["B008"]
 # Splitting them to satisfy the complexity limit would fragment the page
 # layout without making it easier to follow. Everything under api/ stays
 # subject to the full rule set.
-"administration portal/**" = ["C901"]
+"administration portal/**" = ["C901", "E501"]
 
 [tool.ruff.format]
 quote-style = "double"

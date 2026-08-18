@@ -18,9 +18,7 @@ from utils.styling import (
 
 
 def _render_college_list() -> None:
-    page_header(
-        "\U0001f3eb", "Colleges", "All colleges registered on the platform"
-    )
+    page_header("\U0001f3eb", "Colleges", "All colleges registered on the platform")
 
     try:
         colleges = list_colleges(st.session_state.token)

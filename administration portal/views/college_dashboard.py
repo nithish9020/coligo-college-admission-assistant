@@ -1,5 +1,4 @@
 import streamlit as st
-
 from utils.api_client import APIError, get_my_profile, list_brochures, list_courses
 from utils.styling import (
     action_row,

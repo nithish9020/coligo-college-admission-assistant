@@ -1,8 +1,15 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+)
 
 from api.core.config import settings
-from api.core.database import get_db
+from api.core.database import async_session_factory
 from api.core.logging import get_logger
 from api.schemas.whatsapp import ParsedMessage, WhatsAppWebhookPayload
 from api.services.rag_service import handle_rag_query
@@ -37,37 +44,32 @@ async def verify_webhook(
     raise HTTPException(status_code=403, detail="Verification failed")
 
 
-async def _answer_student(db: AsyncSession, message: ParsedMessage) -> None:
-    """Run the RAG pipeline for a student message and send back the answer.
-
-    Never raises: any failure is logged and the user gets a friendly
-    fallback, so the webhook can still ack Meta with 200.
-    """
-    try:
-        answer, sources = await handle_rag_query(
-            db, message.text or "", session_key=f"whatsapp:{message.sender}"
-        )
-        logger.info(
-            "rag_answer_generated", sender=message.sender, source_count=len(sources)
-        )
-    except Exception as e:
-        logger.error("rag_query_failed", sender=message.sender, error=str(e))
-        answer = FALLBACK_REPLY
-    await send_text(message.sender, answer)
+async def _answer_student_task(message: ParsedMessage) -> None:
+    """Run the RAG pipeline in background with its own DB session."""
+    async with async_session_factory() as db:
+        try:
+            answer, sources = await handle_rag_query(
+                db, message.text or "", session_key=f"whatsapp:{message.sender}"
+            )
+            logger.info(
+                "rag_answer_generated", sender=message.sender, source_count=len(sources)
+            )
+        except Exception as e:
+            logger.error("rag_query_failed", sender=message.sender, error=str(e))
+            answer = FALLBACK_REPLY
+        await send_text(message.sender, answer)
 
 
 @router.post("", summary="Receive WhatsApp Cloud API events")
 async def receive_webhook(
     request: Request,
+    background_tasks: BackgroundTasks,
     x_hub_signature_256: str | None = Header(default=None),
-    db: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
-    """Trigger entry point: verify, parse, route, and reply to an event.
+    """Trigger entry point: verify, parse, route, and reply asynchronously.
 
-    Student text messages run through the RAG pipeline and get an answer
-    sent back over WhatsApp. Admin commands are still detected/logged only
-    (they need ingest/analytics services that don't exist yet). Always acks
-    Meta with 200 unless the signature is invalid — Meta retries non-2xx.
+    Acknowledges Meta immediately with HTTP 200 to prevent webhook timeouts
+    and duplicate message retries. The RAG pipeline runs in a background task.
     """
     raw_body = await request.body()
 
@@ -104,13 +106,14 @@ async def receive_webhook(
     )
 
     if message.message_type == "text" and message.text:
-        await _answer_student(db, message)
+        background_tasks.add_task(_answer_student_task, message)
     else:
         logger.debug(
             "reply_skipped_unsupported_message_type",
             message_type=message.message_type,
         )
-        await send_text(
+        background_tasks.add_task(
+            send_text,
             message.sender,
             "I can only answer text questions right now. Please type your query.",
         )
