@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
     GEMINI_LLM_MODEL: str = "gemini-3.5-flash-lite"
 
+    # OpenAI API Settings — used to extract structured college/course/facility
+    # details from uploaded brochure PDFs (administration portal).
+    OPENAI_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+
     # RAG Settings
     CHUNK_SIZE: int = 512
     CHUNK_OVERLAP: int = 50
@@ -43,6 +48,21 @@ class Settings(BaseSettings):
     WHATSAPP_APP_SECRET: str = ""
     WHATSAPP_API_VERSION: str = "v21.0"
     ADMIN_NUMBERS: str = ""
+
+    # Administration Portal — Auth Settings
+    JWT_SECRET_KEY: str = "change-this-secret-key-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    # 7 days, to support "remember me" login persistence
+    JWT_EXPIRE_MINUTES: int = 10080
+
+    # Administration Portal — Fixed Platform Admin Login
+    ADMIN_EMAIL: str = "admin@coligo.com"
+    ADMIN_PASSWORD: str = "coligo@123"
+
+    # Administration Portal — File Uploads
+    UPLOAD_DIR: str = "uploads"
+    MAX_LOGO_SIZE_MB: int = 2
+    MAX_BROCHURE_SIZE_MB: int = 10
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"

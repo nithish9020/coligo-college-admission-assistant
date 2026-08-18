@@ -19,6 +19,11 @@ dependencies = [
     "asyncpg>=0.29.0",
     "pgvector>=0.2.0",
     "httpx>=0.27.0",
+    "bcrypt>=4.1.0",
+    "pyjwt>=2.8.0",
+    "python-multipart>=0.0.9",
+    "email-validator>=2.1.0",
+    "openai>=1.40.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -49,6 +54,14 @@ select = [
     "B",  # flake8-bugbear
 ]
 ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# Streamlit view functions are long, linear UI code: each one walks through
+# form state, create-vs-edit modes and delete confirmations in sequence.
+# Splitting them to satisfy the complexity limit would fragment the page
+# layout without making it easier to follow. Everything under api/ stays
+# subject to the full rule set.
+"administration portal/**" = ["C901"]
 
 [tool.ruff.format]
 quote-style = "double"
