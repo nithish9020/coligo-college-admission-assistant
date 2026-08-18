@@ -1,4 +1,5 @@
 import json
+from typing import Any, cast
 
 from openai import APIError as OpenAIAPIError
 from openai import AsyncOpenAI, OpenAIError
@@ -146,7 +147,7 @@ async def extract_brochure_details(pdf_bytes: bytes) -> dict:
         raise BrochureExtractionError("OpenAI returned an empty extraction response.")
 
     try:
-        result = json.loads(content)
+        result = cast(dict[str, Any], json.loads(content))
     except json.JSONDecodeError as e:
         logger.error("openai_brochure_extraction_unparsable", error=str(e))
         raise BrochureExtractionError(

@@ -155,45 +155,48 @@ async def process_document(
     db.add(db_document)
     await db.flush()  # Populates db_document.id
 
-    # 4. Global Deduplication logic: Identify chunks that already exist in the database
+    # 4. Smart Deduplication: Reuse existing embeddings by sha256 to save API calls
+    # while ensuring every document owns its own DocumentChunk rows.
     all_hashes = [c["sha256"] for c in chunks]
-    existing_hashes = set()
+    existing_embedding_map = {}
     if all_hashes:
-        existing_hashes_query = select(DocumentChunk.sha256).where(
-            DocumentChunk.sha256.in_(all_hashes)
-        )
-        result = await db.execute(existing_hashes_query)
-        existing_hashes = set(result.scalars().all())
+        existing_chunks_query = select(
+            DocumentChunk.sha256, DocumentChunk.embedding
+        ).where(DocumentChunk.sha256.in_(all_hashes))
+        result = await db.execute(existing_chunks_query)
+        for sha256_hash, emb in result.all():
+            if sha256_hash not in existing_embedding_map:
+                existing_embedding_map[sha256_hash] = emb
 
-    chunks_to_insert = [c for c in chunks if c["sha256"] not in existing_hashes]
-    skipped_chunks = total_chunks - len(chunks_to_insert)
+    # 5. Fetch Embeddings only for brand new hashes to save cost/time
+    missing_chunks = [c for c in chunks if c["sha256"] not in existing_embedding_map]
+    if missing_chunks:
+        texts_to_embed = [c["text_content"] for c in missing_chunks]
+        new_embeddings = await get_embeddings(texts_to_embed)
+        for c, emb in zip(missing_chunks, new_embeddings, strict=False):
+            existing_embedding_map[c["sha256"]] = emb
 
-    # 5. Fetch Embeddings for non-existing chunks only to save cost/time
-    embeddings = []
-    if chunks_to_insert:
-        texts_to_embed = [c["text_content"] for c in chunks_to_insert]
-        embeddings = await get_embeddings(texts_to_embed)
-
-    # 6. Bulk add non-existing chunks to the database session
-    for chunk_data, emb in zip(chunks_to_insert, embeddings, strict=False):
+    # 6. Add all chunks for this document using the embedding map
+    for chunk_data in chunks:
         db_chunk = DocumentChunk(
             document_id=db_document.id,
             chunk_index=chunk_data["chunk_index"],
             text_content=chunk_data["text_content"],
             sha256=chunk_data["sha256"],
-            embedding=emb,
+            embedding=existing_embedding_map[chunk_data["sha256"]],
         )
         db.add(db_chunk)
 
     # Commit all changes to the database
     await db.commit()
 
+    reused_embeddings_count = total_chunks - len(missing_chunks)
     logger.info(
         "document_processing_db_success",
         document_ref=document_ref,
         total_chunks=total_chunks,
-        inserted_chunks=len(chunks_to_insert),
-        skipped_chunks=skipped_chunks,
+        inserted_chunks=total_chunks,
+        reused_embeddings_count=reused_embeddings_count,
     )
 
-    return extracted_text, total_chunks, len(chunks_to_insert), skipped_chunks
+    return extracted_text, total_chunks, total_chunks, reused_embeddings_count
