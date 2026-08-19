@@ -7,6 +7,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 COPY pyproject.toml README.md ./
 COPY api ./api
+COPY data ./data
 
 RUN pip install --no-cache-dir -e .
 
