@@ -4,7 +4,25 @@ import os
 
 import requests
 
-API_BASE_URL = os.environ.get("COLIGO_API_BASE_URL", "http://localhost:8000")
+
+def _resolve_api_base_url() -> str:
+    try:
+        import streamlit as st
+
+        if hasattr(st, "secrets"):
+            for key in ("COLIGO_API_BASE_URL", "API_BASE_URL", "coligo_api_base_url"):
+                if key in st.secrets:
+                    return str(st.secrets[key]).rstrip("/")
+    except Exception:
+        pass
+    for env_key in ("COLIGO_API_BASE_URL", "API_BASE_URL"):
+        val = os.environ.get(env_key)
+        if val:
+            return str(val).rstrip("/")
+    return "http://localhost:8000"
+
+
+API_BASE_URL = _resolve_api_base_url()
 REQUEST_TIMEOUT = 30
 
 
