@@ -139,6 +139,32 @@ async def mark_message_as_read(message_id: str) -> bool:
         return False
 
 
+async def send_typing_indicator(to: str) -> bool:
+    """Send typing indicator (typing_on) to show typing... bubble on user's WhatsApp."""
+    if not settings.WHATSAPP_PHONE_NUMBER_ID or not settings.WHATSAPP_ACCESS_TOKEN:
+        return False
+
+    url = (
+        "https://graph.facebook.com/"
+        f"{settings.WHATSAPP_API_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+    )
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": to,
+        "status": "typing_on",
+    }
+    headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
+
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(url, json=payload, headers=headers, timeout=5.0)
+        return True
+    except Exception as e:
+        logger.error("send_typing_indicator_failed", to=to, error=str(e))
+        return False
+
+
 async def send_interactive_buttons(
     to: str, body_text: str, buttons: list[Tuple[str, str]]
 ) -> bool:

@@ -29,6 +29,7 @@ from api.services.whatsapp_service import (
     send_interactive_buttons,
     send_interactive_list,
     send_text,
+    send_typing_indicator,
     verify_signature,
 )
 
@@ -152,6 +153,7 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         )
         return
 
+    await send_typing_indicator(message.sender)
     async with async_session_factory() as db:
         try:
             answer, sources = await handle_rag_query(

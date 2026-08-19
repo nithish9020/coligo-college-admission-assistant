@@ -90,6 +90,8 @@ def detect_college_keyword(text: str) -> str | None:
         return "anna"
     if "skcet" in cleaned:
         return "skcet"
+    if "srm" in cleaned:
+        return "srm"
     return None
 
 
@@ -236,13 +238,20 @@ async def handle_rag_query(
 
     if not context_parts:
         logger.warning("rag_search_returned_empty_context")
-        context_str = "No relevant context is available in the database."
         if session_key:
             try:
                 db.add(Escalation(sender=session_key, query_text=query_text))
-                await db.flush()
+                await db.commit()
             except Exception as e:
                 logger.error("escalation_logging_failed", error=str(e))
+
+        college_display = (college_kw or "that college").upper()
+        return (
+            f"Sorry pa, {college_display} pathina official documents/details innum "
+            "database la add aagala. Streamlit Admin portal web scraper la link feed "
+            "panni scrape pannunga, naan padichuttu solren!",
+            [],
+        )
     else:
         context_str = "\n\n".join(context_parts)
         logger.info(

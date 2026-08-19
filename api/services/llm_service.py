@@ -1,3 +1,5 @@
+import asyncio
+
 import httpx
 
 from api.core.config import settings
@@ -33,33 +35,40 @@ async def generate_response_from_llm(prompt: str) -> str:
     }
 
     logger.debug("sending_prompt_to_nvidia_llm", model=settings.NVIDIA_LLM_MODEL)
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url, headers=headers, json=payload, timeout=60.0
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    url, headers=headers, json=payload, timeout=90.0
+                )
+
+            if response.status_code != 200:
+                logger.error(
+                    "nvidia_llm_api_failed",
+                    status_code=response.status_code,
+                    body=response.text,
+                )
+                raise DocumentProcessingError(
+                    f"NVIDIA error status {response.status_code}: {response.text}"
+                )
+
+            response_data = response.json()
+            choices = response_data.get("choices", [])
+            if not choices:
+                raise DocumentProcessingError("NVIDIA NIM API returned no choices.")
+
+            message = choices[0].get("message", {})
+            content = message.get("content", "")
+            return str(content).strip()
+
+        except httpx.RequestError as e:
+            logger.warning(
+                "nvidia_llm_request_error_retrying", attempt=attempt + 1, error=str(e)
             )
+            if attempt == 2:
+                raise DocumentProcessingError(
+                    f"Network request to NVIDIA NIM API failed: {str(e)}"
+                ) from e
+            await asyncio.sleep(2.0)
 
-        if response.status_code != 200:
-            logger.error(
-                "nvidia_llm_api_failed",
-                status_code=response.status_code,
-                body=response.text,
-            )
-            raise DocumentProcessingError(
-                f"NVIDIA NIM API error status {response.status_code}: {response.text}"
-            )
-
-        response_data = response.json()
-        choices = response_data.get("choices", [])
-        if not choices:
-            raise DocumentProcessingError("NVIDIA NIM API returned no choices.")
-
-        message = choices[0].get("message", {})
-        content = message.get("content", "")
-        return str(content).strip()
-
-    except httpx.RequestError as e:
-        logger.error("nvidia_llm_request_error", error=str(e))
-        raise DocumentProcessingError(
-            f"Network request to NVIDIA NIM API failed: {str(e)}"
-        ) from e
+    raise DocumentProcessingError("Failed to generate response from NVIDIA NIM API")
