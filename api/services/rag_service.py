@@ -60,7 +60,7 @@ Tone & Formatting Guidelines for WhatsApp:
 
 Strict Knowledge Rules:
 1. Base your answer ONLY on the provided Context snippets below.
-2. If the context does not contain the answer, say "I don't have that specific detail in the official documents yet." Never make up facts.
+2. If the context does not contain the specific answer or requested cutoff details, respond politely in friendly Tanglish/English: "Sorry pa, en kitta adhu pathina exact details/cutoff marks ippodhiku illa. Official documents update pannitu koodiya seekram solren!" NEVER ask the user the same question back or loop.
 3. TNEA Cutoff marks are out of 200: Maths + (Physics/2) + (Chemistry/2). Lower general ranks are better.
 4. Cutoffs depend on community (OC, BC, BCM, MBC, SC, SCA, ST).
 
@@ -77,6 +77,20 @@ HISTORY_BLOCK_TEMPLATE = """
 Conversation so far:
 {history}
 """
+
+
+def detect_college_keyword(text: str) -> str | None:
+    """Detect if a specific college is named in the user query."""
+    cleaned = text.lower()
+    if "psg" in cleaned:
+        return "psg"
+    if "cit" in cleaned:
+        return "cit"
+    if "anna" in cleaned:
+        return "anna"
+    if "skcet" in cleaned:
+        return "skcet"
+    return None
 
 
 def reorder_chunks_lost_in_middle(
@@ -188,11 +202,18 @@ async def handle_rag_query(
 
     # 4. Query database for closest chunks using cosine distance
     logger.debug("querying_pgvector_for_closest_chunks", top_k=settings.RAG_TOP_K)
-    stmt = (
-        select(DocumentChunk, Document.document_ref)
-        .join(Document, DocumentChunk.document_id == Document.id)
-        .order_by(DocumentChunk.embedding.cosine_distance(query_vector))
-        .limit(settings.RAG_TOP_K)
+    college_kw = detect_college_keyword(retrieval_query) or detect_college_keyword(
+        query_text
+    )
+    stmt = select(DocumentChunk, Document.document_ref).join(
+        Document, DocumentChunk.document_id == Document.id
+    )
+    if college_kw:
+        logger.info("filtering_pgvector_by_college", college_keyword=college_kw)
+        stmt = stmt.where(Document.document_ref.ilike(f"%{college_kw}%"))
+
+    stmt = stmt.order_by(DocumentChunk.embedding.cosine_distance(query_vector)).limit(
+        settings.RAG_TOP_K
     )
 
     result = await db.execute(stmt)

@@ -139,7 +139,10 @@ def format_whatsapp_response(query: str, answer: str, sources: List[str]) -> str
 
     # 2. Format Cutoff Query Responses
     elif any(k in lower_query for k in ("cutoff", "cut-off", "mark", "marks", "rank")):
-        if "tnea" in lower_query or "mark" in lower_query:
+        if ("tnea" in lower_query or "mark" in lower_query) and not any(
+            neg in cleaned_answer.lower()
+            for neg in ("illa", "don't have", "not available", "missing")
+        ):
             hint = "\n\n💡 *TNEA Cutoff Formula*: `Maths + (Physics / 2) + (Chemistry / 2)` (Max 200)"
             if "TNEA Cutoff Formula" not in cleaned_answer:
                 cleaned_answer += hint
