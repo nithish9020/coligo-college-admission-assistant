@@ -321,20 +321,20 @@ def render_brochures() -> None:
             if not target_url or not target_college_name:
                 st.error("Both Target Website URL and College Name are required.")
             else:
-                import httpx
+                import requests
                 from utils.api_client import API_BASE_URL
 
                 with st.spinner(
                     f"Scraping {target_college_name} sub-pages and vectorizing into database..."
                 ):
                     try:
-                        res = httpx.post(
+                        res = requests.post(
                             f"{API_BASE_URL}/documents/scrape",
                             json={
                                 "urls": [target_url.strip()],
                                 "college_name": target_college_name.strip(),
                             },
-                            timeout=120.0,
+                            timeout=120,
                         )
                         if res.status_code == 200:
                             data = res.json()
