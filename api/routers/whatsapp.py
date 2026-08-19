@@ -214,7 +214,7 @@ async def receive_webhook(
             background_tasks.add_task(
                 _execute_admin_task, command, message.text or "", message.sender
             )
-        return {"status": "received"}
+            return {"status": "received"}
 
     logger.info(
         "student_message_received",
