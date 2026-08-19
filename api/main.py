@@ -22,12 +22,14 @@ from api.core.exceptions import (
 from api.core.logging import configure_logging, get_logger
 from api.core.middleware import RequestLoggingMiddleware
 from api.routers import (
+    analytics_router,
     auth_router,
     brochure_router,
     chat_router,
     college_router,
     course_router,
     document_router,
+    escalation_router,
     facility_router,
     health_router,
     whatsapp_router,
@@ -106,6 +108,8 @@ app.include_router(college_router)
 app.include_router(course_router)
 app.include_router(facility_router)
 app.include_router(brochure_router)
+app.include_router(escalation_router)
+app.include_router(analytics_router)
 
 
 # Register global exception handlers for document processing errors

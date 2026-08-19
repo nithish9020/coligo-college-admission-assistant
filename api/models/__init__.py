@@ -1,6 +1,7 @@
 from api.models.college import Brochure, College, Course, Facility
 from api.models.conversation import Conversation, ConversationMessage
 from api.models.document import Document, DocumentChunk
+from api.models.escalation import Escalation
 
 __all__ = [
     "Document",
@@ -11,4 +12,5 @@ __all__ = [
     "Course",
     "Facility",
     "Brochure",
+    "Escalation",
 ]

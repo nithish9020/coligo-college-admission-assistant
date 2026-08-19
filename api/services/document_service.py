@@ -4,7 +4,7 @@ import urllib.request
 from typing import Tuple
 from urllib.parse import urlparse
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.core.config import settings
@@ -199,4 +199,43 @@ async def process_document(
         reused_embeddings_count=reused_embeddings_count,
     )
 
-    return extracted_text, total_chunks, total_chunks, reused_embeddings_count
+    return (
+        extracted_text,
+        total_chunks,
+        total_chunks,
+        0,
+    )
+
+
+async def list_documents(db: AsyncSession) -> list[dict]:
+    """List all ingested documents with chunk counts for the Admin Portal."""
+    stmt = select(Document).order_by(Document.created_at.desc())
+    documents = (await db.execute(stmt)).scalars().all()
+
+    result = []
+    for doc in documents:
+        chunk_count_stmt = select(func.count(DocumentChunk.id)).where(
+            DocumentChunk.document_id == doc.id
+        )
+        chunk_count = (await db.execute(chunk_count_stmt)).scalar() or 0
+        result.append(
+            {
+                "id": doc.id,
+                "document_ref": doc.document_ref,
+                "chunk_count": chunk_count,
+                "created_at": doc.created_at.isoformat(),
+            }
+        )
+    return result
+
+
+async def delete_document(db: AsyncSession, document_id: int) -> bool:
+    """Delete a document and its owned chunks safely."""
+    doc = await db.get(Document, document_id)
+    if not doc:
+        return False
+
+    await db.delete(doc)
+    await db.commit()
+    logger.info("document_deleted", document_id=document_id)
+    return True

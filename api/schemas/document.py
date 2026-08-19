@@ -52,3 +52,15 @@ class DocumentProcessResponse(BaseModel):
         description="The full extracted text from the PDF document",
         examples=["Coligo College Admission Guidelines\nPage 1..."],
     )
+
+
+class DocumentItemResponse(BaseModel):
+    id: int = Field(..., examples=[1])
+    document_ref: str = Field(..., examples=["/path/to/catalog.pdf"])
+    chunk_count: int = Field(..., examples=[12])
+    created_at: str = Field(..., examples=["2026-08-19T00:00:00Z"])
+
+
+class DocumentListResponse(BaseModel):
+    total: int = Field(..., examples=[3])
+    documents: list[DocumentItemResponse]

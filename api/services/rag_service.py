@@ -1,11 +1,12 @@
-from typing import List, Tuple
+import time
+from typing import Dict, List, Tuple
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.core.config import settings
 from api.core.logging import get_logger
-from api.models import Document, DocumentChunk
+from api.models import Document, DocumentChunk, Escalation
 from api.services.conversation_service import (
     append_turn,
     format_history,
@@ -14,9 +15,36 @@ from api.services.conversation_service import (
 )
 from api.services.embedding_service import get_embeddings
 from api.services.llm_service import generate_response_from_llm
+from api.services.query_normalizer import normalize_query
 from api.services.query_rewriter import condense_question
 
 logger = get_logger(__name__)
+
+CACHE_TTL_SECONDS = 3600  # 1 hour TTL
+MAX_CACHE_ENTRIES = 500
+_RAG_RESPONSE_CACHE: Dict[str, Tuple[str, List[str], float]] = {}
+
+
+def get_cached_rag_response(query_text: str) -> Tuple[str, List[str]] | None:
+    """Return cached RAG answer and sources for common queries if unexpired."""
+    cache_key = query_text.strip().lower()
+    if cache_key in _RAG_RESPONSE_CACHE:
+        answer, sources, timestamp = _RAG_RESPONSE_CACHE[cache_key]
+        if time.time() - timestamp < CACHE_TTL_SECONDS:
+            logger.info("rag_response_cache_hit", query=query_text)
+            return answer, sources
+        del _RAG_RESPONSE_CACHE[cache_key]
+    return None
+
+
+def set_cached_rag_response(query_text: str, answer: str, sources: List[str]) -> None:
+    """Cache generated RAG answer in memory with timestamp."""
+    cache_key = query_text.strip().lower()
+    if len(_RAG_RESPONSE_CACHE) >= MAX_CACHE_ENTRIES:
+        oldest_key = min(_RAG_RESPONSE_CACHE, key=lambda k: _RAG_RESPONSE_CACHE[k][2])
+        del _RAG_RESPONSE_CACHE[oldest_key]
+    _RAG_RESPONSE_CACHE[cache_key] = (answer, sources, time.time())
+
 
 SYSTEM_PROMPT_TEMPLATE = """You are Coligo, a friendly and encouraging senior \
 student guide for Tamil Nadu Engineering Admissions (TNEA). You talk to students \
@@ -95,15 +123,24 @@ async def handle_rag_query(
             conversation = None
             history_str = ""
 
+    # 1b. Check In-Memory RAG Response Cache (for queries without prior history)
+    if not history_str:
+        cached = get_cached_rag_response(query_text)
+        if cached is not None:
+            return cached
+
     # 2. Condense a follow-up ("what about ECE?") into a standalone question,
     # otherwise retrieval embeds the bare phrase and finds the wrong chunks.
     retrieval_query = query_text
     if history_str and settings.ENABLE_QUERY_REWRITING:
         retrieval_query = await condense_question(history_str, query_text)
 
+    # Normalize query typos and expand abbreviations for vector embedding search
+    normalized_retrieval_query = normalize_query(retrieval_query)
+
     # 3. Fetch query vector embedding
     logger.debug("embedding_query_text")
-    query_embeddings = await get_embeddings([retrieval_query])
+    query_embeddings = await get_embeddings([normalized_retrieval_query])
     query_vector = query_embeddings[0]
 
     # 2. Query database for closest chunks using cosine distance
@@ -133,6 +170,12 @@ async def handle_rag_query(
     if not context_parts:
         logger.warning("rag_search_returned_empty_context")
         context_str = "No relevant context is available in the database."
+        if session_key:
+            try:
+                db.add(Escalation(sender=session_key, query_text=query_text))
+                await db.flush()
+            except Exception as e:
+                logger.error("escalation_logging_failed", error=str(e))
     else:
         context_str = "\n\n".join(context_parts)
         logger.info(
@@ -154,6 +197,9 @@ async def handle_rag_query(
 
     logger.debug("requesting_llm_generation")
     answer = await generate_response_from_llm(prompt)
+
+    if not history_str:
+        set_cached_rag_response(query_text, answer, sources)
 
     # 5. Persist both turns so the next message can see them. A write failure
     # must not lose an answer the user is already waiting on.
