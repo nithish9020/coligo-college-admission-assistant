@@ -22,7 +22,8 @@ from api.services.whatsapp_service import (
 )
 
 FALLBACK_REPLY = (
-    "Sorry, I ran into a problem answering that. Please try again in a moment."
+    "Hey! I ran into a tiny hiccup fetching that info. "
+    "Could you try asking again in a moment?"
 )
 
 router = APIRouter(prefix="/webhook", tags=["WhatsApp Webhook"])
