@@ -1,3 +1,4 @@
+import os
 import re
 from typing import List, Optional
 
@@ -91,9 +92,9 @@ def get_course_list_menu_sections() -> List[dict]:
 
 
 def calculate_tnea_cutoff(text: str) -> Optional[float]:
-    """Extract Maths, Physics, and Chemistry marks from text and calculate TNEA Cutoff out of 200.
+    """Extract Maths, Physics, and Chemistry marks from text and calculate official TNEA Cutoff out of 200.
 
-    Formula: Maths/2 + Physics/4 + Chemistry/4
+    Official TNEA Formula: Maths + (Physics / 2) + (Chemistry / 2)
     """
     cleaned = text.lower()
     maths_match = re.search(r"(?:maths?|m|mathes)\D*(\d{1,3})", cleaned)
@@ -106,7 +107,7 @@ def calculate_tnea_cutoff(text: str) -> Optional[float]:
         c = float(chem_match.group(1))
 
         if 0 <= m <= 100 and 0 <= p <= 100 and 0 <= c <= 100:
-            cutoff = (m / 2.0) + (p / 4.0) + (c / 4.0)
+            cutoff = m + (p / 2.0) + (c / 2.0)
             return round(cutoff, 2)
     return None
 
@@ -117,6 +118,8 @@ def format_whatsapp_response(query: str, answer: str, sources: List[str]) -> str
     Applies WhatsApp rich text styling (bold headers, bullet styling, and source tags).
     """
     cleaned_answer = answer.strip()
+    # Convert markdown double asterisks (**text**) to WhatsApp single asterisks (*text*)
+    cleaned_answer = re.sub(r"\*\*(.*?)\*\*", r"*\1*", cleaned_answer)
     lower_query = query.lower()
 
     # 1. Automatic Cutoff Calculation if student typed marks
@@ -125,16 +128,27 @@ def format_whatsapp_response(query: str, answer: str, sources: List[str]) -> str
         calc_header = f"🎯 *Calculated TNEA Cutoff*: *{calculated_cutoff} / 200*\n\n"
         cleaned_answer = calc_header + cleaned_answer
 
+    # 1b. Comparative Analysis Formatting
+    elif any(
+        k in lower_query for k in ("compare", "versus", "vs", "difference", "better")
+    ):
+        if "📊 *Branch & Cutoff" not in cleaned_answer:
+            cleaned_answer = (
+                f"📊 *Branch & Cutoff Comparative Analysis*\n\n{cleaned_answer}"
+            )
+
     # 2. Format Cutoff Query Responses
     elif any(k in lower_query for k in ("cutoff", "cut-off", "mark", "marks", "rank")):
         if "tnea" in lower_query or "mark" in lower_query:
-            hint = "\n\n💡 *TNEA Cutoff Formula*: `Maths/2 + Physics/4 + Chemistry/4` (Max 200)"
+            hint = "\n\n💡 *TNEA Cutoff Formula*: `Maths + (Physics / 2) + (Chemistry / 2)` (Max 200)"
             if "TNEA Cutoff Formula" not in cleaned_answer:
                 cleaned_answer += hint
 
-    # 3. Format Fee Query Responses
-    elif any(k in lower_query for k in ("fee", "fees", "tuition", "hostel", "bus")):
-        if "💳 *Fee Information*" not in cleaned_answer:
+    # 3. Format Fee Query Responses (only if answer is actually about fees)
+    elif any(
+        k in lower_query for k in ("fee", "fees", "tuition", "hostel")
+    ) and not any(c in cleaned_answer for c in ("🎯", "📊", "Cutoff", "cutoff")):
+        if "💳 *Fee" not in cleaned_answer:
             cleaned_answer = f"💳 *Fee Structure & Details*\n\n{cleaned_answer}"
 
     # 4. Format Location / Travel Queries
@@ -157,7 +171,9 @@ def format_whatsapp_response(query: str, answer: str, sources: List[str]) -> str
 
     # 6. Attach Source Document References (if available)
     if sources:
-        formatted_sources = ", ".join(f"`{s}`" for s in sources[:3])
-        cleaned_answer += f"\n\n📌 *Source*: {formatted_sources}"
+        clean_sources = list(dict.fromkeys(os.path.basename(s) for s in sources if s))
+        if clean_sources:
+            formatted_sources = ", ".join(f"`{s}`" for s in clean_sources[:2])
+            cleaned_answer += f"\n\n📌 *Source*: {formatted_sources}"
 
     return cleaned_answer

@@ -16,10 +16,10 @@ class Settings(BaseSettings):
     # Database Settings
     DATABASE_URL: str = "postgresql+asyncpg://dte:dte_secret@localhost:5432/dte_chatbot"
 
-    # Gemini API Settings
-    GEMINI_API_KEY: str | None = None
-    GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
-    GEMINI_LLM_MODEL: str = "gemini-3.5-flash-lite"
+    # NVIDIA NIM API Settings (OpenAI Compatible - https://build.nvidia.com)
+    NVIDIA_API_KEY: str | None = None
+    NVIDIA_LLM_MODEL: str = "meta/llama-3.1-70b-instruct"
+    NVIDIA_EMBEDDING_MODEL: str = "nvidia/nv-embedqa-e5-v5"
 
     # OpenAI API Settings — used to extract structured college/course/facility
     # details from uploaded brochure PDFs (administration portal).

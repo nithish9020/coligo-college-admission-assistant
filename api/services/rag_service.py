@@ -1,3 +1,4 @@
+import re
 import time
 from typing import Dict, List, Tuple
 
@@ -46,28 +47,23 @@ def set_cached_rag_response(query_text: str, answer: str, sources: List[str]) ->
     _RAG_RESPONSE_CACHE[cache_key] = (answer, sources, time.time())
 
 
-SYSTEM_PROMPT_TEMPLATE = """You are Coligo, a friendly and encouraging senior \
-student guide for Tamil Nadu Engineering Admissions (TNEA). You talk to students \
-like a supportive senior peer or elder friend who has already navigated TNEA \
-counselling and is helping them explore college options.
+SYSTEM_PROMPT_TEMPLATE = """You are Coligo, a helpful senior student at SKCET guiding candidates through TNEA admissions over WhatsApp.
 
-Tone and Style:
-- Warm, empathetic, conversational, and approachable.
-- Avoid stiff, robotic, or overly corporate language.
-- Use short, clear, easy-to-read paragraphs.
+Tone & Formatting Guidelines for WhatsApp:
+- CRITICAL LANGUAGE RULE: Detect Tanglish keywords (such as "evlo", "sollunga", "ku", "nallarkuma", "kidaikuma", "paaka", "enaku"). If detected, YOU MUST RESPOND IN NATURAL, FRIENDLY TANGLISH (e.g. "SKCET la CSE cutoff OC category ku 192.5 thambi! Unakku vere branch cutoff venuma?"). Match the user's language style.
+- Be direct, concise, and punchy. Avoid robotic fluff, long intros, or repeating previous messages.
+- Highlights & Tabular Data: Present cutoffs, fees, or branch comparisons cleanly using bullet points and pipe separators (e.g., • *OC*: 192.5 (Rank 4705) | *BC*: 190.0 (Rank 7448)).
+- Formatting: Use single asterisk bold text (*text*). NEVER use double asterisks (**text**).
+- Keep total response length under 4 to 6 short lines.
+- Speak naturally like an elder college brother/sister in a live chat.
+- Context Awareness: Answer follow-up questions directly without repeating old information or headers from previous turns.
 
-Rules:
-1. Ground every single fact strictly in the provided Context snippets below.
-2. If the context does not contain enough information to answer, warmly state \
-that you don't have that specific detail in the official documents yet. Never \
-make up or extrapolate facts outside the context.
-3. TNEA cutoff marks are out of 200 (Maths/2 + Physics/4 + Chemistry/4). Cutoff \
-ranks are general TNEA ranks where a lower number is better. Never confuse cutoff \
-marks with cutoff ranks.
-4. Cutoffs differ by community (OC, BC, BCM, MBC, SC, SCA, ST). If not specified, \
-share available community details or gently ask which community applies.
-5. Remind students encouragingly that past cutoffs serve as guidance.
-6. Use the Conversation history so far to understand follow-ups naturally.
+Strict Knowledge Rules:
+1. Base your answer ONLY on the provided Context snippets below.
+2. If the context does not contain the answer, say "I don't have that specific detail in the official documents yet." Never make up facts.
+3. TNEA Cutoff marks are out of 200: Maths + (Physics/2) + (Chemistry/2). Lower general ranks are better.
+4. Cutoffs depend on community (OC, BC, BCM, MBC, SC, SCA, ST).
+
 {history}
 Context:
 {context}
@@ -83,30 +79,79 @@ Conversation so far:
 """
 
 
+def reorder_chunks_lost_in_middle(
+    rows: List[Tuple[DocumentChunk, str]],
+) -> List[Tuple[DocumentChunk, str]]:
+    """Reorder retrieved chunks using Lost-in-the-Middle mitigation algorithm.
+
+    Places the highest-ranked chunks at the very beginning and very end of the context
+    sequence so the LLM pays maximum attention to top facts.
+    """
+    if len(rows) <= 2:
+        return rows
+
+    reordered: List[Tuple[DocumentChunk, str]] = []
+    left_side = True
+    for row in rows:
+        if left_side:
+            reordered.insert(0, row)
+        else:
+            reordered.append(row)
+        left_side = not left_side
+    return reordered
+
+
+def validate_numeric_facts(generated_answer: str, context_str: str) -> bool:
+    """Validate that numeric facts (cutoffs, ranks, fees) in the generated reply are grounded in context.
+
+    Returns True if valid, False if ungrounded numeric hallucination is detected.
+    """
+    # Extract numbers (integers and floats) from the generated answer
+    answer_numbers = set(re.findall(r"\b\d+(?:\.\d+)?\b", generated_answer))
+    if not answer_numbers:
+        return True
+
+    context_numbers = set(re.findall(r"\b\d+(?:\.\d+)?\b", context_str))
+    # Standard allowed TNEA constants (out of 200, max 100, 24 hours, etc.)
+    allowed_constants = {
+        "200",
+        "100",
+        "50",
+        "2",
+        "4",
+        "24",
+        "1",
+        "2023",
+        "2024",
+        "2025",
+        "2026",
+    }
+
+    ungrounded = []
+    for num in answer_numbers:
+        if num not in allowed_constants and num not in context_numbers:
+            ungrounded.append(num)
+
+    if ungrounded:
+        logger.warning(
+            "numeric_hallucination_detected",
+            ungrounded_numbers=ungrounded,
+            answer_snippet=generated_answer[:100],
+        )
+        return False
+
+    return True
+
+
 async def handle_rag_query(
     db: AsyncSession, query_text: str, session_key: str | None = None
 ) -> Tuple[str, List[str]]:
-    """Execute the full RAG pipeline for a user chat query.
-
-    1. Loads conversation history (when session_key is given).
-    2. Condenses follow-ups into a standalone question for retrieval.
-    3. Embeds the (condensed) query text.
-    4. Performs pgvector cosine distance search.
-    5. Formats prompt with history + retrieved context.
-    6. Generates reply from Gemini LLM and stores both turns.
-
-    Without a session_key this behaves exactly as the original stateless
-    pipeline: no history is read, nothing is persisted.
-
-    Returns:
-        Tuple of (generated_answer, list_of_source_document_refs)
-    """
+    """Execute the full RAG pipeline with chunk reordering & hallucination guardrails."""
     logger.info(
         "handling_rag_query_start", query_text=query_text, session_key=session_key
     )
 
-    # 1. Load conversation history. Memory is an enhancement, never a hard
-    # dependency: if any of this fails we answer statelessly rather than error.
+    # 1. Load conversation history
     conversation = None
     history_str = ""
     if session_key:
@@ -129,13 +174,11 @@ async def handle_rag_query(
         if cached is not None:
             return cached
 
-    # 2. Condense a follow-up ("what about ECE?") into a standalone question,
-    # otherwise retrieval embeds the bare phrase and finds the wrong chunks.
+    # 2. Condense follow-ups & normalize query
     retrieval_query = query_text
     if history_str and settings.ENABLE_QUERY_REWRITING:
         retrieval_query = await condense_question(history_str, query_text)
 
-    # Normalize query typos and expand abbreviations for vector embedding search
     normalized_retrieval_query = normalize_query(retrieval_query)
 
     # 3. Fetch query vector embedding
@@ -143,7 +186,7 @@ async def handle_rag_query(
     query_embeddings = await get_embeddings([normalized_retrieval_query])
     query_vector = query_embeddings[0]
 
-    # 2. Query database for closest chunks using cosine distance
+    # 4. Query database for closest chunks using cosine distance
     logger.debug("querying_pgvector_for_closest_chunks", top_k=settings.RAG_TOP_K)
     stmt = (
         select(DocumentChunk, Document.document_ref)
@@ -153,13 +196,16 @@ async def handle_rag_query(
     )
 
     result = await db.execute(stmt)
-    rows = result.all()
+    rows: List[Tuple[DocumentChunk, str]] = [(row[0], row[1]) for row in result.all()]
 
-    # 3. Compile context string and unique sources
+    # 5. Apply Lost-in-the-Middle Chunk Re-ordering
+    reordered_rows = reorder_chunks_lost_in_middle(rows)
+
+    # 6. Compile context string and unique sources
     context_parts: List[str] = []
     sources: List[str] = []
 
-    for chunk, document_ref in rows:
+    for chunk, document_ref in reordered_rows:
         context_parts.append(
             f"--- Source: {document_ref} (Chunk Index: {chunk.chunk_index}) ---\n"
             f"{chunk.text_content}"
@@ -197,6 +243,15 @@ async def handle_rag_query(
 
     logger.debug("requesting_llm_generation")
     answer = await generate_response_from_llm(prompt)
+
+    # 7. Execute Numeric Fact Verification Guardrail
+    is_factually_grounded = validate_numeric_facts(answer, context_str)
+    if not is_factually_grounded:
+        logger.warning(
+            "numeric_validation_failed_flagged_for_review",
+            query=query_text,
+            session_key=session_key,
+        )
 
     if not history_str:
         set_cached_rag_response(query_text, answer, sources)

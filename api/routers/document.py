@@ -8,12 +8,14 @@ from api.schemas.document import (
     DocumentListResponse,
     DocumentProcessRequest,
     DocumentProcessResponse,
+    ScrapeRequest,
 )
 from api.services.document_service import (
     delete_document,
     list_documents,
     process_document,
 )
+from api.services.web_scraper import scrape_college_urls_to_file
 
 router = APIRouter(prefix="/documents", tags=["Document Ingestion"])
 logger = get_logger(__name__)
@@ -43,6 +45,50 @@ async def process_document_endpoint(
 
     return DocumentProcessResponse(
         document_ref=request.document_ref,
+        total_chunks=total_chunks,
+        inserted_chunks=inserted_chunks,
+        skipped_chunks=skipped_chunks,
+        extracted_text=extracted_text,
+    )
+
+
+@router.post(
+    "/scrape",
+    response_model=DocumentProcessResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Scrape College Websites & Ingest",
+)
+async def scrape_college_endpoint(
+    request: ScrapeRequest,
+    db: AsyncSession = Depends(get_db),
+) -> DocumentProcessResponse:
+    """Scrape web pages for a college, combine extracted text, and store chunks."""
+    logger.info(
+        "scrape_college_requested",
+        college_name=request.college_name,
+        url_count=len(request.urls),
+    )
+
+    try:
+        scraped_file_path = await scrape_college_urls_to_file(
+            request.urls, request.college_name
+        )
+    except Exception as e:
+        logger.error("scrape_college_failed", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to scrape college URLs: {str(e)}",
+        ) from e
+
+    (
+        extracted_text,
+        total_chunks,
+        inserted_chunks,
+        skipped_chunks,
+    ) = await process_document(db, scraped_file_path)
+
+    return DocumentProcessResponse(
+        document_ref=scraped_file_path,
         total_chunks=total_chunks,
         inserted_chunks=inserted_chunks,
         skipped_chunks=skipped_chunks,

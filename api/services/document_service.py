@@ -116,11 +116,14 @@ async def process_document(
     logger.info("processing_document_start", document_ref=document_ref)
 
     if _is_url(document_ref):
-        pdf_bytes = _fetch_from_url(document_ref)
+        doc_bytes = _fetch_from_url(document_ref)
     else:
-        pdf_bytes = _fetch_from_local_path(document_ref)
+        doc_bytes = _fetch_from_local_path(document_ref)
 
-    extracted_text = extract_text_from_pdf_bytes(pdf_bytes)
+    if document_ref.endswith(".txt"):
+        extracted_text = doc_bytes.decode("utf-8", errors="ignore")
+    else:
+        extracted_text = extract_text_from_pdf_bytes(doc_bytes)
 
     # Structured logging of extracted text for verification
     preview_len = min(200, len(extracted_text))

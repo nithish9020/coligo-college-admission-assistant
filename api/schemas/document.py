@@ -17,9 +17,24 @@ class DocumentProcessRequest(BaseModel):
         cleaned_ref = v.strip()
         if not cleaned_ref:
             raise ValueError("Document reference cannot be empty")
-        if not cleaned_ref.lower().endswith(".pdf"):
-            raise ValueError("Document reference must refer to a PDF file (.pdf)")
+        if not (
+            cleaned_ref.lower().endswith(".pdf") or cleaned_ref.lower().endswith(".txt")
+        ):
+            raise ValueError("Document reference must refer to a .pdf or .txt file")
         return cleaned_ref
+
+
+class ScrapeRequest(BaseModel):
+    urls: list[str] = Field(
+        ...,
+        description="List of college website URLs to scrape",
+        examples=[["https://www.skcet.ac.in", "https://www.skcet.ac.in/admission"]],
+    )
+    college_name: str = Field(
+        ...,
+        description="Name of the college being scraped",
+        examples=["SKCET Coimbatore"],
+    )
 
 
 class DocumentProcessResponse(BaseModel):

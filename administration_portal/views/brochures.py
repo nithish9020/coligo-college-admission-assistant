@@ -300,6 +300,55 @@ def render_brochures() -> None:
     )
 
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
+    st.markdown("### 🌐 Web Scraping & Knowledge Base Ingestion")
+    st.caption(
+        "Scrape college websites, discover sub-pages, and automatically generate vector embeddings for pgvector."
+    )
+    with st.form("web_scrape_form", clear_on_submit=False):
+        sc_col1, sc_col2 = st.columns([2, 1])
+        with sc_col1:
+            target_url = st.text_input(
+                "College Website URL *",
+                placeholder="e.g. https://www.psgtech.edu or https://cit.edu.in",
+            )
+        with sc_col2:
+            target_college_name = st.text_input(
+                "College Name *", placeholder="e.g. PSG Tech"
+            )
+        if st.form_submit_button(
+            "🚀 Scrape Website & Ingest Knowledge Base", type="primary"
+        ):
+            if not target_url or not target_college_name:
+                st.error("Both Target Website URL and College Name are required.")
+            else:
+                import httpx
+                from utils.api_client import API_BASE_URL
+
+                with st.spinner(
+                    f"Scraping {target_college_name} sub-pages and vectorizing into database..."
+                ):
+                    try:
+                        res = httpx.post(
+                            f"{API_BASE_URL}/documents/scrape",
+                            json={
+                                "urls": [target_url.strip()],
+                                "college_name": target_college_name.strip(),
+                            },
+                            timeout=120.0,
+                        )
+                        if res.status_code == 200:
+                            data = res.json()
+                            st.success(
+                                f"🎉 Ingestion Success! Total Chunks: {data.get('total_chunks')} | "
+                                f"Inserted Chunks: {data.get('inserted_chunks')} | Document: {data.get('document_ref')}"
+                            )
+                        else:
+                            st.error(f"Scraping failed ({res.status_code}): {res.text}")
+                    except Exception as ex:
+                        st.error(f"Failed to connect to backend scraper: {str(ex)}")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
     with st.form("upload_brochure_form", clear_on_submit=True):
         col1, col2 = st.columns([2, 1])
         with col1:

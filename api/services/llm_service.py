@@ -8,67 +8,58 @@ logger = get_logger(__name__)
 
 
 async def generate_response_from_llm(prompt: str) -> str:
-    """Send prompt to the Google Gemini-1.5-Flash API and return generated content.
+    """Generate response using NVIDIA NIM API (OpenAI compatible endpoint).
 
-    Raises:
-        DocumentProcessingError: If API key is missing or HTTP request fails.
+    Model: openai/gpt-oss-120b (https://build.nvidia.com/openai/gpt-oss-120b)
     """
-    if not settings.GEMINI_API_KEY:
-        logger.error("gemini_api_key_missing_for_llm")
+    if not settings.NVIDIA_API_KEY:
+        logger.error("nvidia_api_key_missing_for_llm")
         raise DocumentProcessingError(
-            "GEMINI_API_KEY is not configured in the application environment."
+            "NVIDIA_API_KEY is not configured in the application environment."
         )
 
-    # Base Gemini API endpoint URL for content generation
-    url = (
-        "https://generativelanguage.googleapis.com/v1/models/"
-        f"{settings.GEMINI_LLM_MODEL}:generateContent"
-        f"?key={settings.GEMINI_API_KEY}"
-    )
+    url = "https://integrate.api.nvidia.com/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {settings.NVIDIA_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": settings.NVIDIA_LLM_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.7,
+        "top_p": 1,
+        "max_tokens": 1024,
+        "stream": False,
+    }
 
-    # Construct generation payload matching Gemini API specification
-    payload = {"contents": [{"parts": [{"text": prompt}]}]}
-
-    logger.debug("sending_prompt_to_llm", model=settings.GEMINI_LLM_MODEL)
-
+    logger.debug("sending_prompt_to_nvidia_llm", model=settings.NVIDIA_LLM_MODEL)
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload, timeout=30.0)
+            response = await client.post(
+                url, headers=headers, json=payload, timeout=60.0
+            )
 
         if response.status_code != 200:
             logger.error(
-                "gemini_llm_api_failed",
+                "nvidia_llm_api_failed",
                 status_code=response.status_code,
                 body=response.text,
             )
             raise DocumentProcessingError(
-                "Gemini LLM API returned error status "
-                f"{response.status_code}: {response.text}"
+                f"NVIDIA NIM API error status {response.status_code}: {response.text}"
             )
 
         response_data = response.json()
-        candidates = response_data.get("candidates", [])
+        choices = response_data.get("choices", [])
+        if not choices:
+            raise DocumentProcessingError("NVIDIA NIM API returned no choices.")
 
-        if not candidates:
-            logger.warning("gemini_llm_returned_no_candidates")
-            raise DocumentProcessingError("Gemini LLM API returned no candidates.")
-
-        # Extract generated response text content
-        generated_text = str(
-            candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-        )
-
-        return generated_text.strip()
+        message = choices[0].get("message", {})
+        content = message.get("content", "")
+        return str(content).strip()
 
     except httpx.RequestError as e:
-        logger.error("gemini_llm_request_error", error=str(e))
+        logger.error("nvidia_llm_request_error", error=str(e))
         raise DocumentProcessingError(
-            f"Network request to Gemini LLM API failed: {str(e)}"
-        ) from e
-    except Exception as e:
-        if isinstance(e, DocumentProcessingError):
-            raise e
-        logger.error("gemini_llm_unexpected_error", error=str(e))
-        raise DocumentProcessingError(
-            f"Failed to generate LLM response: {str(e)}"
+            f"Network request to NVIDIA NIM API failed: {str(e)}"
         ) from e
