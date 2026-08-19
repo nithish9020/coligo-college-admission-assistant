@@ -56,9 +56,9 @@ async def _send_single_nvidia_embedding_batch(
                     f"Mismatch: expected {len(batch)}, got {len(data_items)}"
                 )
 
-            # Sort by index to maintain input order
+            # Sort by index to maintain input order and slice to 768 dimensions
             sorted_items = sorted(data_items, key=lambda item: item.get("index", 0))
-            return [item["embedding"] for item in sorted_items]
+            return [item["embedding"][:768] for item in sorted_items]
 
         except httpx.RequestError as e:
             if attempt == 4:
