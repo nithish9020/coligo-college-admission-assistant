@@ -3,16 +3,16 @@ from utils.auth import log_out
 from utils.styling import PRIMARY_BRIGHT, avatar_html
 
 COLLEGE_NAV = [
-    ("Dashboard", "\U0001f3e0"),
-    ("College Profile", "\U0001f3eb"),
-    ("Courses", "\U0001f4d8"),
-    ("Infrastructure", "\U0001f3d7"),
-    ("Brochures", "\U0001f4c4"),
+    "Dashboard",
+    "College Profile",
+    "Courses",
+    "Infrastructure",
+    "Brochures",
 ]
 
 ADMIN_NAV = [
-    ("Dashboard", "\U0001f3e0"),
-    ("Colleges", "\U0001f3eb"),
+    "Dashboard",
+    "Colleges",
 ]
 
 
@@ -20,13 +20,11 @@ def _slug(label: str) -> str:
     return label.lower().replace(" ", "-")
 
 
-def _render_nav(items: list[tuple[str, str]]) -> None:
+def _render_nav(items: list[str]) -> None:
     current = st.session_state.nav
-    for label, icon in items:
+    for label in items:
         with st.container(key=f"navitem-{_slug(label)}"):
-            if st.button(
-                f"{icon}  {label}", key=f"nav_{label}", use_container_width=True
-            ):
+            if st.button(label, key=f"nav_{label}", use_container_width=True):
                 st.session_state.nav = label
                 st.session_state.viewing_college_id = None
                 st.rerun()
@@ -52,7 +50,6 @@ def render_sidebar() -> None:
         st.markdown(
             """
             <div class="coligo-brand">
-                <div style="font-size:1.6rem;">\U0001f393</div>
                 <div class="coligo-brand-title">Coligo Admin Portal</div>
             </div>
             """,
@@ -84,6 +81,6 @@ def render_sidebar() -> None:
 
         st.markdown("<div style='margin-top:2rem;'></div>", unsafe_allow_html=True)
         st.markdown("<hr/>", unsafe_allow_html=True)
-        if st.button("\U0001f6aa  Logout", key="nav_logout", use_container_width=True):
+        if st.button("Logout", key="nav_logout", use_container_width=True):
             log_out()
             st.rerun()

@@ -18,9 +18,7 @@ def render_college_profile() -> None:
         st.error(e.message)
         return
 
-    page_header(
-        "\U0001f3eb", "College Profile", "Complete your college information", "blue"
-    )
+    page_header("", "College Profile", "Complete your college information", "blue")
 
     tabs = st.tabs(
         ["Basic Information", "Contact Information", "Social Links", "Accreditation"]
@@ -33,9 +31,9 @@ def render_college_profile() -> None:
         logo_col, upload_col = st.columns([1, 3])
         with logo_col:
             if profile.get("logo_path"):
-                st.markdown("\U0001f3eb **Logo uploaded**")
+                st.markdown("**Logo uploaded**")
             else:
-                st.markdown("\U0001f3eb No logo yet")
+                st.markdown("No logo yet")
         with upload_col:
             logo_file = st.file_uploader(
                 "Change Logo", type=["png", "jpg", "jpeg"], key="logo_uploader"

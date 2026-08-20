@@ -1,8 +1,15 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+)
 
 from api.core.config import settings
-from api.core.database import get_db
+from api.core.database import async_session_factory
 from api.core.logging import get_logger
 from api.schemas.whatsapp import ParsedMessage, WhatsAppWebhookPayload
 from api.services.rag_service import handle_rag_query
@@ -37,16 +44,27 @@ async def verify_webhook(
     raise HTTPException(status_code=403, detail="Verification failed")
 
 
-async def _answer_student(db: AsyncSession, message: ParsedMessage) -> None:
+async def _answer_student(message: ParsedMessage) -> None:
     """Run the RAG pipeline for a student message and send back the answer.
 
+    Runs as a background task, scheduled only after the webhook has already
+    acked Meta with 200 -- Meta expects a reply within a few seconds and
+    retries (re-delivering the same event and stacking up duplicate work)
+    if the handler blocks on the full RAG pipeline before responding. That
+    retry storm, not the RAG pipeline itself, is what turns a ~5-10s answer
+    into a multi-minute delay for the student.
+
+    Opens its own DB session since the request that scheduled this task has
+    already finished and its session may be closed by the time this runs.
+
     Never raises: any failure is logged and the user gets a friendly
-    fallback, so the webhook can still ack Meta with 200.
+    fallback.
     """
     try:
-        answer, sources = await handle_rag_query(
-            db, message.text or "", session_key=f"whatsapp:{message.sender}"
-        )
+        async with async_session_factory() as db:
+            answer, sources = await handle_rag_query(
+                db, message.text or "", session_key=f"whatsapp:{message.sender}"
+            )
         logger.info(
             "rag_answer_generated", sender=message.sender, source_count=len(sources)
         )
@@ -59,15 +77,19 @@ async def _answer_student(db: AsyncSession, message: ParsedMessage) -> None:
 @router.post("", summary="Receive WhatsApp Cloud API events")
 async def receive_webhook(
     request: Request,
+    background_tasks: BackgroundTasks,
     x_hub_signature_256: str | None = Header(default=None),
-    db: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
-    """Trigger entry point: verify, parse, route, and reply to an event.
+    """Trigger entry point: verify, parse, route, and ack an event.
 
-    Student text messages run through the RAG pipeline and get an answer
-    sent back over WhatsApp. Admin commands are still detected/logged only
-    (they need ingest/analytics services that don't exist yet). Always acks
-    Meta with 200 unless the signature is invalid — Meta retries non-2xx.
+    Student text messages are handed off to a background task that runs the
+    RAG pipeline and sends the answer back over WhatsApp -- this handler
+    returns immediately rather than waiting for that to finish. Meta expects
+    an ack within a few seconds and otherwise retries delivery, which would
+    stack up duplicate RAG runs and turn a single reply into a multi-minute
+    wait. Admin commands are still detected/logged only (they need
+    ingest/analytics services that don't exist yet). Always acks Meta with
+    200 unless the signature is invalid — Meta retries non-2xx.
     """
     raw_body = await request.body()
 
@@ -104,13 +126,14 @@ async def receive_webhook(
     )
 
     if message.message_type == "text" and message.text:
-        await _answer_student(db, message)
+        background_tasks.add_task(_answer_student, message)
     else:
         logger.debug(
             "reply_skipped_unsupported_message_type",
             message_type=message.message_type,
         )
-        await send_text(
+        background_tasks.add_task(
+            send_text,
             message.sender,
             "I can only answer text questions right now. Please type your query.",
         )

@@ -16,9 +16,7 @@ def render_admin_dashboard() -> None:
         st.error(e.message)
         return
 
-    page_header(
-        "\U0001f3e0", "Admin Dashboard", "Overview across all registered colleges"
-    )
+    page_header("", "Admin Dashboard", "Overview across all registered colleges")
 
     total_courses = sum(c["course_count"] for c in colleges)
     total_brochures = sum(c["brochure_count"] for c in colleges)
@@ -26,17 +24,17 @@ def render_admin_dashboard() -> None:
 
     render_stat_row(
         [
-            ("Total Colleges", len(colleges), "\U0001f3eb", "Registered on platform"),
-            ("Active Colleges", active_colleges, "\U0001f464", "Currently active"),
-            ("Total Courses", total_courses, "\U0001f4d8", "Across all colleges"),
-            ("Total Brochures", total_brochures, "\U0001f4c4", "Uploaded in total"),
+            ("Total Colleges", len(colleges), "", "Registered on platform"),
+            ("Active Colleges", active_colleges, "", "Currently active"),
+            ("Total Courses", total_courses, "", "Across all colleges"),
+            ("Total Brochures", total_brochures, "", "Uploaded in total"),
         ]
     )
 
     st.markdown("<div style='height:0.3rem'></div>", unsafe_allow_html=True)
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
     st.markdown(
-        '<div class="coligo-card-header">\U0001f3eb Recent Colleges</div>',
+        '<div class="coligo-card-header">Recent Colleges</div>',
         unsafe_allow_html=True,
     )
 
@@ -61,7 +59,7 @@ def render_admin_dashboard() -> None:
         for c in recent:
             row = st.columns([2.5, 2, 1, 1, 1, 1])
             with row[0]:
-                college_icon = row_icon_html("\U0001f3eb", "purple")
+                college_icon = row_icon_html("", "purple")
                 st.markdown(
                     f'<div class="coligo-item-row">'
                     f"{college_icon}"

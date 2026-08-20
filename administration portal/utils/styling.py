@@ -367,6 +367,8 @@ def pill(text: str, accent: str = "blue") -> str:
 
 
 def icon_chip_html(icon: str, accent: str = "purple", size: str = "") -> str:
+    if not icon:
+        return ""
     bg, fg = ACCENTS.get(accent, ACCENTS["purple"])
     style_extra = f' style="width:{size};height:{size};"' if size else ""
     return (
@@ -376,6 +378,8 @@ def icon_chip_html(icon: str, accent: str = "purple", size: str = "") -> str:
 
 
 def row_icon_html(icon: str, accent: str = "purple") -> str:
+    if not icon:
+        return ""
     bg, fg = ACCENTS.get(accent, ACCENTS["purple"])
     return f'<div class="coligo-row-icon" style="background:{bg};color:{fg};">{icon}</div>'
 
@@ -386,17 +390,13 @@ def avatar_html(name: str) -> str:
 
 
 def page_header(icon: str, title: str, subtitle: str, accent: str = "purple") -> None:
-    bg, fg = ACCENTS.get(accent, ACCENTS["purple"])
+    icon_html = icon_chip_html(icon, accent) if icon else ""
     st.markdown(
-        f"""
-        <div class="coligo-page-header">
-            <div class="coligo-icon-chip" style="background:{bg};color:{fg};">{icon}</div>
-            <div>
-                <h1>{title}</h1>
-                <div class="coligo-page-subtitle">{subtitle}</div>
-            </div>
-        </div>
-        """,
+        '<div class="coligo-page-header">'
+        f"{icon_html}"
+        f"<div><h1>{title}</h1>"
+        f'<div class="coligo-page-subtitle">{subtitle}</div></div>'
+        "</div>",
         unsafe_allow_html=True,
     )
 
@@ -429,14 +429,13 @@ def render_stat_row(items: list[tuple[str, object, str, str]]) -> None:
 
 
 def empty_state(icon: str, title: str, subtitle: str) -> None:
+    circle_html = f'<div class="coligo-empty-circle">{icon}</div>' if icon else ""
     st.markdown(
-        f"""
-        <div class="coligo-empty-state">
-            <div class="coligo-empty-circle">{icon}</div>
-            <div class="coligo-empty-title">{title}</div>
-            <div class="coligo-empty-subtitle">{subtitle}</div>
-        </div>
-        """,
+        '<div class="coligo-empty-state">'
+        f"{circle_html}"
+        f'<div class="coligo-empty-title">{title}</div>'
+        f'<div class="coligo-empty-subtitle">{subtitle}</div>'
+        "</div>",
         unsafe_allow_html=True,
     )
 
@@ -449,16 +448,12 @@ def action_row(
     Returns True on the run where it was clicked."""
     with st.container(key=f"action-{key}"):
         st.markdown(
-            f"""
-            <div class="coligo-action-row">
-                {icon_chip_html(icon, accent)}
-                <div>
-                    <div class="coligo-action-title">{title}</div>
-                    <div class="coligo-action-subtitle">{subtitle}</div>
-                </div>
-                <div class="coligo-action-chevron">&rsaquo;</div>
-            </div>
-            """,
+            '<div class="coligo-action-row">'
+            f"{icon_chip_html(icon, accent)}"
+            f'<div><div class="coligo-action-title">{title}</div>'
+            f'<div class="coligo-action-subtitle">{subtitle}</div></div>'
+            '<div class="coligo-action-chevron">&rsaquo;</div>'
+            "</div>",
             unsafe_allow_html=True,
         )
         return st.button("", key=f"action_btn_{key}")

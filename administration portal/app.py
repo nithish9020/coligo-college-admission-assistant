@@ -17,7 +17,7 @@ restore_session_from_cookie()
 
 st.set_page_config(
     page_title="Coligo Admin Portal",
-    page_icon="\U0001f393",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded" if is_authenticated() else "collapsed",
 )

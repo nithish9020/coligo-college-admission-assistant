@@ -34,7 +34,7 @@ def _render_extraction_review(token: str, brochure_id: int, result: dict) -> Non
     facilities = result.get("facilities") or []
 
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
-    st.markdown("#### ✨ AI-suggested details from this brochure")
+    st.markdown("#### AI-suggested details from this brochure")
     st.caption(
         "Nothing is saved until you confirm below. Review each field, uncheck "
         "anything you don't want, then apply."
@@ -294,7 +294,7 @@ def render_brochures() -> None:
     token = st.session_state.token
 
     page_header(
-        "\U0001f4c4",
+        "",
         "Brochures",
         "Upload and manage your college brochures (PDF only)",
         "orange",
@@ -311,7 +311,7 @@ def render_brochures() -> None:
             category = st.selectbox("Category", CATEGORIES)
         pdf_file = st.file_uploader("PDF File *", type=["pdf"])
 
-        if st.form_submit_button("\U0001f4e4 Upload Brochure", type="primary"):
+        if st.form_submit_button("Upload Brochure", type="primary"):
             if not title or pdf_file is None:
                 st.error("Title and a PDF file are both required.")
             else:
@@ -383,7 +383,7 @@ def render_brochures() -> None:
                     st.rerun()
         else:
             with row[0]:
-                brochure_icon = row_icon_html("\U0001f4c4", "orange")
+                brochure_icon = row_icon_html("", "orange")
                 st.markdown(
                     f'<div class="coligo-item-row">'
                     f"{brochure_icon}"
@@ -399,7 +399,7 @@ def render_brochures() -> None:
                     try:
                         pdf_bytes = download_brochure(token, b["id"])
                         st.download_button(
-                            "\U0001f441️",
+                            "Download",
                             data=pdf_bytes,
                             file_name=f"{b['title']}.pdf",
                             mime="application/pdf",
@@ -408,15 +408,15 @@ def render_brochures() -> None:
                     except APIError:
                         st.caption("N/A")
                 if ai_col.button(
-                    "✨", key=f"ai_bro_{b['id']}", help="Extract details with AI"
+                    "AI Extract", key=f"ai_bro_{b['id']}", help="Extract details with AI"
                 ):
                     with st.spinner("Reading brochure with AI..."):
                         _run_extraction(token, b["id"])
                     st.rerun()
-                if e_col.button("✏️", key=f"edit_bro_{b['id']}"):
+                if e_col.button("Edit", key=f"edit_bro_{b['id']}"):
                     st.session_state[edit_key] = True
                     st.rerun()
-                if d_col.button("\U0001f5d1️", key=f"del_bro_{b['id']}"):
+                if d_col.button("Delete", key=f"del_bro_{b['id']}"):
                     try:
                         delete_brochure(token, b["id"])
                         st.session_state.pop(_extraction_key(b["id"]), None)

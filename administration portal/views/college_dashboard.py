@@ -22,31 +22,31 @@ def render_college_dashboard() -> None:
         return
 
     page_header(
-        "\U0001f3e0",
+        "",
         "Dashboard",
-        f"Welcome back, {profile['college_name']} \U0001f44b",
+        f"Welcome back, {profile['college_name']}",
     )
 
     published = sum(1 for c in courses if c["status"] == "published")
     render_stat_row(
         [
-            ("Total Courses", len(courses), "\U0001f4d8", "All courses added"),
+            ("Total Courses", len(courses), "", "All courses added"),
             (
                 "Published Courses",
                 published,
-                "\U0001f393",
+                "",
                 "Courses published",
             ),
             (
                 "Total Brochures",
                 len(brochures),
-                "\U0001f4c4",
+                "",
                 "Brochures uploaded",
             ),
             (
                 "Profile Status",
                 "Active" if profile["is_active"] else "Inactive",
-                "\U0001f464",
+                "",
                 "Your profile is active"
                 if profile["is_active"]
                 else "Complete your profile",
@@ -60,14 +60,14 @@ def render_college_dashboard() -> None:
     with left:
         st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
         st.markdown(
-            '<div class="coligo-card-header">ℹ️ About your college</div>',
+            '<div class="coligo-card-header">About your college</div>',
             unsafe_allow_html=True,
         )
         if profile.get("about"):
             st.write(profile["about"])
         else:
             empty_state(
-                "\U0001f3db️",
+                "",
                 "No description added yet.",
                 "Add a description to showcase your college.",
             )
@@ -76,17 +76,17 @@ def render_college_dashboard() -> None:
     with right:
         st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
         st.markdown(
-            '<div class="coligo-card-header">⚡ Quick Actions</div>',
+            '<div class="coligo-card-header">Quick Actions</div>',
             unsafe_allow_html=True,
         )
         if action_row(
-            "addcourse", "➕", "Add New Course", "Create a new course", "purple"
+            "addcourse", "", "Add New Course", "Create a new course", "purple"
         ):
             st.session_state.nav = "Courses"
             st.rerun()
         if action_row(
             "uploadbrochure",
-            "\U0001f4e4",
+            "",
             "Upload Brochure",
             "Upload college brochure",
             "blue",
@@ -95,7 +95,7 @@ def render_college_dashboard() -> None:
             st.rerun()
         if action_row(
             "editprofile",
-            "✏️",
+            "",
             "Edit College Profile",
             "Update your college information",
             "orange",
