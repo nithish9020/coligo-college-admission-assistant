@@ -1,6 +1,7 @@
 import asyncio
 
-import httpx
+import google.generativeai as genai
+from google.api_core import exceptions as google_exceptions
 
 from api.core.config import settings
 from api.core.exceptions import DocumentProcessingError
@@ -10,65 +11,49 @@ logger = get_logger(__name__)
 
 
 async def generate_response_from_llm(prompt: str) -> str:
-    """Generate response using NVIDIA NIM API (OpenAI compatible endpoint).
-
-    Model: openai/gpt-oss-120b (https://build.nvidia.com/openai/gpt-oss-120b)
-    """
-    if not settings.NVIDIA_API_KEY:
-        logger.error("nvidia_api_key_missing_for_llm")
+    """Generate response using Google Gemini API."""
+    if not settings.GEMINI_API_KEY:
+        logger.error("gemini_api_key_missing_for_llm")
         raise DocumentProcessingError(
-            "NVIDIA_API_KEY is not configured in the application environment."
+            "GEMINI_API_KEY is not configured in the application environment."
         )
 
-    url = "https://integrate.api.nvidia.com/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {settings.NVIDIA_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": settings.NVIDIA_LLM_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7,
-        "top_p": 1,
-        "max_tokens": 1024,
-        "stream": False,
-    }
+    genai.configure(api_key=settings.GEMINI_API_KEY)
 
-    logger.debug("sending_prompt_to_nvidia_llm", model=settings.NVIDIA_LLM_MODEL)
+    logger.debug("sending_prompt_to_gemini_llm", model=settings.GEMINI_MODEL)
     for attempt in range(3):
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    url, headers=headers, json=payload, timeout=90.0
+
+            def _generate():
+                model = genai.GenerativeModel(settings.GEMINI_MODEL)
+                return model.generate_content(
+                    prompt,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=0.7,
+                        top_p=1.0,
+                        max_output_tokens=1024,
+                    ),
                 )
 
-            if response.status_code != 200:
-                logger.error(
-                    "nvidia_llm_api_failed",
-                    status_code=response.status_code,
-                    body=response.text,
-                )
-                raise DocumentProcessingError(
-                    f"NVIDIA error status {response.status_code}: {response.text}"
-                )
+            response = await asyncio.to_thread(_generate)
 
-            response_data = response.json()
-            choices = response_data.get("choices", [])
-            if not choices:
-                raise DocumentProcessingError("NVIDIA NIM API returned no choices.")
+            if response.text:
+                return str(response.text).strip()
+            else:
+                raise DocumentProcessingError("Gemini API returned an empty response.")
 
-            message = choices[0].get("message", {})
-            content = message.get("content", "")
-            return str(content).strip()
+        except google_exceptions.ResourceExhausted:
+            logger.warning("gemini_llm_rate_limited_retrying", attempt=attempt + 1)
+            await asyncio.sleep(2.0 ** (attempt + 1))
 
-        except httpx.RequestError as e:
+        except Exception as e:
             logger.warning(
-                "nvidia_llm_request_error_retrying", attempt=attempt + 1, error=str(e)
+                "gemini_llm_request_error_retrying", attempt=attempt + 1, error=str(e)
             )
             if attempt == 2:
                 raise DocumentProcessingError(
-                    f"Network request to NVIDIA NIM API failed: {str(e)}"
+                    f"Network request to Gemini API failed: {str(e)}"
                 ) from e
             await asyncio.sleep(2.0)
 
-    raise DocumentProcessingError("Failed to generate response from NVIDIA NIM API")
+    raise DocumentProcessingError("Failed to generate response from Gemini API")
