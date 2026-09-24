@@ -107,7 +107,103 @@ async def _answer_student_task(message: ParsedMessage) -> None:
     if message.message_id:
         await mark_message_as_read(message.message_id)
 
+    voice_prefix = ""
     query = (message.text or "").strip()
+
+    # ── 0. Handle WhatsApp Audio / Voice Note Transcriptions ──
+    if message.message_type in ("audio", "voice") and message.media_id:
+        from api.services.audio_service import transcribe_audio_message
+
+        logger.info("transcribing_incoming_voice_note", media_id=message.media_id)
+        transcript = await transcribe_audio_message(message.media_id)
+        if transcript:
+            query = transcript
+            voice_prefix = f'🎙️ _"Voice note: {transcript}"_\n\n'
+            logger.info("voice_note_transcribed_successfully", transcript=transcript)
+        else:
+            await send_text(
+                message.sender,
+                "🎙️ Sorry, I had trouble listening to your audio message clearly. "
+                "Could you please type your admission query as text?",
+            )
+            return
+
+    if not query:
+        return
+
+    session_key = f"whatsapp:{message.sender}"
+
+    # ── 1. Student /resume command to release escalation pause ──
+    if query.lower() in ("/resume", "resume", "resume bot", "resume ai", "start ai"):
+        from datetime import datetime, timezone
+
+        from sqlalchemy import select
+
+        async with async_session_factory() as db:
+            stmt = select(Escalation).where(
+                Escalation.sender == session_key,
+                Escalation.status.in_(["pending", "in_progress"]),
+            )
+            active_escalations = (await db.execute(stmt)).scalars().all()
+            for esc in active_escalations:
+                esc.status = "resolved"
+                esc.resolved_at = datetime.now(timezone.utc)
+            await db.commit()
+
+        resume_msg = (
+            "🤖 *AI Assistant Resumed!*\n\n"
+            "You are now back in automated mode with Coligo TNEA Assistant. "
+            "Ask me anything about engineering college cutoffs, courses, or fee details!"
+        )
+        await send_text(message.sender, resume_msg)
+        return
+
+    # ── 2. Check if conversation is paused due to an active human counselor takeover ──
+    from sqlalchemy import select
+
+    from api.services.conversation_service import (
+        append_turn,
+        get_or_create_conversation,
+    )
+
+    async with async_session_factory() as db:
+        stmt = (
+            select(Escalation)
+            .where(
+                Escalation.sender == session_key,
+                Escalation.status.in_(["pending", "in_progress"]),
+            )
+            .order_by(Escalation.created_at.desc())
+            .limit(1)
+        )
+        active_esc = (await db.execute(stmt)).scalar_one_or_none()
+        if active_esc is not None:
+            logger.info(
+                "student_message_paused_active_escalation",
+                sender=message.sender,
+                escalation_id=active_esc.id,
+                status=active_esc.status,
+            )
+            try:
+                conv = await get_or_create_conversation(db, session_key)
+                await append_turn(db, conv, "user", query)
+                active_esc.query_text += f"\n[Student Follow-up]: {query}"
+                await db.commit()
+            except Exception as e:
+                logger.error("failed_to_log_paused_message", error=str(e))
+
+            status_str = (
+                "in active consultation with"
+                if active_esc.status == "in_progress"
+                else "assigned to"
+            )
+            pause_notice = (
+                f"⏳ *Your conversation is currently {status_str} an admission counselor.*\n\n"
+                "A human admission officer is reviewing your queries and will respond directly here on WhatsApp.\n\n"
+                "💡 _To switch back to automated AI mode at any time, simply reply with */resume*._"
+            )
+            await send_text(message.sender, pause_notice)
+            return
 
     # ── Colleges-list shortcut: answer directly from DB, not from RAG ──
     # Vector search ranks individual chunks by similarity, so a generic
@@ -260,7 +356,9 @@ async def _answer_student_task(message: ParsedMessage) -> None:
                 session_key=f"whatsapp:{message.sender}",
                 system_calculated_cutoff=calculated_cutoff,
             )
-            formatted_answer = format_whatsapp_response(query, answer, sources)
+            formatted_answer = (
+                f"{voice_prefix}{format_whatsapp_response(query, answer, sources)}"
+            )
             await send_text(message.sender, formatted_answer)
         except Exception as e:
             logger.error("rag_query_failed", sender=message.sender, error=str(e))
@@ -332,9 +430,8 @@ async def receive_webhook(
         message_type=message.message_type,
     )
 
-    if message.text:
-        # Covers both "text" messages and "interactive" button replies
-        # (extract_message already pulls text from both types).
+    if message.text or message.message_type in ("audio", "voice"):
+        # Covers text messages, interactive buttons, and voice notes
         background_tasks.add_task(_answer_student_task, message)
     else:
         logger.debug(
@@ -344,7 +441,7 @@ async def receive_webhook(
         background_tasks.add_task(
             send_text,
             message.sender,
-            "I can only answer text questions right now. Please type your query.",
+            "I can only answer text questions or voice notes right now. Please type or speak your query!",
         )
 
     return {"status": "received"}

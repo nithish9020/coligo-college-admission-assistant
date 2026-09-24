@@ -21,8 +21,17 @@ ABBREVIATION_EXPANSIONS = {
     r"\bcse\b": "computer science engineering (CSE)",
     r"\bece\b": "electronics and communication engineering (ECE)",
     r"\baids\b": "artificial intelligence and data science (AI & DS)",
+    r"\baiml\b": "artificial intelligence and machine learning (AI & ML)",
+    r"\bai & ml\b": "artificial intelligence and machine learning (AI & ML)",
+    r"\bai&ml\b": "artificial intelligence and machine learning (AI & ML)",
+    r"\bai & ds\b": "artificial intelligence and data science (AI & DS)",
+    r"\bai&ds\b": "artificial intelligence and data science (AI & DS)",
     r"\beee\b": "electrical and electronics engineering (EEE)",
     r"\bmech\b": "mechanical engineering (MECH)",
+    r"\bcsbs\b": "computer science and business systems (CSBS)",
+    r"\bbme\b": "biomedical engineering (BME)",
+    r"\bbiotech\b": "biotechnology (Biotech)",
+    r"\bmct\b": "mechatronics engineering (MCT)",
     # NOTE: "IT" is intentionally NOT in the case-insensitive map because
     # \bit\b matches the English word "it" in sentences like "Does it have
     # hostel?".  We handle IT expansion separately with a case-sensitive check.

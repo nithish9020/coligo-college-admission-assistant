@@ -39,7 +39,7 @@ class DocumentChunk(Base):
     chunk_index: Mapped[int] = mapped_column(nullable=False)
     text_content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[List[float]] = mapped_column(
-        Vector(3072),  # Gemini gemini-embedding-001 output dimension
+        Vector(768),  # Gemini gemini-embedding-001 output dimension (768)
         nullable=False,
     )
     sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)

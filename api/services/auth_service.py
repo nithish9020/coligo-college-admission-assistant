@@ -54,7 +54,15 @@ async def login(db: AsyncSession, request: LoginRequest) -> TokenResponse:
     normalized_email = request.email.lower()
 
     if normalized_email == settings.ADMIN_EMAIL.lower():
-        if request.password != settings.ADMIN_PASSWORD:
+        import hmac
+
+        is_valid = False
+        if settings.ADMIN_PASSWORD.startswith(("$2b$", "$2a$")):
+            is_valid = verify_password(request.password, settings.ADMIN_PASSWORD)
+        else:
+            is_valid = hmac.compare_digest(request.password, settings.ADMIN_PASSWORD)
+
+        if not is_valid:
             raise InvalidCredentialsError("Incorrect email or password")
         logger.info("admin_logged_in", email=normalized_email)
         token = create_access_token({"role": "admin", "email": normalized_email})

@@ -8,6 +8,7 @@ from utils.api_client import (
     download_brochure,
     extract_brochure,
     list_brochures,
+    scrape_college,
     update_brochure,
     upload_brochure,
 )
@@ -323,29 +324,21 @@ def render_brochures() -> None:
             if not target_url or not target_college_name:
                 st.error("Both Target Website URL and College Name are required.")
             else:
-                import requests
-                from utils.api_client import API_BASE_URL
-
                 with st.spinner(
                     f"Scraping {target_college_name} sub-pages and vectorizing into database..."
                 ):
                     try:
-                        res = requests.post(
-                            f"{API_BASE_URL}/documents/scrape",
-                            json={
-                                "urls": [target_url.strip()],
-                                "college_name": target_college_name.strip(),
-                            },
-                            timeout=120,
+                        data = scrape_college(
+                            token=token,
+                            college_name=target_college_name.strip(),
+                            urls=[target_url.strip()],
                         )
-                        if res.status_code == 200:
-                            data = res.json()
-                            st.success(
-                                f"🎉 Ingestion Success! Total Chunks: {data.get('total_chunks')} | "
-                                f"Inserted Chunks: {data.get('inserted_chunks')} | Document: {data.get('document_ref')}"
-                            )
-                        else:
-                            st.error(f"Scraping failed ({res.status_code}): {res.text}")
+                        st.success(
+                            f"🎉 Ingestion Success! Total Chunks: {data.get('total_chunks')} | "
+                            f"Inserted Chunks: {data.get('inserted_chunks')} | Document: {data.get('document_ref')}"
+                        )
+                    except APIError as ex:
+                        st.error(f"Scraping failed: {ex.message}")
                     except Exception as ex:
                         st.error(f"Failed to connect to backend scraper: {str(ex)}")
     st.markdown("</div>", unsafe_allow_html=True)

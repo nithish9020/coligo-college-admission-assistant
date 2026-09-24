@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install Dependencies
+        run: |
+          uv venv .venv
+          uv pip install --python .venv -e ".[dev]"
+          uv pip install --python .venv -r administration_portal/requirements.txt
+
+      - name: Run Ruff Lint
+        run: .venv/bin/ruff check .
+
+      - name: Run Ruff Format Check
+        run: .venv/bin/ruff format --check .
+
+      - name: Run Mypy Typecheck
+        run: .venv/bin/mypy api/

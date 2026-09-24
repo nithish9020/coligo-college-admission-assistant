@@ -16,20 +16,30 @@ class Settings(BaseSettings):
     # Database Settings
     DATABASE_URL: str = "postgresql+asyncpg://dte:dte_secret@localhost:5432/dte_chatbot"
 
+    # LLM Provider & Model Selection
+    # Supported: "gemini" | "groq" | "openai" | "deepseek" | "ollama" | "custom"
+    LLM_PROVIDER: str = "gemini"
+    LLM_MODEL: str | None = None
+    LLM_API_KEY: str | None = None
+    LLM_BASE_URL: str | None = None
+    GROQ_API_KEY: str | None = None
+    DEEPSEEK_API_KEY: str | None = None
+
     # Google Gemini API Settings
     GEMINI_API_KEY: str | None = None
     GEMINI_MODEL: str = "gemini-3.5-flash-lite"
     GEMINI_EMBEDDING_MODEL: str = "models/gemini-embedding-001"
+    EMBEDDING_DIMENSION: int = 768
 
-    # OpenAI API Settings — used to extract structured college/course/facility
-    # details from uploaded brochure PDFs (administration portal).
+    # OpenAI / Compatible API Settings — used for brochure extraction
+    # and alternative LLM backend (Groq, DeepSeek, Ollama)
     OPENAI_API_KEY: str | None = None
     OPENAI_MODEL: str = "gpt-4o-mini"
 
     # RAG Settings
     CHUNK_SIZE: int = 512
     CHUNK_OVERLAP: int = 50
-    RAG_TOP_K: int = 80
+    RAG_TOP_K: int = 15
 
     # Conversation memory. TTL matches WhatsApp's own 24h service-conversation
     # window: a student returning the next day starts a fresh thread.
@@ -40,6 +50,7 @@ class Settings(BaseSettings):
     # extra LLM call per message that has history; disable to save Gemini quota
     # at the cost of follow-up questions retrieving the wrong chunks.
     ENABLE_QUERY_REWRITING: bool = True
+    USE_LANGGRAPH: bool = True
 
     # WhatsApp Cloud API (Meta) — see README "WhatsApp Integration"
     WHATSAPP_PHONE_NUMBER_ID: str = ""

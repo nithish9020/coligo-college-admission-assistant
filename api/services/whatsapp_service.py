@@ -57,6 +57,9 @@ def extract_message(payload: WhatsAppWebhookPayload) -> ParsedMessage | None:
             )
 
             extracted_text = None
+            media_id = None
+            mime_type = None
+
             if message.type == "text" and message.text:
                 extracted_text = message.text.body
             elif message.type == "interactive" and hasattr(message, "interactive"):
@@ -64,11 +67,20 @@ def extract_message(payload: WhatsAppWebhookPayload) -> ParsedMessage | None:
                 interactive = getattr(message, "interactive", {})
                 button_reply = interactive.get("button_reply", {})
                 extracted_text = button_reply.get("title") or button_reply.get("id")
+            elif message.type in ("audio", "voice"):
+                audio_obj = getattr(message, "audio", None) or getattr(
+                    message, "voice", None
+                )
+                if audio_obj:
+                    media_id = audio_obj.id
+                    mime_type = audio_obj.mime_type
 
             return ParsedMessage(
                 sender=message.from_number,
                 message_type=message.type,
                 text=extracted_text,
+                media_id=media_id,
+                mime_type=mime_type,
                 message_id=message.id,
             )
     logger.debug("no_message_in_payload")

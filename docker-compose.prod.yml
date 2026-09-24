@@ -1,0 +1,54 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coligo_api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ENVIRONMENT: production
+      DEBUG: "false"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./data:/app/data
+    ports:
+      - "127.0.0.1:8000:8000"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --no-access-log
+
+  portal:
+    build:
+      context: .
+      dockerfile: Dockerfile.portal
+    container_name: coligo_portal
+    restart: unless-stopped
+    environment:
+      COLIGO_API_BASE_URL: http://api:8000
+    ports:
+      - "127.0.0.1:8501:8501"
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: coligo_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - portal
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -76,12 +76,24 @@ def restore_session_from_cookie() -> None:
         role = payload["role"]
     except (ValueError, KeyError, TypeError):
         return
+
+    try:
+        from utils.api_client import get_me
+
+        me = get_me(token)
+        st.session_state.role = me.get("role", role)
+        st.session_state.email = me.get("email", payload.get("email"))
+        st.session_state.college_id = me.get("college_id", payload.get("college_id"))
+    except Exception:
+        # Token invalid, expired, or backend unreachable - clear cookie
+        _clear_remember_cookie()
+        return
+
     st.session_state.token = token
-    st.session_state.role = role
-    st.session_state.college_id = payload.get("college_id")
     st.session_state.college_name = payload.get("college_name")
-    st.session_state.email = payload.get("email")
-    st.session_state.page = "admin_app" if role == "admin" else "college_app"
+    st.session_state.page = (
+        "admin_app" if st.session_state.role == "admin" else "college_app"
+    )
 
 
 def log_in(token_response: dict, email: str | None = None) -> None:

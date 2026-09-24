@@ -91,6 +91,25 @@ async def upload_brochure(
     await db.commit()
     await db.refresh(brochure)
     logger.info("brochure_uploaded", college_id=college_id, brochure_id=brochure.id)
+
+    # Automatically ingest brochure into RAG Document/Chunk vector database
+    try:
+        from api.services.document_service import process_document
+
+        await process_document(db, full_path)
+        logger.info(
+            "brochure_ingested_for_rag",
+            college_id=college_id,
+            brochure_id=brochure.id,
+            file_path=full_path,
+        )
+    except Exception as e:
+        logger.warning(
+            "brochure_rag_ingestion_skipped",
+            brochure_id=brochure.id,
+            error=str(e),
+        )
+
     return brochure
 
 
@@ -111,6 +130,20 @@ async def delete_brochure(db: AsyncSession, college_id: int, brochure_id: int) -
     file_path = brochure.file_path
     await db.delete(brochure)
     await db.commit()
+
+    # Clean up corresponding Document and DocumentChunks from RAG vector store
+    try:
+        from api.models import Document
+        from api.services.document_service import delete_document
+
+        doc_query = select(Document.id).where(Document.document_ref == file_path)
+        doc_id = (await db.execute(doc_query)).scalar()
+        if doc_id:
+            await delete_document(db, doc_id)
+            logger.info("brochure_rag_document_cleaned_up", document_id=doc_id)
+    except Exception as e:
+        logger.warning("brochure_rag_cleanup_failed", error=str(e))
+
     try:
         if os.path.exists(file_path):
             os.remove(file_path)

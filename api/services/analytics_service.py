@@ -53,3 +53,72 @@ async def get_analytics_summary(db: AsyncSession) -> dict:
             "total": pending_escalations + resolved_escalations,
         },
     }
+
+
+async def list_recent_conversations(db: AsyncSession, limit: int = 50) -> list[dict]:
+    """Retrieve recent student chat threads with turn count and latest message preview."""
+    from sqlalchemy.orm import selectinload
+
+    stmt = (
+        select(Conversation)
+        .options(selectinload(Conversation.messages))
+        .order_by(Conversation.last_message_at.desc())
+        .limit(limit)
+    )
+    result = await db.execute(stmt)
+    conversations = result.scalars().all()
+
+    items = []
+    for conv in conversations:
+        msgs = conv.messages or []
+        last_msg = msgs[-1].content if msgs else ""
+        items.append(
+            {
+                "id": conv.id,
+                "session_key": conv.session_key,
+                "created_at": conv.created_at.isoformat() if conv.created_at else None,
+                "last_message_at": (
+                    conv.last_message_at.isoformat() if conv.last_message_at else None
+                ),
+                "message_count": len(msgs),
+                "last_message": (
+                    last_msg[:120] + "..." if len(last_msg) > 120 else last_msg
+                ),
+            }
+        )
+    return items
+
+
+async def get_conversation_detail(
+    db: AsyncSession, conversation_id: int
+) -> dict | None:
+    """Retrieve full message history for a given student conversation session."""
+    from sqlalchemy.orm import selectinload
+
+    stmt = (
+        select(Conversation)
+        .options(selectinload(Conversation.messages))
+        .where(Conversation.id == conversation_id)
+    )
+    result = await db.execute(stmt)
+    conv = result.scalar_one_or_none()
+    if not conv:
+        return None
+
+    return {
+        "id": conv.id,
+        "session_key": conv.session_key,
+        "created_at": conv.created_at.isoformat() if conv.created_at else None,
+        "last_message_at": (
+            conv.last_message_at.isoformat() if conv.last_message_at else None
+        ),
+        "messages": [
+            {
+                "id": m.id,
+                "role": m.role,
+                "content": m.content,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in (conv.messages or [])
+        ],
+    }

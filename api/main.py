@@ -28,6 +28,7 @@ from api.routers import (
     chat_router,
     college_router,
     course_router,
+    cutoff_router,
     document_router,
     escalation_router,
     facility_router,
@@ -67,6 +68,17 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
                 )
             )
         logger.info("database_tables_initialized_successfully")
+
+        # Automatically seed structured TNEA cutoffs from knowledge base if table empty
+        try:
+            from api.core.database import async_session_factory
+            from api.services.cutoff_service import seed_cutoffs_from_file
+
+            async with async_session_factory() as db:
+                seeded = await seed_cutoffs_from_file(db)
+                logger.info("startup_cutoff_seed_checked", total_records=seeded)
+        except Exception as e:
+            logger.warning("cutoff_auto_seed_failed", error=str(e))
     except Exception as e:
         logger.error("database_table_initialization_failed", error=str(e))
 
@@ -120,6 +132,7 @@ app.include_router(facility_router)
 app.include_router(brochure_router)
 app.include_router(escalation_router)
 app.include_router(analytics_router)
+app.include_router(cutoff_router)
 
 
 # Register global exception handlers for document processing errors

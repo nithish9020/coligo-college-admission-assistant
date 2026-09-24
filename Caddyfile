@@ -1,0 +1,17 @@
+# Caddyfile - Production Reverse Proxy with Automatic SSL
+# Replace 'your-domain.com' with your actual domain or Azure VM Public IP / DNS name.
+
+{
+    # Optional email for Let's Encrypt certificate renewal notices
+    # email your-email@example.com
+}
+
+# API Subdomain (FastAPI Backend)
+api.{$DOMAIN:localhost} {
+    reverse_proxy api:8000
+}
+
+# Admin Portal Subdomain (Streamlit)
+admin.{$DOMAIN:localhost} {
+    reverse_proxy portal:8501
+}

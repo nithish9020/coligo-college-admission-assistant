@@ -3,16 +3,22 @@ from utils.auth import log_out
 from utils.styling import PRIMARY_BRIGHT, avatar_html
 
 COLLEGE_NAV = [
-    ("Dashboard", "\U0001f3e0"),
-    ("College Profile", "\U0001f3eb"),
-    ("Courses", "\U0001f4d8"),
-    ("Infrastructure", "\U0001f3d7"),
-    ("Brochures", "\U0001f4c4"),
+    ("Dashboard", "🏠"),
+    ("College Profile", "🏫"),
+    ("Courses", "📘"),
+    ("Infrastructure", "🏗️"),
+    ("Brochures", "📄"),
+    ("Choice Filling", "🎯"),
+    ("Counselor Chat", "💬"),
 ]
 
 ADMIN_NAV = [
-    ("Dashboard", "\U0001f3e0"),
-    ("Colleges", "\U0001f3eb"),
+    ("Dashboard", "🏠"),
+    ("Colleges", "🏫"),
+    ("Knowledge Base", "📚"),
+    ("Escalations", "⚠️"),
+    ("Choice Filling", "🎯"),
+    ("Counselor Chat", "💬"),
 ]
 
 

@@ -26,6 +26,12 @@ MAX_CACHE_ENTRIES = 500
 _RAG_RESPONSE_CACHE: Dict[str, Tuple[str, List[str], float]] = {}
 
 
+def clear_rag_response_cache() -> None:
+    """Clear all entries in the in-memory RAG response cache."""
+    _RAG_RESPONSE_CACHE.clear()
+    logger.info("rag_response_cache_cleared")
+
+
 def get_cached_rag_response(query_text: str) -> Tuple[str, List[str]] | None:
     """Return cached RAG answer and sources for common queries if unexpired."""
     cache_key = query_text.strip().lower()
@@ -142,16 +148,27 @@ COLLEGE_ALIASES: list[tuple[list[str], str]] = [
     (["sri eshwar"], "sri eshwar"),
     (["karpagam"], "karpagam"),
     (["sri ramakrishna", "srec"], "sri ramakrishna"),
+    (["gct", "government college of technology"], "government college of technology"),
+    (["kgisl"], "kgisl"),
+    (["hindusthan", "hicet"], "hindusthan"),
 ]
+
+
+def detect_college_keywords(text: str) -> list[str]:
+    """Detect all specific colleges named in the user query using an alias map."""
+    cleaned = text.lower()
+    matched: list[str] = []
+    for aliases, search_term in COLLEGE_ALIASES:
+        if any(re.search(rf"\b{re.escape(a)}\b", cleaned) for a in aliases):
+            if search_term not in matched:
+                matched.append(search_term)
+    return matched
 
 
 def detect_college_keyword(text: str) -> str | None:
     """Detect if a specific college is named in the user query using an alias map."""
-    cleaned = text.lower()
-    for aliases, search_term in COLLEGE_ALIASES:
-        if any(re.search(rf"\b{re.escape(a)}\b", cleaned) for a in aliases):
-            return search_term
-    return None
+    kws = detect_college_keywords(text)
+    return kws[0] if kws else None
 
 
 def reorder_chunks_lost_in_middle(
@@ -278,7 +295,38 @@ async def handle_rag_query(
                     pass
             return cached
 
-    # 2. Condense follow-ups & normalize query
+    # 1c. LangGraph Multi-Turn Agentic RAG Execution
+    if settings.USE_LANGGRAPH:
+        from api.services.agent.graph import counselor_graph
+
+        agent_state = {
+            "session_key": session_key or "web:anonymous",
+            "raw_message": query_text,
+            "history_text": history_str,
+        }
+        res = await counselor_graph.ainvoke(
+            agent_state, config={"configurable": {"db": db}}
+        )
+        answer = res.get("response_text", "")
+        agent_sources = res.get("sources", [])
+
+        if not history_str:
+            set_cached_rag_response(query_text, answer, agent_sources)
+
+        if conversation is not None:
+            try:
+                await append_turn(db, conversation, "user", query_text)
+                await append_turn(db, conversation, "assistant", answer)
+                await db.commit()
+            except Exception as e:
+                logger.error(
+                    "conversation_history_save_failed",
+                    session_key=session_key,
+                    error=str(e),
+                )
+
+        logger.info("rag_query_handled_via_langgraph", source_count=len(agent_sources))
+        return answer, agent_sources
     retrieval_query = query_text
     if history_str and settings.ENABLE_QUERY_REWRITING:
         retrieval_query = await condense_question(history_str, query_text)
@@ -292,25 +340,49 @@ async def handle_rag_query(
 
     # 4. Query database for closest chunks using cosine distance
     logger.debug("querying_pgvector_for_closest_chunks", top_k=settings.RAG_TOP_K)
-    college_kw = detect_college_keyword(retrieval_query) or detect_college_keyword(
-        query_text
-    )
-    stmt = select(DocumentChunk, Document.document_ref).join(
-        Document, DocumentChunk.document_id == Document.id
-    )
-    if college_kw:
-        logger.info("filtering_pgvector_by_college", college_keyword=college_kw)
-        stmt = stmt.where(
-            Document.document_ref.ilike(f"%{college_kw}%")
-            | DocumentChunk.text_content.ilike(f"%{college_kw}%")
+    college_kws = detect_college_keywords(retrieval_query)
+    for kw in detect_college_keywords(query_text):
+        if kw not in college_kws:
+            college_kws.append(kw)
+
+    rows: List[Tuple[DocumentChunk, str]] = []
+    if len(college_kws) > 1:
+        logger.info("balanced_pgvector_by_colleges", college_keywords=college_kws)
+        per_college_k = max(4, settings.RAG_TOP_K // len(college_kws))
+        seen_ids: set[int] = set()
+        for kw in college_kws:
+            col_filter = Document.document_ref.ilike(
+                f"%{kw}%"
+            ) | DocumentChunk.text_content.ilike(f"%{kw}%")
+            col_stmt = (
+                select(DocumentChunk, Document.document_ref)
+                .join(Document, DocumentChunk.document_id == Document.id)
+                .where(col_filter)
+                .order_by(DocumentChunk.embedding.cosine_distance(query_vector))
+                .limit(per_college_k)
+            )
+            col_res = await db.execute(col_stmt)
+            for ch, d_ref in col_res.all():
+                if ch.id not in seen_ids:
+                    seen_ids.add(ch.id)
+                    rows.append((ch, d_ref))
+    else:
+        stmt = select(DocumentChunk, Document.document_ref).join(
+            Document, DocumentChunk.document_id == Document.id
         )
+        if college_kws:
+            kw = college_kws[0]
+            stmt = stmt.where(
+                Document.document_ref.ilike(f"%{kw}%")
+                | DocumentChunk.text_content.ilike(f"%{kw}%")
+            )
 
-    stmt = stmt.order_by(DocumentChunk.embedding.cosine_distance(query_vector)).limit(
-        settings.RAG_TOP_K
-    )
+        stmt = stmt.order_by(
+            DocumentChunk.embedding.cosine_distance(query_vector)
+        ).limit(settings.RAG_TOP_K)
 
-    result = await db.execute(stmt)
-    rows: List[Tuple[DocumentChunk, str]] = [(row[0], row[1]) for row in result.all()]
+        result = await db.execute(stmt)
+        rows = [(row[0], row[1]) for row in result.all()]
 
     # 5. Apply Lost-in-the-Middle Chunk Re-ordering
     reordered_rows = reorder_chunks_lost_in_middle(rows)
@@ -336,7 +408,11 @@ async def handle_rag_query(
             except Exception as e:
                 logger.error("escalation_logging_failed", error=str(e))
 
-        college_display = (college_kw or "that college").title()
+        college_display = (
+            " & ".join(kw.title() for kw in college_kws)
+            if college_kws
+            else "that college"
+        )
         return (
             f"Sorry, I don't have the official documents or details for {college_display} "
             "in the database yet. Please provide the link in the Admin portal web scraper, "

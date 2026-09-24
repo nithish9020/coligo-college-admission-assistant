@@ -14,6 +14,11 @@ class TextBody(BaseModel):
     body: str
 
 
+class MediaAttachment(BaseModel):
+    id: str
+    mime_type: str | None = None
+
+
 class IncomingMessage(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -22,6 +27,8 @@ class IncomingMessage(BaseModel):
     timestamp: str
     type: str
     text: TextBody | None = None
+    audio: MediaAttachment | None = None
+    voice: MediaAttachment | None = None
 
 
 class Metadata(BaseModel):
@@ -60,4 +67,6 @@ class ParsedMessage(BaseModel):
     sender: str
     message_type: str
     text: str | None = None
+    media_id: str | None = None
+    mime_type: str | None = None
     message_id: str

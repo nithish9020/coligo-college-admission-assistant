@@ -193,6 +193,11 @@ async def process_document(
     # Commit all changes to the database
     await db.commit()
 
+    # Invalidate in-memory RAG query cache so new documents are immediately retrievable
+    from api.services.rag_service import clear_rag_response_cache
+
+    clear_rag_response_cache()
+
     reused_embeddings_count = total_chunks - len(missing_chunks)
     logger.info(
         "document_processing_db_success",
@@ -212,24 +217,29 @@ async def process_document(
 
 async def list_documents(db: AsyncSession) -> list[dict]:
     """List all ingested documents with chunk counts for the Admin Portal."""
-    stmt = select(Document).order_by(Document.created_at.desc())
-    documents = (await db.execute(stmt)).scalars().all()
+    stmt = (
+        select(
+            Document.id,
+            Document.document_ref,
+            Document.created_at,
+            func.count(DocumentChunk.id).label("chunk_count"),
+        )
+        .outerjoin(DocumentChunk, DocumentChunk.document_id == Document.id)
+        .group_by(Document.id, Document.document_ref, Document.created_at)
+        .order_by(Document.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
 
-    result = []
-    for doc in documents:
-        chunk_count_stmt = select(func.count(DocumentChunk.id)).where(
-            DocumentChunk.document_id == doc.id
-        )
-        chunk_count = (await db.execute(chunk_count_stmt)).scalar() or 0
-        result.append(
-            {
-                "id": doc.id,
-                "document_ref": doc.document_ref,
-                "chunk_count": chunk_count,
-                "created_at": doc.created_at.isoformat(),
-            }
-        )
-    return result
+    return [
+        {
+            "id": row.id,
+            "document_ref": row.document_ref,
+            "chunk_count": row.chunk_count,
+            "created_at": row.created_at.isoformat(),
+        }
+        for row in rows
+    ]
 
 
 async def delete_document(db: AsyncSession, document_id: int) -> bool:
@@ -240,5 +250,10 @@ async def delete_document(db: AsyncSession, document_id: int) -> bool:
 
     await db.delete(doc)
     await db.commit()
+
+    from api.services.rag_service import clear_rag_response_cache
+
+    clear_rag_response_cache()
+
     logger.info("document_deleted", document_id=document_id)
     return True

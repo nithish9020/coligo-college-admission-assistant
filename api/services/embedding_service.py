@@ -52,6 +52,7 @@ async def get_embeddings(texts: List[str]) -> List[List[float]]:
                     result = current_client.models.embed_content(
                         model=settings.GEMINI_EMBEDDING_MODEL,
                         contents=current_batch,  # type: ignore[arg-type]
+                        config={"output_dimensionality": settings.EMBEDDING_DIMENSION},
                     )
                     embeddings = result.embeddings or []
                     if not embeddings:
@@ -78,12 +79,12 @@ async def get_embeddings(texts: List[str]) -> List[List[float]]:
 
             except genai_errors.ClientError as e:
                 if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                    if attempt == 4:
+                    if attempt >= 5:
                         logger.error("gemini_embedding_api_rate_limit_exhausted")
                         raise DocumentProcessingError(
-                            "Gemini API rate limit exhausted after 5 attempts."
+                            "Gemini API rate limit exhausted after retries."
                         ) from e
-                    wait_sec = 2**attempt + 2
+                    wait_sec = (attempt + 1) * 12
                     logger.warning(
                         "gemini_embedding_rate_limited_retrying",
                         attempt=attempt + 1,
