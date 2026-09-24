@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
@@ -40,7 +40,7 @@ logger = get_logger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(
         "app_started", environment=settings.ENVIRONMENT, docs_url=settings.DOCS_URL
     )
@@ -54,8 +54,18 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         async with engine.begin() as conn:
             # Create vector extension if not present
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+            # Enable pg_trgm for fast ILIKE filters on text_content
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
             # Create all mapped tables safely (if not already existing)
             await conn.run_sync(Base.metadata.create_all)
+            # GIN trigram index accelerates the ILIKE college-name filter
+            # in rag_service.  Idempotent (IF NOT EXISTS).
+            await conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_document_chunks_text_trgm "
+                    "ON document_chunks USING gin (text_content gin_trgm_ops);"
+                )
+            )
         logger.info("database_tables_initialized_successfully")
     except Exception as e:
         logger.error("database_table_initialization_failed", error=str(e))

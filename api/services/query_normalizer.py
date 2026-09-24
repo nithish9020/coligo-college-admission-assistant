@@ -23,7 +23,9 @@ ABBREVIATION_EXPANSIONS = {
     r"\baids\b": "artificial intelligence and data science (AI & DS)",
     r"\beee\b": "electrical and electronics engineering (EEE)",
     r"\bmech\b": "mechanical engineering (MECH)",
-    r"\bit\b": "information technology (IT)",
+    # NOTE: "IT" is intentionally NOT in the case-insensitive map because
+    # \bit\b matches the English word "it" in sentences like "Does it have
+    # hostel?".  We handle IT expansion separately with a case-sensitive check.
 }
 
 
@@ -38,8 +40,13 @@ def normalize_query(query: str) -> str:
     for pattern, replacement in TYPO_MAPPINGS.items():
         normalized = re.sub(pattern, replacement, normalized)
 
-    # 2. Expand Abbreviated Branch Names
+    # 2. Expand Abbreviated Branch Names (case-insensitive for most)
     for pattern, replacement in ABBREVIATION_EXPANSIONS.items():
         normalized = re.sub(pattern, replacement, normalized)
+
+    # 3. Case-sensitive expansion for "IT" (avoids matching "it" in English)
+    #    We check the *original* query to detect uppercase IT, then apply to normalized.
+    if re.search(r"\bIT\b", query):
+        normalized = re.sub(r"\bit\b", "information technology (IT)", normalized)
 
     return normalized

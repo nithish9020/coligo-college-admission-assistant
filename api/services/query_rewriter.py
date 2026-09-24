@@ -12,6 +12,8 @@ Rules:
 the conversation.
 - Keep the user's original intent and any details they gave (community, marks, \
 rank, branch, college, year).
+- If the user asks a general question like "which college" or "top colleges", DO \
+NOT restrict it to a specific college from the history. Keep it general.
 - If the follow-up is already a standalone question, return it unchanged.
 - Output ONLY the rewritten question. No preamble, no quotes, no explanation.
 

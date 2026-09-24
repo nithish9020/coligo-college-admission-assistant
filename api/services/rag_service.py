@@ -55,14 +55,16 @@ IDENTITY GUARDRAILS (NON-NEGOTIABLE)
 - You are a neutral, multi-college TNEA guide. You have NO home college.
 - NEVER assume or default to any specific college when the student does not name one.
 - If the student gives only marks or only a department (e.g., "CSE cutoff" or "my cutoff is 175"), you MUST list results for ALL colleges present in the context, not just one.
+- ALWAYS explicitly state the College Name next to any branch or cutoff you list, so the student knows which college it belongs to.
 - NEVER invent, assume, or hallucinate college names, cutoffs, ranks, or fees. Ground every number in the Context below.
 - If you do not have data for a specific college or query, say exactly: "I don't have that information right now." Do not fill the gap with data from another college.
+- NEVER list or name specific colleges in the abstract. Only mention a college when its data is present in the Context below.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 HOW TO HANDLE DIFFERENT QUERY TYPES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. MARK / CUTOFF QUERY (student gives marks OR asks for cutoff without naming a college):
-   - Calculate TNEA cutoff if raw marks given: Maths + (Physics / 2) + (Chemistry / 2). Max 200.
+   - Use the pre-calculated cutoff if one is provided. DO NOT calculate the cutoff yourself.
    - Show the cutoff eligibility result for EVERY college and branch present in the Context, formatted as a comparison list.
    - Do NOT show only one college.
 
@@ -78,10 +80,6 @@ HOW TO HANDLE DIFFERENT QUERY TYPES
 
 4. COMPARISON QUERY (student says "compare SKCET and PSG", "which is better"):
    - Present a structured side-by-side comparison using bullet points with | separators.
-
-5. CUTOFF CALCULATION (student gives raw Maths/Physics/Chemistry marks):
-   - Always calculate the TNEA cutoff first and display it clearly.
-   - Then show which branches and colleges from the Context they may be eligible for.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STRICT KNOWLEDGE & GROUNDING RULES
@@ -129,19 +127,30 @@ Conversation so far:
 """
 
 
+# ── College alias map for keyword detection ──
+# Each entry: (list of aliases to match in the query, search term for DB filtering)
+COLLEGE_ALIASES: list[tuple[list[str], str]] = [
+    (["psg"], "psg"),
+    (["cit", "coimbatore institute"], "coimbatore institute"),
+    (["anna university", "anna univ"], "anna"),
+    (["skcet", "sri krishna"], "sri krishna"),
+    (["srm"], "srm"),
+    (["bannari", "bit sathy", "bit erode"], "bannari"),
+    (["kongu", "kec"], "kongu"),
+    (["mahalingam"], "mahalingam"),
+    (["kumaraguru", "kct"], "kumaraguru"),
+    (["sri eshwar"], "sri eshwar"),
+    (["karpagam"], "karpagam"),
+    (["sri ramakrishna", "srec"], "sri ramakrishna"),
+]
+
+
 def detect_college_keyword(text: str) -> str | None:
-    """Detect if a specific college is named in the user query."""
+    """Detect if a specific college is named in the user query using an alias map."""
     cleaned = text.lower()
-    if "psg" in cleaned:
-        return "psg"
-    if "cit" in cleaned:
-        return "cit"
-    if "anna" in cleaned:
-        return "anna"
-    if "skcet" in cleaned:
-        return "skcet"
-    if "srm" in cleaned:
-        return "srm"
+    for aliases, search_term in COLLEGE_ALIASES:
+        if any(re.search(rf"\b{re.escape(a)}\b", cleaned) for a in aliases):
+            return search_term
     return None
 
 
@@ -167,7 +176,11 @@ def reorder_chunks_lost_in_middle(
     return reordered
 
 
-def validate_numeric_facts(generated_answer: str, context_str: str) -> bool:
+def validate_numeric_facts(
+    generated_answer: str,
+    context_str: str,
+    system_calculated_cutoff: float | None = None,
+) -> bool:
     """Validate that numeric facts (cutoffs, ranks, fees) in the generated reply are grounded in context.
 
     Returns True if valid, False if ungrounded numeric hallucination is detected.
@@ -193,6 +206,12 @@ def validate_numeric_facts(generated_answer: str, context_str: str) -> bool:
         "2026",
     }
 
+    if system_calculated_cutoff is not None:
+        allowed_constants.add(str(system_calculated_cutoff))
+        # Also add integer version if it's a whole number (e.g. 180.0 -> "180")
+        if system_calculated_cutoff.is_integer():
+            allowed_constants.add(str(int(system_calculated_cutoff)))
+
     ungrounded = []
     for num in answer_numbers:
         if num not in allowed_constants and num not in context_numbers:
@@ -210,7 +229,10 @@ def validate_numeric_facts(generated_answer: str, context_str: str) -> bool:
 
 
 async def handle_rag_query(
-    db: AsyncSession, query_text: str, session_key: str | None = None
+    db: AsyncSession,
+    query_text: str,
+    session_key: str | None = None,
+    system_calculated_cutoff: float | None = None,
 ) -> Tuple[str, List[str]]:
     """Execute the full RAG pipeline with chunk reordering & hallucination guardrails."""
     logger.info(
@@ -225,6 +247,13 @@ async def handle_rag_query(
             conversation = await get_or_create_conversation(db, session_key)
             turns = await get_recent_turns(db, conversation.id)
             history_str = format_history(turns)
+            # Remove python-appended disclaimers from history so the LLM doesn't learn to repeat them
+            if history_str:
+                history_str = re.sub(
+                    r"\n\n⚠️ _Some numbers may not match official records[^_]*_",
+                    "",
+                    history_str,
+                )
         except Exception as e:
             logger.error(
                 "conversation_history_load_failed",
@@ -238,6 +267,15 @@ async def handle_rag_query(
     if not history_str:
         cached = get_cached_rag_response(query_text)
         if cached is not None:
+            # Still persist conversation turns so follow-ups have context
+            if conversation is not None:
+                try:
+                    answer_cached, _ = cached
+                    await append_turn(db, conversation, "user", query_text)
+                    await append_turn(db, conversation, "assistant", answer_cached)
+                    await db.commit()
+                except Exception:
+                    pass
             return cached
 
     # 2. Condense follow-ups & normalize query
@@ -262,7 +300,10 @@ async def handle_rag_query(
     )
     if college_kw:
         logger.info("filtering_pgvector_by_college", college_keyword=college_kw)
-        stmt = stmt.where(Document.document_ref.ilike(f"%{college_kw}%"))
+        stmt = stmt.where(
+            Document.document_ref.ilike(f"%{college_kw}%")
+            | DocumentChunk.text_content.ilike(f"%{college_kw}%")
+        )
 
     stmt = stmt.order_by(DocumentChunk.embedding.cosine_distance(query_vector)).limit(
         settings.RAG_TOP_K
@@ -313,24 +354,36 @@ async def handle_rag_query(
     # 4. Construct prompt and request answer from LLM. The user's original
     # wording goes in as the question -- the condensed form was only ever a
     # retrieval device, and feeding it back would flatten how they actually asked.
+    llm_question = query_text
+    if system_calculated_cutoff is not None:
+        llm_question = (
+            f"[System Calculated Cutoff: {system_calculated_cutoff} / 200] {query_text}"
+        )
+
     prompt = SYSTEM_PROMPT_TEMPLATE.format(
         history=(
             HISTORY_BLOCK_TEMPLATE.format(history=history_str) if history_str else ""
         ),
         context=context_str,
-        question=query_text,
+        question=llm_question,
     )
 
     logger.debug("requesting_llm_generation")
     answer = await generate_response_from_llm(prompt)
 
     # 7. Execute Numeric Fact Verification Guardrail
-    is_factually_grounded = validate_numeric_facts(answer, context_str)
+    is_factually_grounded = validate_numeric_facts(
+        answer, context_str, system_calculated_cutoff
+    )
     if not is_factually_grounded:
         logger.warning(
             "numeric_validation_failed_flagged_for_review",
             query=query_text,
             session_key=session_key,
+        )
+        answer += (
+            "\n\n⚠️ _Some numbers may not match official records. "
+            "Please verify with the college website or TNEA portal._"
         )
 
     if not history_str:

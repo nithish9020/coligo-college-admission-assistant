@@ -1,4 +1,5 @@
 from collections import Counter
+from typing import Any
 
 import streamlit as st
 from utils.api_client import (
@@ -17,12 +18,13 @@ from utils.styling import (
     row_icon_html,
 )
 
-PROGRAM_LEVELS = ["UG", "PG", "Diploma", "PhD"]
+PROGRAM_LEVELS: list[str] = ["UG", "PG", "Diploma", "PhD"]
 
 
 def _course_form(existing: dict | None) -> None:
     token = st.session_state.token
     is_edit = existing is not None
+    existing_dict: dict[str, Any] = existing or {}
     st.subheader("Edit Course" if is_edit else "Add New Course")
 
     with st.form("course_form"):
@@ -31,31 +33,34 @@ def _course_form(existing: dict | None) -> None:
             program_level = st.selectbox(
                 "Program Level *",
                 PROGRAM_LEVELS,
-                index=PROGRAM_LEVELS.index(existing["program_level"]) if is_edit else 0,
+                index=PROGRAM_LEVELS.index(existing_dict["program_level"])
+                if is_edit
+                else 0,
             )
             course_name = st.text_input(
-                "Course Name *", value=existing["course_name"] if is_edit else ""
+                "Course Name *", value=existing_dict["course_name"] if is_edit else ""
             )
             course_code = st.text_input(
                 "Course Code (Optional)",
-                value=(existing.get("course_code") or "") if is_edit else "",
+                value=(existing_dict.get("course_code") or "") if is_edit else "",
             )
             duration = st.text_input(
-                "Duration *", value=(existing.get("duration") or "") if is_edit else ""
+                "Duration *",
+                value=(existing_dict.get("duration") or "") if is_edit else "",
             )
         with col2:
             intake_capacity = st.number_input(
                 "Intake Capacity",
                 min_value=0,
-                value=existing.get("intake_capacity") or 0 if is_edit else 0,
+                value=existing_dict.get("intake_capacity") or 0 if is_edit else 0,
                 step=1,
             )
             department = st.text_input(
                 "Department",
-                value=(existing.get("department") or "") if is_edit else "",
+                value=(existing_dict.get("department") or "") if is_edit else "",
             )
             status_options = ["published", "draft"]
-            current_status = existing["status"] if is_edit else "draft"
+            current_status = existing_dict["status"] if is_edit else "draft"
             status = st.radio(
                 "Course Status *",
                 status_options,
@@ -65,18 +70,19 @@ def _course_form(existing: dict | None) -> None:
             )
 
         eligibility = st.text_area(
-            "Eligibility", value=(existing.get("eligibility") or "") if is_edit else ""
+            "Eligibility",
+            value=(existing_dict.get("eligibility") or "") if is_edit else "",
         )
         fees = st.text_input(
-            "Fees", value=(existing.get("fees") or "") if is_edit else ""
+            "Fees", value=(existing_dict.get("fees") or "") if is_edit else ""
         )
         course_details = st.text_area(
             "Course Details",
-            value=(existing.get("course_details") or "") if is_edit else "",
+            value=(existing_dict.get("course_details") or "") if is_edit else "",
         )
         career_opportunities = st.text_area(
             "Career Opportunities",
-            value=(existing.get("career_opportunities") or "") if is_edit else "",
+            value=(existing_dict.get("career_opportunities") or "") if is_edit else "",
         )
 
         save_col, cancel_col = st.columns([1, 1])
@@ -110,7 +116,7 @@ def _course_form(existing: dict | None) -> None:
         }
         try:
             if is_edit:
-                update_course(token, existing["id"], payload)
+                update_course(token, existing_dict["id"], payload)
                 st.success("Course updated.")
             else:
                 create_course(token, payload)

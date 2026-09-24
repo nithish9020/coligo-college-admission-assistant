@@ -1,3 +1,5 @@
+import time
+
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -29,7 +31,6 @@ from api.services.whatsapp_service import (
     send_interactive_buttons,
     send_interactive_list,
     send_text,
-    send_typing_indicator,
     verify_signature,
 )
 
@@ -38,8 +39,52 @@ FALLBACK_REPLY = (
     "Could you try asking again in a moment?"
 )
 
+# Keywords that indicate the student wants to know which colleges are in the system
+_COLLEGES_LIST_KEYWORDS = (
+    "which college",
+    "what college",
+    "colleges do you have",
+    "colleges you have",
+    "what colleges",
+    "colleges available",
+    "list of colleges",
+    "colleges in the database",
+    "data about which",
+    "which colleges",
+    "know about which",
+    "info about which",
+    "contacts about",
+    "have information",
+)
+
+
+def _is_colleges_list_query(text: str) -> bool:
+    """Return True if the student is asking which colleges are available."""
+    cleaned = text.strip().lower()
+    return any(kw in cleaned for kw in _COLLEGES_LIST_KEYWORDS)
+
+
 router = APIRouter(prefix="/webhook", tags=["WhatsApp Webhook"])
 logger = get_logger(__name__)
+
+# ── Duplicate-message guard ────────────────────────────────────────────
+# Meta retries webhook POSTs when the initial request is slow.  We track
+# recently-processed message IDs so the bot never answers twice.
+_PROCESSED_IDS: dict[str, float] = {}
+_DEDUP_TTL = 60  # seconds
+
+
+def _is_duplicate(message_id: str) -> bool:
+    """Return True if this message_id was already processed within TTL."""
+    now = time.time()
+    # Evict stale entries
+    stale = [k for k, v in _PROCESSED_IDS.items() if now - v > _DEDUP_TTL]
+    for k in stale:
+        del _PROCESSED_IDS[k]
+    if message_id in _PROCESSED_IDS:
+        return True
+    _PROCESSED_IDS[message_id] = now
+    return False
 
 
 @router.get("", summary="Meta webhook verification handshake")
@@ -63,6 +108,56 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         await mark_message_as_read(message.message_id)
 
     query = (message.text or "").strip()
+
+    # ── Colleges-list shortcut: answer directly from DB, not from RAG ──
+    # Vector search ranks individual chunks by similarity, so a generic
+    # "which colleges" query surfaces whichever college appears most often
+    # in the top-K results — not all ingested colleges. We fix this by
+    # querying the documents table directly and formatting the answer here.
+    if _is_colleges_list_query(query):
+        from sqlalchemy import select
+
+        async with async_session_factory() as db:
+            try:
+                from api.models import Document
+
+                result = await db.execute(select(Document.document_ref))
+                refs = [row[0] for row in result.all()]
+
+                # Build human-readable college names from document refs
+                college_lines = []
+                seen: set[str] = set()
+                for ref in refs:
+                    import os
+
+                    base = os.path.basename(ref).replace("_", " ").replace("-", " ")
+                    # Strip file extensions
+                    for ext in (".pdf", ".txt"):
+                        base = base.replace(ext, "")
+                    # Group duplicates (e.g. aggregated cutoff file)
+                    if "raw cutoffs" in base.lower() or "aggregated" in base.lower():
+                        label = "Cutoff data: Bannari Amman, CIT, Kongu, SKCET, PSG Tech, Kumaraguru + more"
+                    else:
+                        label = base.title()
+                    if label not in seen:
+                        seen.add(label)
+                        college_lines.append(f"• {label}")
+
+                if college_lines:
+                    reply = (
+                        "🏫 *Colleges with TNEA data in my system:*\n\n"
+                        + "\n".join(college_lines)
+                        + "\n\n💡 Ask me the cutoff, fees, or courses for any of these!"
+                    )
+                else:
+                    reply = "No college data has been ingested yet. Please ask an admin to upload documents."
+            except Exception as e:
+                logger.error("colleges_list_query_failed", error=str(e))
+                reply = FALLBACK_REPLY
+
+        await send_text(message.sender, reply)
+        return
+
     if is_greeting(query):
         welcome_txt = get_welcome_message()
         buttons = [
@@ -153,11 +248,17 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         )
         return
 
-    await send_typing_indicator(message.sender)
     async with async_session_factory() as db:
         try:
+            from api.services.message_formatter import calculate_tnea_cutoff
+
+            calculated_cutoff = calculate_tnea_cutoff(query)
+
             answer, sources = await handle_rag_query(
-                db, query, session_key=f"whatsapp:{message.sender}"
+                db,
+                query,
+                session_key=f"whatsapp:{message.sender}",
+                system_calculated_cutoff=calculated_cutoff,
             )
             formatted_answer = format_whatsapp_response(query, answer, sources)
             await send_text(message.sender, formatted_answer)
@@ -204,6 +305,11 @@ async def receive_webhook(
         logger.debug("webhook_event_ignored", reason="no_message_in_payload")
         return {"status": "ignored"}
 
+    # ── Deduplicate retried webhook deliveries ──
+    if _is_duplicate(message.message_id):
+        logger.info("duplicate_message_skipped", message_id=message.message_id)
+        return {"status": "duplicate_skipped"}
+
     if is_admin_number(message.sender):
         command = match_admin_command(message.text)
         logger.info(
@@ -217,6 +323,8 @@ async def receive_webhook(
                 _execute_admin_task, command, message.text or "", message.sender
             )
             return {"status": "received"}
+        # Admin sent a non-command message — fall through to student pipeline
+        # so admins can also test the bot by chatting normally.
 
     logger.info(
         "student_message_received",
@@ -224,7 +332,9 @@ async def receive_webhook(
         message_type=message.message_type,
     )
 
-    if message.message_type == "text" and message.text:
+    if message.text:
+        # Covers both "text" messages and "interactive" button replies
+        # (extract_message already pulls text from both types).
         background_tasks.add_task(_answer_student_task, message)
     else:
         logger.debug(

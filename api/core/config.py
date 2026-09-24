@@ -18,8 +18,8 @@ class Settings(BaseSettings):
 
     # Google Gemini API Settings
     GEMINI_API_KEY: str | None = None
-    GEMINI_MODEL: str = "gemini-1.5-flash"
-    GEMINI_EMBEDDING_MODEL: str = "models/text-embedding-004"
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
+    GEMINI_EMBEDDING_MODEL: str = "models/gemini-embedding-001"
 
     # OpenAI API Settings — used to extract structured college/course/facility
     # details from uploaded brochure PDFs (administration portal).
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     # RAG Settings
     CHUNK_SIZE: int = 512
     CHUNK_OVERLAP: int = 50
-    RAG_TOP_K: int = 5
+    RAG_TOP_K: int = 80
 
     # Conversation memory. TTL matches WhatsApp's own 24h service-conversation
     # window: a student returning the next day starts a fresh thread.

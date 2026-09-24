@@ -1,4 +1,3 @@
-import os
 import re
 from typing import List, Optional
 
@@ -97,9 +96,9 @@ def calculate_tnea_cutoff(text: str) -> Optional[float]:
     Official TNEA Formula: Maths + (Physics / 2) + (Chemistry / 2)
     """
     cleaned = text.lower()
-    maths_match = re.search(r"(?:maths?|m|mathes)\D*(\d{1,3})", cleaned)
-    physics_match = re.search(r"(?:physics?|p|phy)\D*(\d{1,3})", cleaned)
-    chem_match = re.search(r"(?:chemistry?|chem?|c)\D*(\d{1,3})", cleaned)
+    maths_match = re.search(r"\b(?:maths?|mathes|m)\b\D*(\d{1,3})", cleaned)
+    physics_match = re.search(r"\b(?:physics?|phy|p)\b\D*(\d{1,3})", cleaned)
+    chem_match = re.search(r"\b(?:chemistry?|chem|c)\b\D*(\d{1,3})", cleaned)
 
     if maths_match and physics_match and chem_match:
         m = float(maths_match.group(1))
@@ -173,10 +172,6 @@ def format_whatsapp_response(query: str, answer: str, sources: List[str]) -> str
             cleaned_answer = f"🎓 *Academic Branch Details*\n\n{cleaned_answer}"
 
     # 6. Attach Source Document References (if available)
-    if sources:
-        clean_sources = list(dict.fromkeys(os.path.basename(s) for s in sources if s))
-        if clean_sources:
-            formatted_sources = ", ".join(f"`{s}`" for s in clean_sources[:2])
-            cleaned_answer += f"\n\n📌 *Source*: {formatted_sources}"
+    # The user requested to remove the source template from the final WhatsApp message.
 
     return cleaned_answer

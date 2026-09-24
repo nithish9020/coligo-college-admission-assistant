@@ -1,3 +1,5 @@
+from typing import Any
+
 import streamlit as st
 from utils.api_client import (
     APIError,
@@ -120,7 +122,7 @@ def _render_extraction_review(token: str, brochure_id: int, result: dict) -> Non
 
         st.markdown("---")
         st.markdown(f"**Courses found ({len(courses)})**")
-        course_rows = []
+        course_rows: list[dict[str, Any]] = []
         for i, c in enumerate(courses):
             include = st.checkbox(
                 f"Add: {c.get('course_name') or f'Course {i + 1}'}",
@@ -205,7 +207,7 @@ def _render_extraction_review(token: str, brochure_id: int, result: dict) -> Non
             st.markdown("---")
 
         st.markdown(f"**Facilities found ({len(facilities)})**")
-        facility_rows = []
+        facility_rows: list[dict[str, Any]] = []
         for i, f in enumerate(facilities):
             include = st.checkbox(
                 f"Add: {f.get('name') or f'Facility {i + 1}'}",
@@ -247,7 +249,7 @@ def _render_extraction_review(token: str, brochure_id: int, result: dict) -> Non
         st.rerun()
 
     if submitted:
-        payload = {
+        payload: dict[str, Any] = {
             "courses": [
                 row["payload"]
                 for row in course_rows

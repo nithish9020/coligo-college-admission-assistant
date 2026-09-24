@@ -24,7 +24,7 @@ dependencies = [
     "python-multipart>=0.0.9",
     "email-validator>=2.1.0",
     "openai>=1.40.0",
-    "google-generativeai>=0.4.0",
+    "google-genai>=1.0.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -70,6 +70,7 @@ ignore = ["B008"]
 "api/routers/escalation.py" = ["C901", "E501"]
 "api/services/analytics_service.py" = ["C901", "E501"]
 "api/services/message_formatter.py" = ["C901", "E501"]
+"api/services/embedding_service.py" = ["C901"]
 "api/services/query_normalizer.py" = ["C901", "E501"]
 
 [tool.ruff.format]

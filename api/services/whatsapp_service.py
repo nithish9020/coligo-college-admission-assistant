@@ -16,6 +16,19 @@ logger = get_logger(__name__)
 ADMIN_COMMANDS = ("/ingest", "/stats", "/refresh", "/health")
 MAX_MESSAGE_LENGTH = 4096
 
+# ── Shared HTTP client for Meta Graph API ──
+# Reuses TCP connections across all outbound WhatsApp API calls, avoiding
+# repeated DNS + TLS handshakes that add ~200–400ms per message.
+_http_client: httpx.AsyncClient | None = None
+
+
+def _get_http_client() -> httpx.AsyncClient:
+    """Return a module-level shared httpx client (lazy-initialized)."""
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.AsyncClient(timeout=15.0)
+    return _http_client
+
 
 def verify_signature(
     raw_body: bytes, signature_header: str | None, app_secret: str
@@ -95,10 +108,8 @@ async def send_text(to: str, body: str) -> bool:
     headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url, json=payload, headers=headers, timeout=15.0
-            )
+        client = _get_http_client()
+        response = await client.post(url, json=payload, headers=headers, timeout=15.0)
         if response.status_code >= 400:
             logger.error(
                 "send_text_failed",
@@ -131,37 +142,11 @@ async def mark_message_as_read(message_id: str) -> bool:
     headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
 
     try:
-        async with httpx.AsyncClient() as client:
-            await client.post(url, json=payload, headers=headers, timeout=5.0)
+        client = _get_http_client()
+        await client.post(url, json=payload, headers=headers, timeout=5.0)
         return True
     except Exception as e:
         logger.error("mark_message_as_read_failed", message_id=message_id, error=str(e))
-        return False
-
-
-async def send_typing_indicator(to: str) -> bool:
-    """Send typing indicator (typing_on) to show typing... bubble on user's WhatsApp."""
-    if not settings.WHATSAPP_PHONE_NUMBER_ID or not settings.WHATSAPP_ACCESS_TOKEN:
-        return False
-
-    url = (
-        "https://graph.facebook.com/"
-        f"{settings.WHATSAPP_API_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
-    )
-    payload = {
-        "messaging_product": "whatsapp",
-        "recipient_type": "individual",
-        "to": to,
-        "status": "typing_on",
-    }
-    headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
-
-    try:
-        async with httpx.AsyncClient() as client:
-            await client.post(url, json=payload, headers=headers, timeout=5.0)
-        return True
-    except Exception as e:
-        logger.error("send_typing_indicator_failed", to=to, error=str(e))
         return False
 
 
@@ -205,10 +190,8 @@ async def send_interactive_buttons(
     }
     headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url, json=payload, headers=headers, timeout=15.0
-            )
+        client = _get_http_client()
+        response = await client.post(url, json=payload, headers=headers, timeout=15.0)
         if response.status_code >= 400:
             logger.error("send_interactive_buttons_failed", status=response.status_code)
             return False
@@ -243,10 +226,8 @@ async def send_document(
     headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url, json=payload, headers=headers, timeout=20.0
-            )
+        client = _get_http_client()
+        response = await client.post(url, json=payload, headers=headers, timeout=20.0)
         if response.status_code >= 400:
             logger.error(
                 "send_document_failed",
@@ -288,10 +269,8 @@ async def send_interactive_list(
     headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url, json=payload, headers=headers, timeout=15.0
-            )
+        client = _get_http_client()
+        response = await client.post(url, json=payload, headers=headers, timeout=15.0)
         if response.status_code >= 400:
             logger.error("send_interactive_list_failed", status=response.status_code)
             return False

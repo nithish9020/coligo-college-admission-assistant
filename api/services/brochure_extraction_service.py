@@ -125,14 +125,17 @@ async def extract_brochure_details(pdf_bytes: bytes) -> dict:
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": text},
             ],
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "brochure_extraction",
-                    "schema": EXTRACTION_SCHEMA,
-                    "strict": True,
+            response_format=cast(
+                Any,
+                {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "brochure_extraction",
+                        "schema": EXTRACTION_SCHEMA,
+                        "strict": True,
+                    },
                 },
-            },
+            ),
         )
     except OpenAIAPIError as e:
         logger.error("openai_brochure_extraction_failed", error=str(e))

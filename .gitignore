@@ -97,3 +97,9 @@ dmypy.json
 
 # Local Claude Code tool config (machine-specific permissions, not project code)
 .claude/
+
+# Ignore scratch scripts and raw scraped data
+scratch/
+data/scraped/
+data/scraped_colleges/
+data/raw_cutoffs*.txt

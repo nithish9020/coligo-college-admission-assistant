@@ -206,7 +206,7 @@ async def process_document(
         extracted_text,
         total_chunks,
         total_chunks,
-        0,
+        reused_embeddings_count,
     )
 
 
