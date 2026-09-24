@@ -19,7 +19,9 @@ def _route_after_router(state: AgentState) -> Literal["escalator", "retriever"]:
 
 def create_counselor_graph() -> StateGraph:
     """Build and assemble the multi-turn agentic state graph."""
-    workflow = StateGraph(AgentState)
+    # Note: TypedDict triggers a known Pyright false-positive with LangGraph's
+    # TypedDictLike protocols.
+    workflow = StateGraph(AgentState)  # type: ignore
 
     # 1. Register Processing Nodes
     workflow.add_node("router", router_node)

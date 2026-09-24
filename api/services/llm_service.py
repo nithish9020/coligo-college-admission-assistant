@@ -58,11 +58,11 @@ def _resolve_openai_compatible_config() -> tuple[str, str, str | None]:
         base_url = settings.LLM_BASE_URL or "http://localhost:11434/v1"
     elif provider == "openai":
         api_key = settings.LLM_API_KEY or settings.OPENAI_API_KEY or ""
-        model = str(settings.LLM_MODEL or settings.OPENAI_MODEL or "gpt-4o-mini")
+        model = settings.LLM_MODEL or settings.OPENAI_MODEL or "gpt-4o-mini"
         base_url = settings.LLM_BASE_URL
     else:  # custom / openrouter
         api_key = settings.LLM_API_KEY or settings.OPENAI_API_KEY or ""
-        model = str(settings.LLM_MODEL or "gpt-4o-mini")
+        model = settings.LLM_MODEL or "gpt-4o-mini"
         base_url = settings.LLM_BASE_URL
 
     if not api_key and provider != "ollama":
