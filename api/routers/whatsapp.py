@@ -1204,7 +1204,7 @@ async def _answer_student_task(message: ParsedMessage) -> None:
 
         brochure_url = (
             "https://coligo-college-admission-assistant.onrender.com"
-            "/static/skcet_tnea_knowledge_base.pdf"
+            "/files/skcet_tnea_knowledge_base.pdf"
         )
         caption = f"📄 *{college_label} - Official Admission Guide & Cutoffs*"
 

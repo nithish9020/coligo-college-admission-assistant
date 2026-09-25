@@ -137,8 +137,10 @@ app.include_router(analytics_router)
 app.include_router(cutoff_router)
 
 # Mount static files directory so official brochures and PDFs are accessible
+# NOTE: mounted at /files (not /static) to avoid conflict with Streamlit's
+# own /static/js, /static/css, /static/media assets served through Nginx.
 if os.path.exists("data"):
-    app.mount("/static", StaticFiles(directory="data"), name="static")
+    app.mount("/files", StaticFiles(directory="data"), name="static")
 
 
 # Register global exception handlers for document processing errors

@@ -37,7 +37,7 @@ http {
         }
 
         # FastAPI Backend endpoints & static brochure downloads
-        location ~ ^/(api|webhook|chat|cutoffs|colleges|brochures|courses|facilities|escalations|analytics|auth|documents|health|docs|redoc|openapi.json|static) {
+        location ~ ^/(api|webhook|chat|cutoffs|colleges|brochures|courses|facilities|escalations|analytics|auth|documents|health|docs|redoc|openapi.json|files) {
             proxy_pass http://backend_api;
             proxy_set_header Host $http_host;
             proxy_set_header X-Real-IP $remote_addr;

@@ -231,6 +231,6 @@ def generate_tnea_choice_sheet_pdf(
         if hasattr(settings, "WHATSAPP_WEBHOOK_URL") and settings.WHATSAPP_WEBHOOK_URL
         else "https://coligo-college-admission-assistant.onrender.com"
     )
-    public_url = f"{base_url}/static/choice_sheets/{filename}"
+    public_url = f"{base_url}/files/choice_sheets/{filename}"
 
     return filepath, public_url
