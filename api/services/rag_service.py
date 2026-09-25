@@ -441,8 +441,7 @@ async def handle_rag_query(
                     sources.append(document_ref)
             break
         context_parts.append(
-            f"--- Source: {document_ref} (Chunk Index: {chunk.chunk_index}) ---\n"
-            f"{text}"
+            f"--- Source: {document_ref} (Chunk Index: {chunk.chunk_index}) ---\n{text}"
         )
         total_chars += len(text)
         if document_ref not in sources:
@@ -627,8 +626,7 @@ async def stream_rag_query(
                     sources.append(document_ref)
             break
         context_parts.append(
-            f"--- Source: {document_ref} (Chunk Index: {chunk.chunk_index}) ---\n"
-            f"{text}"
+            f"--- Source: {document_ref} (Chunk Index: {chunk.chunk_index}) ---\n{text}"
         )
         total_chars += len(text)
         if document_ref not in sources:
