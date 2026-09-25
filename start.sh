@@ -25,6 +25,26 @@ streamlit run administration_portal/app.py \
     --browser.gatherUsageStats false &
 STREAMLIT_PID=$!
 
+# 3. Wait for FastAPI to be ready (up to 60s)
+echo "Waiting for FastAPI to be ready..."
+for i in $(seq 1 60); do
+    if curl -sf http://127.0.0.1:8001/health > /dev/null 2>&1; then
+        echo "FastAPI is ready (${i}s)"
+        break
+    fi
+    sleep 1
+done
+
+# 4. Wait for Streamlit to be ready (up to 60s)
+echo "Waiting for Streamlit to be ready..."
+for i in $(seq 1 60); do
+    if curl -sf http://127.0.0.1:8501/_stcore/health > /dev/null 2>&1; then
+        echo "Streamlit is ready (${i}s)"
+        break
+    fi
+    sleep 1
+done
+
 # Graceful termination handling
 cleanup() {
     echo "Stopping Coligo Unified Service..."
@@ -33,5 +53,5 @@ cleanup() {
 }
 trap cleanup SIGTERM SIGINT
 
-# 3. Start Nginx in foreground to keep container alive
+# 5. Start Nginx in foreground to keep container alive
 exec nginx -g "daemon off;"
