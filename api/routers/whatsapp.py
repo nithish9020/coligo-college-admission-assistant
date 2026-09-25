@@ -17,6 +17,7 @@ from api.models import Escalation
 from api.schemas.whatsapp import ParsedMessage, WhatsAppWebhookPayload
 from api.services.message_formatter import (
     format_whatsapp_response,
+    get_college_list_menu_sections,
     get_course_list_menu_sections,
     get_welcome_message,
     is_brochure_query,
@@ -29,9 +30,11 @@ from api.services.whatsapp_service import (
     is_admin_number,
     mark_message_as_read,
     match_admin_command,
+    send_contact,
     send_document,
     send_interactive_buttons,
     send_interactive_list,
+    send_location,
     send_text,
     send_typing_indicator,
     verify_signature,
@@ -103,6 +106,159 @@ async def verify_webhook(
 
     logger.warning("webhook_verification_failed")
     raise HTTPException(status_code=403, detail="Verification failed")
+
+
+async def _handle_location_query(sender: str, query: str) -> bool:
+    """Send native location pin and transit instructions for campus."""
+    q_lower = query.lower()
+    location_triggers = (
+        "btn_location",
+        "where is the college",
+        "where is skcet",
+        "campus location",
+        "college location",
+        "how to reach skcet",
+        "how to reach the college",
+        "college address",
+        "route map",
+        "google map",
+        "location pin",
+    )
+    if not any(kw in q_lower for kw in location_triggers):
+        return False
+
+    await send_location(
+        to=sender,
+        latitude=10.9388,
+        longitude=76.9554,
+        name="Sri Krishna College of Engineering & Technology (SKCET)",
+        address="Kuniamuthur, Coimbatore, Tamil Nadu 641008",
+    )
+    guide = (
+        "📍 *Campus Location & Travel Guide*\n\n"
+        "🏫 *Sri Krishna College of Engineering and Technology (Autonomous)*\n"
+        "Kuniamuthur, Palakkad Main Road, Coimbatore - 641008\n\n"
+        "🚌 *Transit Connectivity:*\n"
+        "• *Coimbatore Railway Junction*: 8 km (Bus Route 3, 3A, 4)\n"
+        "• *Ukkadam Bus Stand*: 6 km (Direct buses every 5 mins)\n"
+        "• *Gandhipuram Central Bus Stand*: 12 km\n"
+        "• *Coimbatore Airport (CJB)*: 18 km\n\n"
+        "💡 _You can tap the location pin above to navigate with Google Maps!_"
+    )
+    await send_text(sender, guide)
+    return True
+
+
+async def _handle_contact_query(sender: str, query: str) -> bool:
+    """Send native vCard contact card for admission desk."""
+    q_lower = query.lower()
+    contact_triggers = (
+        "btn_contact",
+        "admission helpline",
+        "contact number",
+        "call college",
+        "phone number",
+        "admission office",
+        "counselor phone",
+        "help desk phone",
+    )
+    if not any(kw in q_lower for kw in contact_triggers):
+        return False
+
+    await send_contact(
+        to=sender,
+        name="SKCET Admissions Helpline",
+        phone="+914222678001",
+        org="Sri Krishna College of Engg & Tech",
+        email="admissions@skcet.ac.in",
+    )
+    await send_text(
+        sender,
+        "📞 *Official Admissions Contact Card sent above!*\n\n"
+        "Tap *'Add to Contacts'* or call the admission desk directly for:\n"
+        "• Management / Lateral Entry Quota\n"
+        "• Sports Quota & 7.5% Govt School Quota\n"
+        "• Campus Hostel & Transport Booking",
+    )
+    return True
+
+
+async def _handle_college_menu_query(sender: str, query: str) -> bool:
+    """Send interactive list menu for college directory."""
+    q_lower = query.lower()
+    if q_lower not in (
+        "btn_colleges",
+        "explore colleges",
+        "choose college",
+        "compare colleges",
+        "college list",
+    ):
+        return False
+
+    sections = get_college_list_menu_sections()
+    sent = await send_interactive_list(
+        to=sender,
+        body_text=(
+            "🏫 *Select an Engineering College below to view campus highlights, "
+            "closing cutoff ranks, and available courses:*"
+        ),
+        button_label="Explore Colleges",
+        sections=sections,
+    )
+    if not sent:
+        await send_text(
+            sender,
+            "🏫 *Featured TNEA Institutions:*\n"
+            "• SKCET Coimbatore (2722)\n"
+            "• PSG Tech Coimbatore (2006)\n"
+            "• CIT Coimbatore (2007)\n"
+            "• Kumaraguru KCT (2712)\n"
+            "• GCT Coimbatore (2005)\n"
+            "• CEG Anna Univ (0001)\n\n"
+            "💡 Reply with any college name to see cutoff marks!",
+        )
+    return True
+
+
+async def _handle_choice_list_query(sender: str, query: str, session_key: str) -> bool:
+    """Generate personalized TNEA 10-choice order draft."""
+    q_lower = query.lower()
+    triggers = (
+        "btn_choice_list",
+        "choice list",
+        "generate choice list",
+        "suggest choices",
+        "choice filling order",
+        "choice order",
+    )
+    if not any(kw in q_lower for kw in triggers):
+        return False
+
+    from api.services.choice_list_service import generate_tnea_choice_list
+    from api.services.student_profile_service import get_student_profile
+
+    profile = get_student_profile(session_key)
+    if profile.calculated_cutoff is None:
+        prompt_msg = (
+            "📋 *Personalized TNEA Choice Filling Generator*\n\n"
+            "To generate your customized 10-choice order draft, I need your cutoff!\n\n"
+            "• Send your cutoff mark (e.g. *185*)\n"
+            "• Or type marks: *Maths 90, Physics 85, Chemistry 80*\n"
+            "• And your community quota (e.g. *BC*, *MBC*, *OC*, *SC*)"
+        )
+        await send_text(sender, prompt_msg)
+        return True
+
+    async with async_session_factory() as db:
+        choice_draft = await generate_tnea_choice_list(
+            db=db,
+            cutoff=profile.calculated_cutoff,
+            community=profile.community or "BC",
+            preferred_branches=profile.preferred_branches or None,
+            preferred_colleges=profile.preferred_colleges or None,
+        )
+    await send_text(sender, choice_draft)
+    return True
 
 
 async def _answer_student_task(message: ParsedMessage) -> None:
@@ -257,6 +413,18 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         await send_text(message.sender, reply)
         return
 
+    if await _handle_location_query(message.sender, query):
+        return
+
+    if await _handle_contact_query(message.sender, query):
+        return
+
+    if await _handle_college_menu_query(message.sender, query):
+        return
+
+    if await _handle_choice_list_query(message.sender, query, session_key):
+        return
+
     if is_greeting(query):
         welcome_txt = get_welcome_message()
         buttons = [
@@ -350,6 +518,14 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         "btn_comm_mbc": "I belong to MBC community. What are my college admission chances?",
         "btn_comm_oc": "I belong to OC community. What are my college admission chances?",
         "btn_comm_sc": "I belong to SC community. What are my college admission chances?",
+        "col_skcet": "What are the cutoff marks, top branches, and placements at Sri Krishna College of Engineering and Technology (SKCET 2722)?",
+        "col_psg": "What are the cutoff marks, top branches, and placements at PSG College of Technology (PSG 2006)?",
+        "col_cit": "What are the cutoff marks, top branches, and placements at Coimbatore Institute of Technology (CIT 2007)?",
+        "col_kct": "What are the cutoff marks, top branches, and placements at Kumaraguru College of Technology (KCT 2712)?",
+        "col_gct": "What are the cutoff marks, top branches, and placements at Government College of Technology (GCT 2005)?",
+        "col_ceg": "What are the cutoff marks, top branches, and placements at College of Engineering Guindy (CEG 0001)?",
+        "col_mit": "What are the cutoff marks, top branches, and placements at Madras Institute of Technology (MIT 0004)?",
+        "col_ssn": "What are the cutoff marks, top branches, and placements at SSN College of Engineering (SSN 1315)?",
     }
 
     if query.lower() in menu_query_map:
@@ -374,9 +550,17 @@ async def _answer_student_task(message: ParsedMessage) -> None:
                 await db.commit()
             except Exception as e:
                 logger.error("feedback_escalation_failed", error=str(e))
+        await send_contact(
+            to=message.sender,
+            name="SKCET Admissions Helpline",
+            phone="+914222678001",
+            org="Sri Krishna College of Engg & Tech",
+            email="admissions@skcet.ac.in",
+        )
         await send_text(
             message.sender,
-            "📞 *Got it!* I've notified our admission team. A counselor will follow up with you soon!",
+            "📞 *Got it!* I've logged your request for an admission counselor and sent "
+            "their direct contact card above so you can reach an officer directly!",
         )
         return
 
@@ -431,8 +615,8 @@ async def _answer_student_task(message: ParsedMessage) -> None:
                     )
                 else:
                     cta = [
-                        ("btn_fees", "Fee Details"),
-                        ("btn_courses", "View Courses"),
+                        ("btn_choice_list", "Choice List Draft"),
+                        ("btn_colleges", "Explore Colleges"),
                         ("btn_brochure", "Get Brochure"),
                     ]
                     await send_interactive_buttons(
@@ -440,6 +624,18 @@ async def _answer_student_task(message: ParsedMessage) -> None:
                         "💡 *What would you like to explore next?*",
                         cta,
                     )
+            elif any(
+                k in q_lower
+                for k in ("location", "campus", "address", "reach", "hostel")
+            ):
+                cta = [
+                    ("btn_location", "Campus Location"),
+                    ("btn_contact", "Admission Desk"),
+                    ("btn_fees", "Fee Details"),
+                ]
+                await send_interactive_buttons(
+                    message.sender, "💡 *Campus & Visit Information:*", cta
+                )
             elif any(
                 k in q_lower for k in ("fee", "fees", "cost", "hostel", "tuition")
             ):

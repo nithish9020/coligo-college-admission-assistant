@@ -90,6 +90,62 @@ def get_course_list_menu_sections() -> List[dict]:
     ]
 
 
+def get_college_list_menu_sections() -> List[dict]:
+    """Structure college selection sections for WhatsApp List Menus."""
+    return [
+        {
+            "title": "🏆 Coimbatore Autonomous",
+            "rows": [
+                {
+                    "id": "col_skcet",
+                    "title": "SKCET (Code: 2722)",
+                    "description": "Sri Krishna College of Engg, Kuniamuthur",
+                },
+                {
+                    "id": "col_psg",
+                    "title": "PSG Tech (Code: 2006)",
+                    "description": "PSG College of Technology, Peelamedu",
+                },
+                {
+                    "id": "col_cit",
+                    "title": "CIT (Code: 2007)",
+                    "description": "Coimbatore Institute of Technology",
+                },
+                {
+                    "id": "col_kct",
+                    "title": "Kumaraguru (Code: 2712)",
+                    "description": "Kumaraguru College of Tech, Saravanampatti",
+                },
+                {
+                    "id": "col_gct",
+                    "title": "GCT (Code: 2005)",
+                    "description": "Govt College of Technology, Coimbatore",
+                },
+            ],
+        },
+        {
+            "title": "🏛️ Premier Chennai Colleges",
+            "rows": [
+                {
+                    "id": "col_ceg",
+                    "title": "CEG Anna Univ (Code: 0001)",
+                    "description": "College of Engg Guindy, Chennai",
+                },
+                {
+                    "id": "col_mit",
+                    "title": "MIT Anna Univ (Code: 0004)",
+                    "description": "Madras Institute of Tech, Chromepet",
+                },
+                {
+                    "id": "col_ssn",
+                    "title": "SSN (Code: 1315)",
+                    "description": "SSN College of Engineering, Kalavakkam",
+                },
+            ],
+        },
+    ]
+
+
 def calculate_tnea_cutoff(text: str) -> Optional[float]:
     """Extract Maths, Physics, and Chemistry marks from text and calculate official TNEA Cutoff out of 200.
 

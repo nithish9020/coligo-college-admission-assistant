@@ -20,7 +20,7 @@ class MediaAttachment(BaseModel):
 
 
 class IncomingMessage(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
 
     id: str
     from_number: str = Field(alias="from")
@@ -29,6 +29,7 @@ class IncomingMessage(BaseModel):
     text: TextBody | None = None
     audio: MediaAttachment | None = None
     voice: MediaAttachment | None = None
+    interactive: dict | None = None
 
 
 class Metadata(BaseModel):

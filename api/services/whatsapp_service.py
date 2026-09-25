@@ -1,6 +1,6 @@
 import hashlib
 import hmac
-from typing import Tuple
+from typing import Any, Tuple
 
 import httpx
 from sqlalchemy import func, select
@@ -62,11 +62,16 @@ def extract_message(payload: WhatsAppWebhookPayload) -> ParsedMessage | None:
 
             if message.type == "text" and message.text:
                 extracted_text = message.text.body
-            elif message.type == "interactive" and hasattr(message, "interactive"):
-                # Handle interactive button clicks
-                interactive = getattr(message, "interactive", {})
+            elif message.type == "interactive":
+                interactive = getattr(message, "interactive", None) or {}
                 button_reply = interactive.get("button_reply", {})
-                extracted_text = button_reply.get("title") or button_reply.get("id")
+                list_reply = interactive.get("list_reply", {})
+                extracted_text = (
+                    button_reply.get("id")
+                    or button_reply.get("title")
+                    or list_reply.get("id")
+                    or list_reply.get("title")
+                )
             elif message.type in ("audio", "voice"):
                 audio_obj = getattr(message, "audio", None) or getattr(
                     message, "voice", None
@@ -340,6 +345,116 @@ async def send_interactive_list(
         return True
     except httpx.RequestError as e:
         logger.error("send_interactive_list_error", error=str(e))
+        return False
+
+
+async def send_location(
+    to: str,
+    latitude: float,
+    longitude: float,
+    name: str,
+    address: str,
+) -> bool:
+    """Send a native Google Maps location pin via WhatsApp Cloud API."""
+    if not settings.WHATSAPP_PHONE_NUMBER_ID or not settings.WHATSAPP_ACCESS_TOKEN:
+        logger.error("send_location_skipped_missing_credentials", to=to)
+        return False
+
+    url = (
+        "https://graph.facebook.com/"
+        f"{settings.WHATSAPP_API_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+    )
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "location",
+        "location": {
+            "latitude": str(latitude),
+            "longitude": str(longitude),
+            "name": name[:100],
+            "address": address[:300],
+        },
+    }
+    headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
+    try:
+        client = _get_http_client()
+        response = await client.post(url, json=payload, headers=headers, timeout=15.0)
+        if response.status_code >= 400:
+            logger.error(
+                "send_location_failed",
+                to=to,
+                status=response.status_code,
+                body=response.text,
+            )
+            return False
+        logger.info("send_location_succeeded", to=to, name=name)
+        return True
+    except httpx.RequestError as e:
+        logger.error("send_location_error", to=to, error=str(e))
+        return False
+
+
+async def send_contact(
+    to: str,
+    name: str,
+    phone: str,
+    org: str = "Sri Krishna College of Engineering & Technology",
+    email: str = "admissions@skcet.ac.in",
+) -> bool:
+    """Send a native vCard contact card via WhatsApp Cloud API."""
+    if not settings.WHATSAPP_PHONE_NUMBER_ID or not settings.WHATSAPP_ACCESS_TOKEN:
+        logger.error("send_contact_skipped_missing_credentials", to=to)
+        return False
+
+    url = (
+        "https://graph.facebook.com/"
+        f"{settings.WHATSAPP_API_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+    )
+    contact_data: dict[str, Any] = {
+        "name": {
+            "formatted_name": name,
+            "first_name": name,
+        },
+        "phones": [
+            {
+                "phone": phone,
+                "type": "WORK",
+            }
+        ],
+        "org": {
+            "company": org,
+        },
+    }
+    if email:
+        contact_data["emails"] = [
+            {
+                "email": email,
+                "type": "WORK",
+            }
+        ]
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "contacts",
+        "contacts": [contact_data],
+    }
+    headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
+    try:
+        client = _get_http_client()
+        response = await client.post(url, json=payload, headers=headers, timeout=15.0)
+        if response.status_code >= 400:
+            logger.error(
+                "send_contact_failed",
+                to=to,
+                status=response.status_code,
+                body=response.text,
+            )
+            return False
+        logger.info("send_contact_succeeded", to=to, name=name)
+        return True
+    except httpx.RequestError as e:
+        logger.error("send_contact_error", to=to, error=str(e))
         return False
 
 
