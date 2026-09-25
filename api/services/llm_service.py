@@ -123,9 +123,11 @@ async def _generate_with_openai_compatible(
                 max_tokens=max_tokens,
                 **extra_params,
             )
-            text = response.choices[0].message.content or ""
-            if text and text.strip():
-                return text.strip()
+            content = response.choices[0].message.content
+            if content:
+                text: str = str(content).strip()
+                if text:
+                    return text
             raise DocumentProcessingError("LLM returned an empty response.")
         except Exception as e:
             err_str = str(e)
@@ -380,9 +382,8 @@ async def _stream_with_openai_compatible(
         **extra_params,
     )
     async for chunk in response:
-        delta = chunk.choices[0].delta.content if chunk.choices else ""
-        if delta:
-            yield delta
+        if chunk.choices and chunk.choices[0].delta.content:
+            yield str(chunk.choices[0].delta.content)
 
 
 async def generate_stream_from_llm(prompt: str) -> AsyncIterator[str]:
