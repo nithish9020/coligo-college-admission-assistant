@@ -425,11 +425,26 @@ async def handle_rag_query(
     context_parts: List[str] = []
     sources: List[str] = []
 
-    for chunk, document_ref in reordered_rows:
+    total_chars = 0
+    max_context_chars = 7500
+    for chunk, document_ref in reordered_rows[:4]:
+        text = (chunk.text_content or "").strip()
+        if total_chars + len(text) > max_context_chars:
+            remaining = max(0, max_context_chars - total_chars)
+            if remaining > 200:
+                text = text[:remaining] + "..."
+                context_parts.append(
+                    f"--- Source: {document_ref} (Chunk Index: {chunk.chunk_index}) ---\n"
+                    f"{text}"
+                )
+                if document_ref not in sources:
+                    sources.append(document_ref)
+            break
         context_parts.append(
             f"--- Source: {document_ref} (Chunk Index: {chunk.chunk_index}) ---\n"
-            f"{chunk.text_content}"
+            f"{text}"
         )
+        total_chars += len(text)
         if document_ref not in sources:
             sources.append(document_ref)
 
@@ -596,11 +611,26 @@ async def stream_rag_query(
 
     context_parts: List[str] = []
     sources: List[str] = []
-    for chunk, document_ref in reordered_rows:
+    total_chars = 0
+    max_context_chars = 7500
+    for chunk, document_ref in reordered_rows[:4]:
+        text = (chunk.text_content or "").strip()
+        if total_chars + len(text) > max_context_chars:
+            remaining = max(0, max_context_chars - total_chars)
+            if remaining > 200:
+                text = text[:remaining] + "..."
+                context_parts.append(
+                    f"--- Source: {document_ref} (Chunk Index: {chunk.chunk_index}) ---\n"
+                    f"{text}"
+                )
+                if document_ref not in sources:
+                    sources.append(document_ref)
+            break
         context_parts.append(
             f"--- Source: {document_ref} (Chunk Index: {chunk.chunk_index}) ---\n"
-            f"{chunk.text_content}"
+            f"{text}"
         )
+        total_chars += len(text)
         if document_ref not in sources:
             sources.append(document_ref)
 

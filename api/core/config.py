@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     # RAG Settings
     CHUNK_SIZE: int = 512
     CHUNK_OVERLAP: int = 50
-    RAG_TOP_K: int = 15
+    RAG_TOP_K: int = 6
 
     # Conversation memory. TTL matches WhatsApp's own 24h service-conversation
     # window: a student returning the next day starts a fresh thread.

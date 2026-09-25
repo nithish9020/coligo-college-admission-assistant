@@ -70,13 +70,25 @@ async def synthesizer_node(state: AgentState) -> dict[str, Any]:
         msg = _build_ungrounded_msg(header_prefix, colleges, community, cutoff)
         return {"response_text": msg, "sources": sources}
 
-    # 3. Assemble Grounding Context (cap to top 6 to respect model token limits)
+    # 3. Assemble Grounding Context (cap to top 4 and 7500 chars to respect
+    # model token limits)
     context_parts = []
-    for c in chunks[:6]:
+    total_chars = 0
+    max_context_chars = 7500
+    for c in chunks[:4]:
         doc_ref = c.get("document_ref", "document")
         idx = c.get("chunk_index", 0)
-        text = c.get("text_content", "")
+        text = (c.get("text_content", "") or "").strip()
+        if total_chars + len(text) > max_context_chars:
+            remaining = max(0, max_context_chars - total_chars)
+            if remaining > 200:
+                text = text[:remaining] + "..."
+                context_parts.append(
+                    f"--- Source: {doc_ref} (Chunk Index: {idx}) ---\n{text}"
+                )
+            break
         context_parts.append(f"--- Source: {doc_ref} (Chunk Index: {idx}) ---\n{text}")
+        total_chars += len(text)
     compiled_context = "\n\n".join(context_parts)
 
     llm_question = raw_message

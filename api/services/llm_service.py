@@ -145,8 +145,7 @@ async def _generate_with_gemini(
     client = _get_gemini_client()
     models_to_try = candidate_models or [
         settings.GEMINI_MODEL,
-        "gemini-2.5-flash-lite",
-        "gemini-flash-latest",
+        "gemini-3.8-flash",
     ]
     deduped_models: list[str] = []
     seen: set[str] = set()
@@ -286,8 +285,7 @@ async def _stream_with_gemini(
     client = _get_gemini_client()
     models_to_try = candidate_models or [
         settings.GEMINI_MODEL,
-        "gemini-2.5-flash-lite",
-        "gemini-flash-latest",
+        "gemini-3.8-flash",
     ]
     deduped_models: list[str] = []
     seen: set[str] = set()
