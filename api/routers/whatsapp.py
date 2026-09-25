@@ -325,44 +325,44 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         get_or_create_conversation,
     )
 
-    async with async_session_factory() as db:
-        stmt = (
-            select(Escalation)
-            .where(
-                Escalation.sender == session_key,
-                Escalation.status.in_(["pending", "in_progress"]),
+    try:
+        async with async_session_factory() as db:
+            stmt = (
+                select(Escalation)
+                .where(
+                    Escalation.sender == session_key,
+                    Escalation.status == "in_progress",
+                )
+                .order_by(Escalation.created_at.desc())
+                .limit(1)
             )
-            .order_by(Escalation.created_at.desc())
-            .limit(1)
-        )
-        active_esc = (await db.execute(stmt)).scalar_one_or_none()
-        if active_esc is not None:
-            logger.info(
-                "student_message_paused_active_escalation",
-                sender=message.sender,
-                escalation_id=active_esc.id,
-                status=active_esc.status,
-            )
-            try:
-                conv = await get_or_create_conversation(db, session_key)
-                await append_turn(db, conv, "user", query)
-                active_esc.query_text += f"\n[Student Follow-up]: {query}"
-                await db.commit()
-            except Exception as e:
-                logger.error("failed_to_log_paused_message", error=str(e))
+            active_esc = (await db.execute(stmt)).scalar_one_or_none()
+            if active_esc is not None:
+                logger.info(
+                    "student_message_paused_active_escalation",
+                    sender=message.sender,
+                    escalation_id=active_esc.id,
+                )
+                try:
+                    conv = await get_or_create_conversation(db, session_key)
+                    await append_turn(db, conv, "user", query)
+                    active_esc.query_text += f"\n[Student Follow-up]: {query}"
+                    await db.commit()
+                except Exception as e:
+                    logger.error("failed_to_log_paused_message", error=str(e))
 
-            status_str = (
-                "in active consultation with"
-                if active_esc.status == "in_progress"
-                else "assigned to"
-            )
-            pause_notice = (
-                f"⏳ *Your conversation is currently {status_str} an admission counselor.*\n\n"
-                "A human admission officer is reviewing your queries and will respond directly here on WhatsApp.\n\n"
-                "💡 _To switch back to automated AI mode at any time, simply reply with */resume*._"
-            )
-            await send_text(message.sender, pause_notice)
-            return
+                pause_notice = (
+                    "⏳ *Your conversation is currently in active consultation with "
+                    "an admission counselor.*\n\n"
+                    "A human officer is reviewing your queries and will reply here "
+                    "on WhatsApp.\n\n"
+                    "💡 _To switch back to automated AI mode at any time, "
+                    "reply with */resume*._"
+                )
+                await send_text(message.sender, pause_notice)
+                return
+    except Exception as esc_check_err:
+        logger.warning("escalation_check_skipped", error=str(esc_check_err))
 
     # ── Colleges-list shortcut: answer directly from DB, not from RAG ──
     # Vector search ranks individual chunks by similarity, so a generic
