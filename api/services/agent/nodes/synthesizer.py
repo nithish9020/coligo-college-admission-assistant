@@ -50,6 +50,53 @@ def _build_ungrounded_msg(
     )
 
 
+def _compile_grounding_context(
+    chunks: list[dict[str, Any]], max_chars: int = 7500
+) -> str:
+    """Concatenate retrieved document chunks with character boundary limit."""
+    parts = []
+    total_chars = 0
+    for c in chunks[:4]:
+        doc_ref = c.get("document_ref", "document")
+        idx = c.get("chunk_index", 0)
+        text = (c.get("text_content", "") or "").strip()
+        if total_chars + len(text) > max_chars:
+            remaining = max(0, max_chars - total_chars)
+            if remaining > 200:
+                text = text[:remaining] + "..."
+                parts.append(f"--- Source: {doc_ref} (Chunk Index: {idx}) ---\n{text}")
+            break
+        parts.append(f"--- Source: {doc_ref} (Chunk Index: {idx}) ---\n{text}")
+        total_chars += len(text)
+    return "\n\n".join(parts)
+
+
+def _build_conversational_guidelines(lang_pref: str, is_distress: bool) -> str:
+    """Build empathetic tone directives for Tanglish and student anxiety."""
+    guidelines = []
+    if lang_pref == "tanglish":
+        guidelines.append(
+            "[Tone Directive: The student communicated in Tanglish. Respond "
+            "warmly and conversationally, mixing friendly Tamil phrases "
+            "naturally (e.g. 'Unga cutoff-ku...', '...chance irukku 🟢'), "
+            "while keeping numbers and college codes exact.]"
+        )
+    elif lang_pref == "tamil":
+        guidelines.append(
+            "[Tone Directive: The student communicated in Tamil. Respond with "
+            "a supportive, clear Tamil/English bilingual explanation.]"
+        )
+
+    if is_distress:
+        guidelines.append(
+            "[Empathy Directive: The student is concerned about their score. "
+            "Offer encouraging guidance highlighting that Round 3/4 offer "
+            "viable engineering paths across colleges, along with 7.5% quota.]"
+        )
+
+    return ("\n" + "\n".join(guidelines) + "\n") if guidelines else ""
+
+
 async def synthesizer_node(state: AgentState) -> dict[str, Any]:
     """Synthesize admission counselling answer with citations and cutoffs."""
     raw_message = state.get("raw_message", "")
@@ -70,30 +117,18 @@ async def synthesizer_node(state: AgentState) -> dict[str, Any]:
         msg = _build_ungrounded_msg(header_prefix, colleges, community, cutoff)
         return {"response_text": msg, "sources": sources}
 
-    # 3. Assemble Grounding Context (cap to top 4 and 7500 chars to respect
-    # model token limits)
-    context_parts = []
-    total_chars = 0
-    max_context_chars = 7500
-    for c in chunks[:4]:
-        doc_ref = c.get("document_ref", "document")
-        idx = c.get("chunk_index", 0)
-        text = (c.get("text_content", "") or "").strip()
-        if total_chars + len(text) > max_context_chars:
-            remaining = max(0, max_context_chars - total_chars)
-            if remaining > 200:
-                text = text[:remaining] + "..."
-                context_parts.append(
-                    f"--- Source: {doc_ref} (Chunk Index: {idx}) ---\n{text}"
-                )
-            break
-        context_parts.append(f"--- Source: {doc_ref} (Chunk Index: {idx}) ---\n{text}")
-        total_chars += len(text)
-    compiled_context = "\n\n".join(context_parts)
+    # 3. Assemble Grounding Context & Conversational Directives
+    compiled_context = _compile_grounding_context(chunks)
+    guideline_str = _build_conversational_guidelines(
+        state.get("language_preference", "english"),
+        state.get("is_distress", False),
+    )
 
     llm_question = raw_message
     if cutoff is not None:
         llm_question = f"[System Calculated Cutoff: {cutoff:g} / 200] {raw_message}"
+    if guideline_str:
+        llm_question = f"{guideline_str}\n{llm_question}"
 
     prompt = SYSTEM_PROMPT_TEMPLATE.format(
         context=compiled_context,

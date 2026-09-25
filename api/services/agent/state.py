@@ -28,6 +28,10 @@ class AgentState(TypedDict, total=False):
     # Out-of-scope & human escalation
     is_escalated: bool
     escalation_reason: Optional[str]
+    is_off_topic: bool
+    is_distress: bool
+    language_preference: str  # "english" | "tanglish" | "tamil"
+    is_verified: bool
 
     # Synthesized final output
     response_text: str

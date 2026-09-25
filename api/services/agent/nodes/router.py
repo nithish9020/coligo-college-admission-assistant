@@ -39,6 +39,74 @@ CHOICE_KEYWORDS = [
 
 BRANCH_KEYS = ["cse", "ece", "it", "aids", "aiml", "eee", "mech", "civil", "csbs"]
 
+TANGLISH_WORDS = {
+    "kedaikuma",
+    "kedaikkum",
+    "kedaikathu",
+    "kidaikuma",
+    "evlo",
+    "evvalavu",
+    "eppo",
+    "panradhu",
+    "pannalam",
+    "edukalaama",
+    "varuma",
+    "sollunga",
+    "teriyuma",
+    "eppadi",
+    "romba",
+    "kammi",
+    "nalla",
+    "unga",
+    "enna",
+}
+
+DISTRESS_TRIGGERS = (
+    "life pochu",
+    "life waste",
+    "marks romba kammi",
+    "feel hopeless",
+    "no college will accept",
+    "fail aagiten",
+    "giving up",
+    "depressed",
+    "hopeless",
+)
+
+OFF_TOPIC_TRIGGERS = (
+    "ignore previous instructions",
+    "ignore all instructions",
+    "system prompt",
+    "write a poem",
+    "write poem",
+    "python code",
+    "write python",
+    "write code",
+    "write a script",
+    "who is elon musk",
+    "crypto",
+    "bitcoin",
+    "who is prime minister",
+    "who is president",
+)
+
+
+def _detect_language(text: str) -> str:
+    if re.search(r"[\u0B80-\u0BFF]", text):
+        return "tamil"
+    lower_words = set(re.findall(r"\b\w+\b", text.lower()))
+    if lower_words & TANGLISH_WORDS:
+        return "tanglish"
+    return "english"
+
+
+def _detect_distress(lower_text: str) -> bool:
+    return any(dt in lower_text for dt in DISTRESS_TRIGGERS)
+
+
+def _detect_off_topic(lower_text: str) -> bool:
+    return any(kw in lower_text for kw in OFF_TOPIC_TRIGGERS)
+
 
 def _detect_community(raw_text: str) -> str | None:
     for comm in COMMUNITIES:
@@ -97,6 +165,25 @@ async def router_node(state: AgentState) -> dict[str, Any]:
     raw_text = state.get("raw_message", "")
     lower = raw_text.lower()
 
+    # 0. Check for off-topic prompt injections / non-admissions queries
+    if _detect_off_topic(lower):
+        redirect_msg = (
+            "👋 *I am your dedicated TNEA Admissions Assistant!*\n\n"
+            "I specialize exclusively in Tamil Nadu Engineering Admissions, college "
+            "cutoffs, courses, and fee structures.\n\n"
+            "💡 *Ask me things like:*\n"
+            "• *Can I get SKCET CSE with 185 cutoff?*\n"
+            "• *What is the fee structure for Mechanical?*\n"
+            "• *How to calculate my cutoff?*\n"
+            "• *Generate my choice list*"
+        )
+        return {
+            "intent": "off_topic",
+            "is_off_topic": True,
+            "response_text": redirect_msg,
+            "is_escalated": False,
+        }
+
     # 1. Check for sensitive out-of-scope / escalation intent
     for kw in ESCALATION_KEYWORDS:
         if kw in lower:
@@ -150,8 +237,10 @@ async def router_node(state: AgentState) -> dict[str, Any]:
             branches=detected_branches or None,
         )
 
-    # 8. Determine intent
+    # 8. Determine intent and student conversational traits
     intent = _determine_intent(lower, calculated_cutoff, colleges)
+    lang_pref = _detect_language(raw_text)
+    is_distress = _detect_distress(lower)
 
     return {
         "intent": intent,
@@ -161,4 +250,7 @@ async def router_node(state: AgentState) -> dict[str, Any]:
         "colleges": colleges,
         "branches": detected_branches or state.get("branches"),
         "is_escalated": False,
+        "is_off_topic": False,
+        "is_distress": is_distress,
+        "language_preference": lang_pref,
     }
