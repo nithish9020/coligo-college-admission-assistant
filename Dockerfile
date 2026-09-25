@@ -23,6 +23,7 @@ RUN pip install --no-cache-dir -r requirements-portal.txt && \
 # Copy application directories
 COPY api ./api
 COPY data ./data
+COPY app ./app
 COPY administration_portal ./administration_portal
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
 COPY start.sh ./start.sh

@@ -9,9 +9,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+COPY pyproject.toml README.md ./
 COPY administration_portal/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -e .
 
+COPY api ./api
+COPY data ./data
+COPY app ./app
 COPY administration_portal ./administration_portal
 
 EXPOSE 8501

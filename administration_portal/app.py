@@ -16,8 +16,17 @@ from views.login import render_login
 from views.sidebar import render_sidebar
 from views.signup import render_signup
 
+from app.components.analytics_view import render_analytics_view
+from app.components.chat_view import render_chat_view
+from app.components.choice_sheet_view import render_choice_sheet_view
+from app.components.compare_view import render_compare_view
+from app.components.matrix_view import render_matrix_view
+from app.components.placement_view import render_placement_view
+from app.components.rank_predictor_view import render_rank_predictor_view
+from app.components.upward_simulator_view import render_upward_simulator_view
+
 st.set_page_config(
-    page_title="Coligo Admin Portal",
+    page_title="Coligo — TNEA Admissions & College Hub",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -27,6 +36,17 @@ init_session_state()
 restore_session_from_cookie()
 
 inject_base_css()
+
+STUDENT_ROUTES = {
+    "AI Admissions Chatbot": render_chat_view,
+    "Cutoff Visualizer & Graphs": render_analytics_view,
+    "Head-to-Head College Comparator": render_compare_view,
+    "Seat Matrix & Quota Pie Charts": render_matrix_view,
+    "Placement & Recruiter Analytics": render_placement_view,
+    "3-Tier Choice Sheet Builder": render_choice_sheet_view,
+    "TNEA Rank & Round Predictor": render_rank_predictor_view,
+    "Upward Movement Simulator": render_upward_simulator_view,
+}
 
 COLLEGE_ROUTES = {
     "Dashboard": render_college_dashboard,
@@ -58,12 +78,15 @@ def main() -> None:
 
     render_sidebar()
 
-    if st.session_state.role == "college":
+    if st.session_state.role == "student":
+        routes = STUDENT_ROUTES
+        view = routes.get(st.session_state.nav, routes["AI Admissions Chatbot"])
+    elif st.session_state.role == "college":
         routes = COLLEGE_ROUTES
+        view = routes.get(st.session_state.nav, routes["Dashboard"])
     else:
         routes = ADMIN_ROUTES
-
-    view = routes.get(st.session_state.nav, routes["Dashboard"])
+        view = routes.get(st.session_state.nav, routes["Dashboard"])
     view()
 
 
