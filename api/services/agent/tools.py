@@ -192,8 +192,8 @@ def _calc_cutoff_impl(maths: float, physics: float, chemistry: float) -> str:
     total = maths + (physics / 2.0) + (chemistry / 2.0)
     return (
         f"TNEA Cutoff: {total:g} / 200.0\n"
-        f"Maths: {maths:g} + Physics ({physics:g}/2 = {physics/2:g}) + "
-        f"Chemistry ({chemistry:g}/2 = {chemistry/2:g}) = {total:g}"
+        f"Maths: {maths:g} + Physics ({physics:g}/2 = {physics / 2:g}) + "
+        f"Chemistry ({chemistry:g}/2 = {chemistry / 2:g}) = {total:g}"
     )
 
 
