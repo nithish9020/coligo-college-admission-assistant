@@ -57,7 +57,7 @@ async def get_embeddings(texts: List[str]) -> List[List[float]]:
                     embeddings = result.embeddings or []
                     if not embeddings:
                         raise DocumentProcessingError(
-                            "Gemini embedding API returned no" " embedding for a chunk."
+                            "Gemini embedding API returned no embedding for a chunk."
                         )
 
                     results = []

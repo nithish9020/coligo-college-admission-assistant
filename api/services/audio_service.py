@@ -14,9 +14,7 @@ async def download_whatsapp_media(media_id: str) -> tuple[bytes, str] | None:
         logger.error("whatsapp_access_token_missing_for_media_download")
         return None
 
-    meta_url = (
-        f"https://graph.facebook.com/" f"{settings.WHATSAPP_API_VERSION}/{media_id}"
-    )
+    meta_url = f"https://graph.facebook.com/{settings.WHATSAPP_API_VERSION}/{media_id}"
     headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
 
     try:

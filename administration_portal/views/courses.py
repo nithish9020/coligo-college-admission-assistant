@@ -209,7 +209,7 @@ def render_courses() -> None:
             st.markdown(
                 f'<div style="display:flex;align-items:center;gap:10px;">'
                 f"{course_icon}"
-                f'<span>{course["course_name"]}</span></div>',
+                f"<span>{course['course_name']}</span></div>",
                 unsafe_allow_html=True,
             )
         row[1].markdown(badge(course["program_level"], "ug"), unsafe_allow_html=True)

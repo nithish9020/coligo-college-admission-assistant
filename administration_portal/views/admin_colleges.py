@@ -88,7 +88,7 @@ def _render_college_detail(college_id: int) -> None:
     st.markdown(
         f'<div class="coligo-page-header">'
         f"{detail_icon}"
-        f'<div><h1>{detail["college_name"]}</h1>'
+        f"<div><h1>{detail['college_name']}</h1>"
         f"{detail_badge}</div></div>",
         unsafe_allow_html=True,
     )
@@ -160,7 +160,7 @@ def _render_college_detail(college_id: int) -> None:
                         f'<div class="coligo-item-row">'
                         f"{course_icon}"
                         f'<span class="coligo-item-title">'
-                        f'{course["course_name"]}</span></div>',
+                        f"{course['course_name']}</span></div>",
                         unsafe_allow_html=True,
                     )
                 row[1].write(course["program_level"])
