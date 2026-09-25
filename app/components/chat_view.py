@@ -20,18 +20,25 @@ def render_chat_view() -> None:
 
     session_key = st.session_state.get("session_key", "whatsapp:anonymous")
 
-    if "messages" not in st.session_state:
-        st.session_state["messages"] = [
-            {
-                "role": "assistant",
-                "content": (
-                    "👋 Hello! I am Coligo, your official TNEA Counselling Assistant. "
-                    "I can help you check cutoff marks, compare colleges, and generate "
-                    "your personalized 3-tier choice filling order. How can I help?"
-                ),
-                "sources": [],
-            }
-        ]
+    if "messages" not in st.session_state or not st.session_state.get("history_synced"):
+        from app.services.agent_streamer import load_session_chat_history
+
+        db_turns = load_session_chat_history(session_key)
+        if db_turns:
+            st.session_state["messages"] = db_turns
+        elif "messages" not in st.session_state:
+            st.session_state["messages"] = [
+                {
+                    "role": "assistant",
+                    "content": (
+                        "👋 Hello! I am Coligo, your official TNEA Counselling Assistant. "
+                        "I can help you check cutoff marks, compare colleges, and generate "
+                        "your personalized 3-tier choice filling order. How can I help?"
+                    ),
+                    "sources": [],
+                }
+            ]
+        st.session_state["history_synced"] = True
 
     # Quick action prompt chips
     st.markdown("**💡 Quick Questions:**")

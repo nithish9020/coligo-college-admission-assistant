@@ -3,7 +3,7 @@
 import asyncio
 import concurrent.futures
 import time
-from typing import Any, Coroutine, Generator
+from typing import Any, Coroutine, Generator, cast
 
 from api.core.database import async_session_factory
 from api.core.logging import get_logger
@@ -68,3 +68,29 @@ def stream_agent_response(
             time.sleep(0.012)
 
     return token_generator(), sources, answer
+
+
+def load_session_chat_history(session_key: str) -> list[dict[str, Any]]:
+    """Load persistent chat history from DB for the authenticated student."""
+    from api.services.conversation_service import (
+        get_conversation_turns_for_session,
+    )
+
+    async def _fetch() -> list[dict[str, Any]]:
+        async with async_session_factory() as db:
+            turns = await get_conversation_turns_for_session(db, session_key)
+            formatted = []
+            for t in turns:
+                role = "user" if t.role == "user" else "assistant"
+                formatted.append({"role": role, "content": t.content, "sources": []})
+            return formatted
+
+    try:
+        return cast(list[dict[str, Any]], _run_async_safely(_fetch()) or [])
+    except Exception as e:
+        logger.warning(
+            "failed_to_load_chat_history",
+            session_key=session_key,
+            error=str(e),
+        )
+        return []

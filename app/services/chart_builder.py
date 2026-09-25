@@ -399,3 +399,43 @@ def build_recruiter_split_chart() -> alt.Chart:
         .properties(height=280)
     )
     return cast(alt.Chart, chart)
+
+
+def build_head_to_head_chart(
+    college_a: str, college_b: str, community: str = "BC"
+) -> alt.Chart:
+    """Grouped bar chart comparing cutoffs across branches between two selected colleges."""
+    filtered = [
+        d
+        for d in BENCHMARK_CUTOFFS
+        if d["college"] in (college_a, college_b) and d["community"] == community
+    ]
+    df = pd.DataFrame(filtered)
+    if df.empty:
+        df = pd.DataFrame([{"college": college_a, "branch": "CSE", "cutoff": 190.0}])
+
+    chart = (
+        alt.Chart(df)
+        .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
+        .encode(
+            x=alt.X("branch:N", title="Engineering Department"),
+            y=alt.Y(
+                "cutoff:Q",
+                scale=alt.Scale(domain=[130, 200]),
+                title=f"Cutoff Mark ({community})",
+            ),
+            color=alt.Color(
+                "college:N",
+                title="College",
+                scale=alt.Scale(
+                    domain=[college_a, college_b],
+                    range=["#4F46E5", "#06B6D4"],
+                ),
+            ),
+            xOffset="college:N",
+            tooltip=["college", "branch", "cutoff"],
+        )
+        .properties(height=340)
+        .configure_axis(grid=True, gridColor="#f0f2f6")
+    )
+    return cast(alt.Chart, chart)

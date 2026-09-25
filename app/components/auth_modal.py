@@ -102,6 +102,8 @@ def render_auth_page() -> None:
                             st.session_state["authenticated"] = True
                             st.session_state["phone"] = norm_phone
                             st.session_state["session_key"] = session_key
+                            st.session_state["history_synced"] = False
+                            st.session_state.pop("messages", None)
 
                             profile = get_student_profile(session_key)
                             st.session_state["cutoff"] = profile.calculated_cutoff
@@ -120,6 +122,8 @@ def render_auth_page() -> None:
                 st.session_state["authenticated"] = True
                 st.session_state["phone"] = "919999999999 (Demo)"
                 st.session_state["session_key"] = session_key
+                st.session_state["history_synced"] = False
+                st.session_state.pop("messages", None)
 
                 update_student_profile(
                     session_key=session_key,

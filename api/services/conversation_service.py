@@ -78,6 +78,29 @@ async def get_recent_turns(
     return turns
 
 
+async def get_conversation_turns_for_session(
+    db: AsyncSession, session_key: str, limit: int = 50
+) -> List[ConversationMessage]:
+    """Retrieve full chronological conversation history for a student's session key."""
+    stmt_conv = (
+        select(Conversation)
+        .where(Conversation.session_key == session_key)
+        .order_by(Conversation.last_message_at.desc())
+        .limit(1)
+    )
+    conversation = (await db.execute(stmt_conv)).scalars().first()
+    if conversation is None:
+        return []
+
+    stmt_msgs = (
+        select(ConversationMessage)
+        .where(ConversationMessage.conversation_id == conversation.id)
+        .order_by(ConversationMessage.created_at.asc(), ConversationMessage.id.asc())
+        .limit(limit)
+    )
+    return list((await db.execute(stmt_msgs)).scalars().all())
+
+
 async def append_turn(
     db: AsyncSession, conversation: Conversation, role: str, content: str
 ) -> None:

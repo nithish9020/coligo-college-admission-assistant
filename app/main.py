@@ -6,6 +6,7 @@ from app.components.analytics_view import render_analytics_view
 from app.components.auth_modal import render_auth_page
 from app.components.chat_view import render_chat_view
 from app.components.choice_sheet_view import render_choice_sheet_view
+from app.components.compare_view import render_compare_view
 from app.components.matrix_view import render_matrix_view
 from app.components.placement_view import render_placement_view
 from app.components.rank_predictor_view import render_rank_predictor_view
@@ -77,6 +78,8 @@ def main() -> None:
         render_chat_view()
     elif selected_view == "📊 Cutoff Visualizer & Graphs":
         render_analytics_view()
+    elif selected_view == "⚖️ Head-to-Head College Comparator":
+        render_compare_view()
     elif selected_view == "🥧 Seat Matrix & Quota Pie Charts":
         render_matrix_view()
     elif selected_view == "💼 Placement & Recruiter Analytics":

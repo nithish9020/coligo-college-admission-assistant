@@ -385,6 +385,77 @@ async def _handle_rank_predictor_query(
     return True
 
 
+async def _handle_marks_calculation_query(
+    sender: str, query: str, session_key: str
+) -> bool:
+    """Handle direct marks inputs or cutoff calculations and present instant admission card."""
+    from api.services.message_formatter import calculate_tnea_cutoff
+    from api.services.rank_predictor import predict_tnea_rank
+    from api.services.student_profile_service import (
+        get_student_profile,
+        update_student_profile,
+    )
+
+    q_low = query.lower()
+    has_marks = ("math" in q_low or "mathes" in q_low or "m " in q_low) and (
+        "phy" in q_low or "p " in q_low
+    )
+    has_cutoff = bool(
+        re.search(
+            r"\b(?:my cutoff is|cutoff is|cutoff mark is|cutoff:)\s*\d{2,3}",
+            q_low,
+        )
+    )
+    if not has_marks and not has_cutoff:
+        return False
+
+    other_topics = (
+        "fee",
+        "fees",
+        "hostel",
+        "bus",
+        "address",
+        "autonomous",
+        "syllabus",
+    )
+    if any(t in q_low for t in other_topics):
+        return False
+
+    cutoff = calculate_tnea_cutoff(query)
+    if cutoff is None or cutoff < 77.5 or cutoff > 200.0:
+        return False
+
+    update_student_profile(session_key, cutoff=cutoff)
+    profile = get_student_profile(session_key)
+    comm = profile.community or "BC"
+
+    rank_data = predict_tnea_rank(cutoff, comm)
+
+    card = (
+        f"📊 *Official TNEA Cutoff Calculation & Rank Roadmap*\n\n"
+        f"• *Calculated Cutoff:* *{cutoff:g} / 200.0* ✅\n"
+        f"• *Community Quota:* *{comm}*\n"
+        f"• *Estimated State Rank:* *~{rank_data['overall_rank_min']:,} – {rank_data['overall_rank_max']:,}*\n"
+        f"• *Estimated Community Rank ({comm}):* *~{rank_data['community_rank_min']:,} – {rank_data['community_rank_max']:,}*\n"
+        f"• *Counselling Round:* *ROUND {rank_data['round_number']}* — _{rank_data['round_name']}_\n\n"
+        f"💡 *Round Advisory:*\n{rank_data['strategy']}\n\n"
+        f"🏫 *Top College Matches for Cutoff {cutoff:g}:*\n"
+        f"• *SKCET (2722)*: CSE / IT / AI&DS / ECE\n"
+        f"• *CIT Coimbatore (2007)*: Circuit & Core branches\n"
+        f"• *Kumaraguru KCT (2712)*: Tech & Circuit branches\n\n"
+        f"👉 _Tap below to generate your 3-tier choice order or explore colleges:_"
+    )
+    await send_text(sender, card)
+
+    buttons = [
+        ("btn_matchmaker", "Find My College"),
+        ("btn_choice_list", "3-Tier Choice Sheet"),
+        ("btn_placements", "Placement Stats"),
+    ]
+    await send_interactive_buttons(sender, "💡 *Next Recommended Steps:*", buttons)
+    return True
+
+
 async def _handle_placement_query(sender: str, query: str) -> bool:
     """Send structured placement analytics card."""
     q_lower = query.lower()
@@ -404,6 +475,106 @@ async def _handle_placement_query(sender: str, query: str) -> bool:
         sender, "💡 *What would you like to explore next?*", buttons
     )
     return True
+
+
+async def _send_community_picker(sender: str, step2_msg: str) -> bool:
+    """Send interactive list picker for all 7 TNEA reservation communities."""
+    sections = [
+        {
+            "title": "TNEA Community Quota",
+            "rows": [
+                {
+                    "id": "btn_comm_oc",
+                    "title": "OC (Open Merit)",
+                    "description": "31% General merit quota",
+                },
+                {
+                    "id": "btn_comm_bc",
+                    "title": "BC (Backward Class)",
+                    "description": "26.5% State BC reservation",
+                },
+                {
+                    "id": "btn_comm_bcm",
+                    "title": "BCM (Muslim)",
+                    "description": "3.5% State BCM reservation",
+                },
+                {
+                    "id": "btn_comm_mbc",
+                    "title": "MBC / DNC",
+                    "description": "20% Most Backward Classes",
+                },
+                {
+                    "id": "btn_comm_sc",
+                    "title": "SC (Scheduled Caste)",
+                    "description": "15% SC reservation",
+                },
+                {
+                    "id": "btn_comm_sca",
+                    "title": "SC Arunthathiyar",
+                    "description": "3% SCA reservation",
+                },
+                {
+                    "id": "btn_comm_st",
+                    "title": "ST (Scheduled Tribe)",
+                    "description": "1% ST reservation",
+                },
+            ],
+        }
+    ]
+    sent = await send_interactive_list(sender, step2_msg, "Select Quota", sections)
+    if not sent:
+        buttons = [
+            ("btn_comm_bc", "BC Community"),
+            ("btn_comm_mbc", "MBC Community"),
+            ("btn_comm_oc", "OC Community"),
+        ]
+        sent = await send_interactive_buttons(sender, step2_msg, buttons)
+    return sent
+
+
+async def _send_district_picker(sender: str, step3_msg: str) -> bool:
+    """Send interactive list picker for top educational districts."""
+    sections = [
+        {
+            "title": "Preferred Study Hub",
+            "rows": [
+                {
+                    "id": "btn_dist_cbe",
+                    "title": "Coimbatore",
+                    "description": "SKCET, PSG, CIT, KCT, SECE",
+                },
+                {
+                    "id": "btn_dist_chn",
+                    "title": "Chennai",
+                    "description": "CEG Guindy, MIT, SSN, SVCE",
+                },
+                {
+                    "id": "btn_dist_erd",
+                    "title": "Erode / Salem",
+                    "description": "Bannari Amman, GCE Salem, Kongu",
+                },
+                {
+                    "id": "btn_dist_mdu",
+                    "title": "Madurai / Trichy",
+                    "description": "TCE Madurai, Saranathan, Mepco",
+                },
+                {
+                    "id": "btn_dist_all",
+                    "title": "Anywhere in TN",
+                    "description": "Top colleges statewide",
+                },
+            ],
+        }
+    ]
+    sent = await send_interactive_list(sender, step3_msg, "Select District", sections)
+    if not sent:
+        buttons = [
+            ("btn_dist_cbe", "Coimbatore"),
+            ("btn_dist_chn", "Chennai"),
+            ("btn_dist_all", "Anywhere (TN)"),
+        ]
+        sent = await send_interactive_buttons(sender, step3_msg, buttons)
+    return sent
 
 
 async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> bool:
@@ -483,14 +654,9 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
                     f"🎯 *TNEA College Matchmaker (Step 3 of 3)*\n\n"
                     f"• Cutoff: *{extracted_cutoff:g}* | Quota: *{profile.community}* ✅\n\n"
                     f"👉 *Step 3: What is your preferred study location / district?*\n"
-                    f"Tap below or type your preferred city:"
+                    f"Select your preferred educational hub below:"
                 )
-                buttons = [
-                    ("btn_dist_cbe", "Coimbatore"),
-                    ("btn_dist_chn", "Chennai"),
-                    ("btn_dist_all", "Anywhere (TN)"),
-                ]
-                await send_interactive_buttons(sender, step3_msg, buttons)
+                await _send_district_picker(sender, step3_msg)
                 return True
             else:
                 profile.matchmaker_step = 2
@@ -498,14 +664,9 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
                     f"🎯 *TNEA College Matchmaker (Step 2 of 3)*\n\n"
                     f"• Cutoff registered: *{extracted_cutoff:g} / 200.0* ✅\n\n"
                     f"👉 *Step 2: What is your Community Quota category?*\n"
-                    f"Tap a button below or type your category (OC, BC, BCM, MBC, SC, ST):"
+                    f"Select your category below (OC, BC, BCM, MBC, SC, SCA, ST):"
                 )
-                buttons = [
-                    ("btn_comm_bc", "BC Community"),
-                    ("btn_comm_mbc", "MBC Community"),
-                    ("btn_comm_oc", "OC Community"),
-                ]
-                await send_interactive_buttons(sender, step2_msg, buttons)
+                await _send_community_picker(sender, step2_msg)
                 return True
         else:
             step1_msg = (
@@ -522,15 +683,21 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
     # ── Step 2: Community Category (OC, BC, BCM, MBC, SC, ST) ──
     if profile.matchmaker_step == 2:
         comm_match = re.search(r"\b(OC|BC|BCM|MBC|SC|SCA|ST)\b", query, re.IGNORECASE)
-        if comm_match or "btn_comm_" in q_lower:
-            if "btn_comm_bc" in q_lower:
+        if comm_match or "btn_comm_" in q_lower or "comm_" in q_lower:
+            if "btn_comm_bc" in q_lower or "comm_bc" in q_lower:
                 comm = "BC"
-            elif "btn_comm_mbc" in q_lower:
+            elif "btn_comm_bcm" in q_lower or "comm_bcm" in q_lower:
+                comm = "BCM"
+            elif "btn_comm_mbc" in q_lower or "comm_mbc" in q_lower:
                 comm = "MBC"
-            elif "btn_comm_oc" in q_lower:
+            elif "btn_comm_oc" in q_lower or "comm_oc" in q_lower:
                 comm = "OC"
-            elif "btn_comm_sc" in q_lower:
+            elif "btn_comm_sca" in q_lower or "comm_sca" in q_lower:
+                comm = "SCA"
+            elif "btn_comm_sc" in q_lower or "comm_sc" in q_lower:
                 comm = "SC"
+            elif "btn_comm_st" in q_lower or "comm_st" in q_lower:
+                comm = "ST"
             elif comm_match:
                 comm = comm_match.group(1).upper()
             else:
@@ -543,14 +710,9 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
                 f"🎯 *TNEA College Matchmaker (Step 3 of 3)*\n\n"
                 f"• Cutoff: *{c_score:g}* | Quota: *{comm}* ✅\n\n"
                 f"👉 *Step 3: What is your preferred study location / district?*\n"
-                f"Tap below or type your preferred city:"
+                f"Select your preferred educational hub below:"
             )
-            buttons = [
-                ("btn_dist_cbe", "Coimbatore"),
-                ("btn_dist_chn", "Chennai"),
-                ("btn_dist_all", "Anywhere (TN)"),
-            ]
-            await send_interactive_buttons(sender, step3_msg, buttons)
+            await _send_district_picker(sender, step3_msg)
             return True
         else:
             c_score = profile.calculated_cutoff or 185.0
@@ -558,28 +720,41 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
                 f"🎯 *TNEA College Matchmaker (Step 2 of 3)*\n\n"
                 f"• Cutoff registered: *{c_score:g} / 200.0* ✅\n\n"
                 f"👉 *Step 2: What is your Community Quota category?*\n"
-                f"Tap a button below or type your category (OC, BC, BCM, MBC, SC, ST):"
+                f"Select your category below (OC, BC, BCM, MBC, SC, SCA, ST):"
             )
-            buttons = [
-                ("btn_comm_bc", "BC Community"),
-                ("btn_comm_mbc", "MBC Community"),
-                ("btn_comm_oc", "OC Community"),
-            ]
-            await send_interactive_buttons(sender, step2_msg, buttons)
+            await _send_community_picker(sender, step2_msg)
             return True
 
     # ── Step 3: Preferred District / Region ──
     if profile.matchmaker_step == 3:
         dist = "Anywhere"
-        if any(k in q_lower for k in ("coimbatore", "cbe", "kovai", "btn_dist_cbe")):
+        if any(
+            k in q_lower
+            for k in ("coimbatore", "cbe", "kovai", "btn_dist_cbe", "dist_cbe")
+        ):
             dist = "Coimbatore"
-        elif any(k in q_lower for k in ("chennai", "chn", "btn_dist_chn")):
+        elif any(k in q_lower for k in ("chennai", "chn", "btn_dist_chn", "dist_chn")):
             dist = "Chennai"
-        elif any(k in q_lower for k in ("erode", "sathy", "perundurai")):
+        elif any(
+            k in q_lower
+            for k in ("erode", "sathy", "perundurai", "btn_dist_erd", "dist_erd")
+        ):
             dist = "Erode"
         elif any(
             k in q_lower
-            for k in ("anywhere", "all", "tn", "tamil nadu", "btn_dist_all")
+            for k in ("madurai", "mdu", "trichy", "btn_dist_mdu", "dist_mdu")
+        ):
+            dist = "Madurai"
+        elif any(
+            k in q_lower
+            for k in (
+                "anywhere",
+                "all",
+                "tn",
+                "tamil nadu",
+                "btn_dist_all",
+                "dist_all",
+            )
         ):
             dist = "Anywhere"
         elif (
@@ -595,14 +770,9 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
                 f"🎯 *TNEA College Matchmaker (Step 3 of 3)*\n\n"
                 f"• Cutoff: *{c_score:g}* | Quota: *{comm_val}* ✅\n\n"
                 f"👉 *Step 3: What is your preferred study location / district?*\n"
-                f"Tap below or type your preferred city:"
+                f"Select your preferred educational hub below:"
             )
-            buttons = [
-                ("btn_dist_cbe", "Coimbatore"),
-                ("btn_dist_chn", "Chennai"),
-                ("btn_dist_all", "Anywhere (TN)"),
-            ]
-            await send_interactive_buttons(sender, step3_msg, buttons)
+            await _send_district_picker(sender, step3_msg)
             return True
 
         update_student_profile(session_key, district=dist, clear_matchmaker=True)
@@ -938,6 +1108,9 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         return
 
     if await _handle_matchmaker_flow(message.sender, query, session_key):
+        return
+
+    if await _handle_marks_calculation_query(message.sender, query, session_key):
         return
 
     if await _handle_rank_predictor_query(message.sender, query, session_key):

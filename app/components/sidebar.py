@@ -82,6 +82,7 @@ def render_sidebar() -> str:
         nav_options = [
             "💬 AI Admissions Chatbot",
             "📊 Cutoff Visualizer & Graphs",
+            "⚖️ Head-to-Head College Comparator",
             "🥧 Seat Matrix & Quota Pie Charts",
             "💼 Placement & Recruiter Analytics",
             "📋 3-Tier Choice Sheet Builder",
