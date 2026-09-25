@@ -314,11 +314,25 @@ async def handle_rag_query(
             conversation = None
             history_str = ""
 
-    # 1b. Check In-Memory RAG Response Cache (for queries without prior history)
+    # 1b. Check Instant FAQ Router (<50ms deterministic institutional facts)
+    from api.services.faq_router import match_instant_faq
+
+    faq_hit = match_instant_faq(query_text)
+    if faq_hit:
+        ans, faq_sources = faq_hit
+        if conversation is not None:
+            try:
+                await append_turn(db, conversation, "user", query_text)
+                await append_turn(db, conversation, "assistant", ans)
+                await db.commit()
+            except Exception:
+                pass
+        return ans, faq_sources
+
+    # 1c. Check In-Memory RAG Response Cache (for queries without prior history)
     if not history_str:
         cached = get_cached_rag_response(query_text)
         if cached is not None:
-            # Still persist conversation turns so follow-ups have context
             if conversation is not None:
                 try:
                     answer_cached, _ = cached
@@ -329,7 +343,7 @@ async def handle_rag_query(
                     pass
             return cached
 
-    # 1c. LangGraph Multi-Turn Agentic RAG Execution
+    # 1d. LangGraph Multi-Turn Agentic RAG Execution
     if settings.USE_LANGGRAPH:
         from api.services.agent.graph import counselor_graph
 
@@ -337,6 +351,7 @@ async def handle_rag_query(
             "session_key": session_key or "web:anonymous",
             "raw_message": query_text,
             "history_text": history_str,
+            "calculated_cutoff": system_calculated_cutoff,
         }
         res = await counselor_graph.ainvoke(
             agent_state, config={"configurable": {"db": db}}
@@ -552,8 +567,44 @@ async def stream_rag_query(
             conversation = None
             history_str = ""
 
+    # Instant FAQ Fast Path (<50ms deterministic answers)
+    from api.services.faq_router import match_instant_faq
+
+    faq_hit = match_instant_faq(query_text)
+    if faq_hit:
+        ans, faq_sources = faq_hit
+        yield {
+            "event": "sources",
+            "sources": faq_sources,
+            "calculated_cutoff": system_calculated_cutoff,
+        }
+        yield {"event": "delta", "text": ans}
+        yield {
+            "event": "done",
+            "full_text": ans,
+            "sources": faq_sources,
+            "suggested_followups": get_suggested_followups(query_text, ans),
+            "calculated_cutoff": system_calculated_cutoff,
+        }
+        if conversation is not None:
+            try:
+                await append_turn(db, conversation, "user", query_text)
+                await append_turn(db, conversation, "assistant", ans)
+                await db.commit()
+            except Exception:
+                pass
+        return
+
+    profile = None
+    if session_key:
+        from api.services.student_profile_service import get_student_profile
+
+        profile = get_student_profile(session_key)
+
     if system_calculated_cutoff is None:
         system_calculated_cutoff = calculate_tnea_cutoff(query_text)
+        if system_calculated_cutoff is None and profile and profile.calculated_cutoff:
+            system_calculated_cutoff = profile.calculated_cutoff
 
     retrieval_query = query_text
     if (
@@ -612,6 +663,27 @@ async def stream_rag_query(
     sources: List[str] = []
     total_chars = 0
     max_context_chars = 7500
+
+    from api.services.agent.nodes.retriever import _fetch_structured_context
+
+    structured_intent = (
+        "choice_filling"
+        if (not college_kws and system_calculated_cutoff)
+        else "cutoff_query"
+    )
+    structured_chunk = await _fetch_structured_context(
+        db=db,
+        intent=structured_intent,
+        cutoff=system_calculated_cutoff,
+        community=profile.community if profile else None,
+        branches=None,
+        colleges=college_kws,
+    )
+    if structured_chunk:
+        context_parts.append(structured_chunk["text_content"])
+        if structured_chunk["document_ref"] not in sources:
+            sources.append(structured_chunk["document_ref"])
+        total_chars += len(structured_chunk["text_content"])
     for chunk, document_ref in reordered_rows[:4]:
         text = (chunk.text_content or "").strip()
         if total_chars + len(text) > max_context_chars:

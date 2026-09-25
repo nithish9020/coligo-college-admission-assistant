@@ -44,6 +44,13 @@ async def chat_endpoint(
     session_key = f"web:{request.session_id}" if request.session_id else None
     calculated_cutoff = calculate_tnea_cutoff(request.message)
 
+    if session_key:
+        from api.services.student_profile_service import get_student_profile
+
+        profile = get_student_profile(session_key)
+        if calculated_cutoff is None and profile.calculated_cutoff is not None:
+            calculated_cutoff = profile.calculated_cutoff
+
     response_text, sources = await handle_rag_query(
         db,
         request.message,

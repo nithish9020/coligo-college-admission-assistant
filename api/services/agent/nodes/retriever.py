@@ -76,8 +76,10 @@ async def _fetch_structured_context(
         generate_choice_filling_recommendations,
         get_cutoff_records,
     )
+    from api.services.message_formatter import calculate_admission_chance
 
-    if intent == "choice_filling" and cutoff is not None:
+    # 1. Choice filling / recommendations when cutoff is known
+    if (intent == "choice_filling" or not colleges) and cutoff is not None:
         recs = await generate_choice_filling_recommendations(
             db,
             cutoff=cutoff,
@@ -121,22 +123,31 @@ async def _fetch_structured_context(
             "document_ref": "TNEA Official Cutoffs Database",
         }
 
-    if colleges and community:
+    # 2. Specific College Cutoffs (with or without community)
+    if colleges:
+        target_comm = community if (community and community != "ALL") else None
         sql_records = await get_cutoff_records(
             db,
             college=colleges[0],
             branch=branches[0] if branches else None,
-            community=community,
-            limit=8,
+            community=target_comm,
+            limit=12,
         )
         if sql_records:
             col_name = colleges[0].upper()
-            header = f"=== VERIFIED CUTOFFS FOR {col_name} ({community}) ==="
+            comm_tag = f"({community})" if community else "(Major Communities)"
+            header = f"=== VERIFIED CUTOFFS FOR {col_name} {comm_tag} ==="
             lines = [header]
+            if cutoff is not None:
+                lines.append(f"Candidate Cutoff: {cutoff:g} / 200.0\n")
             for r in sql_records:
+                chance_str = ""
+                if cutoff is not None:
+                    badge, _ = calculate_admission_chance(cutoff, r.cutoff_mark)
+                    chance_str = f" [{badge}]"
                 lines.append(
                     f"• {r.college_name} | {r.branch_name} | "
-                    f"{r.community}: {r.cutoff_mark}"
+                    f"{r.community}: {r.cutoff_mark}{chance_str}"
                 )
             return {
                 "chunk_index": 0,

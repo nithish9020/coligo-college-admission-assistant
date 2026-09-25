@@ -346,6 +346,10 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         "mech_info": "What is the intake, TNEA cutoff, and placement record for Mechanical Engineering?",
         "eee_info": "What is the intake, TNEA cutoff, and placement record for Electrical and Electronics Engineering (EEE)?",
         "civil_info": "What is the intake, TNEA cutoff, and placement record for Civil Engineering?",
+        "btn_comm_bc": "I belong to BC community. What are my college admission chances?",
+        "btn_comm_mbc": "I belong to MBC community. What are my college admission chances?",
+        "btn_comm_oc": "I belong to OC community. What are my college admission chances?",
+        "btn_comm_sc": "I belong to SC community. What are my college admission chances?",
     }
 
     if query.lower() in menu_query_map:
@@ -376,18 +380,24 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         )
         return
 
+    session_key = f"whatsapp:{message.sender}"
     async with async_session_factory() as db:
         try:
             from api.services.message_formatter import calculate_tnea_cutoff
+            from api.services.student_profile_service import get_student_profile
 
+            profile = get_student_profile(session_key)
             calculated_cutoff = calculate_tnea_cutoff(query)
+            if calculated_cutoff is None and profile.calculated_cutoff is not None:
+                calculated_cutoff = profile.calculated_cutoff
+
             if message.message_id:
                 await send_typing_indicator(message.message_id)
 
             answer, sources = await handle_rag_query(
                 db,
                 query,
-                session_key=f"whatsapp:{message.sender}",
+                session_key=session_key,
                 system_calculated_cutoff=calculated_cutoff,
             )
             formatted_answer = (
@@ -408,16 +418,28 @@ async def _answer_student_task(message: ParsedMessage) -> None:
                     "community",
                 )
             ):
-                cta = [
-                    ("btn_fees", "Fee Details"),
-                    ("btn_courses", "View Courses"),
-                    ("btn_brochure", "Get Brochure"),
-                ]
-                await send_interactive_buttons(
-                    message.sender,
-                    "💡 *What would you like to explore next?*",
-                    cta,
-                )
+                if not profile.community:
+                    comm_cta = [
+                        ("btn_comm_bc", "BC Community"),
+                        ("btn_comm_mbc", "MBC Community"),
+                        ("btn_comm_oc", "OC Community"),
+                    ]
+                    await send_interactive_buttons(
+                        message.sender,
+                        "💡 *Select your community to check exact closing ranks:*",
+                        comm_cta,
+                    )
+                else:
+                    cta = [
+                        ("btn_fees", "Fee Details"),
+                        ("btn_courses", "View Courses"),
+                        ("btn_brochure", "Get Brochure"),
+                    ]
+                    await send_interactive_buttons(
+                        message.sender,
+                        "💡 *What would you like to explore next?*",
+                        cta,
+                    )
             elif any(
                 k in q_lower for k in ("fee", "fees", "cost", "hostel", "tuition")
             ):
