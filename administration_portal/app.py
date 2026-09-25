@@ -16,15 +16,15 @@ from views.login import render_login
 from views.sidebar import render_sidebar
 from views.signup import render_signup
 
-init_session_state()
-restore_session_from_cookie()
-
 st.set_page_config(
     page_title="Coligo Admin Portal",
     page_icon="🎓",
     layout="wide",
-    initial_sidebar_state="expanded" if is_authenticated() else "collapsed",
+    initial_sidebar_state="expanded",
 )
+
+init_session_state()
+restore_session_from_cookie()
 
 inject_base_css()
 
