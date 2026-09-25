@@ -137,8 +137,59 @@ async def send_text(to: str, body: str) -> bool:
         return False
 
 
-async def mark_message_as_read(message_id: str) -> bool:
-    """Send read receipt (blue ticks) to WhatsApp for an incoming message."""
+async def send_typing_indicator(message_id: str) -> bool:
+    """Send typing indicator ('typing...') to WhatsApp while preparing response.
+
+    In Meta WhatsApp Cloud API v21.0+, passing a typing_indicator payload
+    displays the 'typing...' animation on the student's phone for up to 25s
+    or until the reply message is delivered.
+    """
+    if not settings.WHATSAPP_PHONE_NUMBER_ID or not settings.WHATSAPP_ACCESS_TOKEN:
+        return False
+
+    url = (
+        "https://graph.facebook.com/"
+        f"{settings.WHATSAPP_API_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+    )
+    payload = {
+        "messaging_product": "whatsapp",
+        "status": "read",
+        "message_id": message_id,
+        "typing_indicator": {
+            "type": "text",
+        },
+    }
+    headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
+
+    try:
+        client = _get_http_client()
+        resp = await client.post(url, json=payload, headers=headers, timeout=5.0)
+        if resp.status_code >= 400:
+            logger.debug(
+                "typing_indicator_fallback_to_standard_read",
+                status_code=resp.status_code,
+                error=resp.text,
+            )
+            # Fallback to standard read receipt without typing_indicator object
+            fallback_payload = {
+                "messaging_product": "whatsapp",
+                "status": "read",
+                "message_id": message_id,
+            }
+            await client.post(url, json=fallback_payload, headers=headers, timeout=5.0)
+        return True
+    except Exception as e:
+        logger.error(
+            "send_typing_indicator_failed", message_id=message_id, error=str(e)
+        )
+        return False
+
+
+async def mark_message_as_read(message_id: str, show_typing: bool = True) -> bool:
+    """Send read receipt (blue ticks) and optional typing indicator to WhatsApp."""
+    if show_typing:
+        return await send_typing_indicator(message_id)
+
     if not settings.WHATSAPP_PHONE_NUMBER_ID or not settings.WHATSAPP_ACCESS_TOKEN:
         return False
 

@@ -33,6 +33,7 @@ from api.services.whatsapp_service import (
     send_interactive_buttons,
     send_interactive_list,
     send_text,
+    send_typing_indicator,
     verify_signature,
 )
 
@@ -380,6 +381,8 @@ async def _answer_student_task(message: ParsedMessage) -> None:
             from api.services.message_formatter import calculate_tnea_cutoff
 
             calculated_cutoff = calculate_tnea_cutoff(query)
+            if message.message_id:
+                await send_typing_indicator(message.message_id)
 
             answer, sources = await handle_rag_query(
                 db,
