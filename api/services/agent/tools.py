@@ -76,9 +76,12 @@ async def _query_cutoffs_impl(
 ) -> str:
     """Fetch verified TNEA cutoffs from the database."""
     try:
+        from api.services.rag_service import detect_college_keyword
+
+        search_col = detect_college_keyword(college) or college
         records = await get_cutoff_records(
             db,
-            college=college,
+            college=search_col,
             branch=branch,
             community=community,
             limit=15,

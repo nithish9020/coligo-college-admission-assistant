@@ -110,7 +110,10 @@ async def get_cutoff_records(
     if college:
         stmt = stmt.where(TNEACutoff.college_name.ilike(f"%{college}%"))
     if branch:
-        stmt = stmt.where(TNEACutoff.branch_name.ilike(f"%{branch}%"))
+        b_lower = branch.strip().lower()
+        patterns = BRANCH_KEYWORD_PATTERNS.get(b_lower, [branch])
+        branch_cond = or_(*(TNEACutoff.branch_name.ilike(f"%{p}%") for p in patterns))
+        stmt = stmt.where(branch_cond)
     if community and community != "ALL":
         stmt = stmt.where(TNEACutoff.community == community.upper())
 
