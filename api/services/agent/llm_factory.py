@@ -31,16 +31,28 @@ def _get_groq_model() -> Any | None:
         return None
     from langchain_openai import ChatOpenAI
 
-    groq_model_name = settings.LLM_MODEL or "openai/gpt-oss-120b"
-    if not groq_model_name or "gemini" in groq_model_name.lower():
-        groq_model_name = "openai/gpt-oss-120b"
-    return ChatOpenAI(
-        model=groq_model_name,
-        api_key=SecretStr(groq_key),
-        base_url="https://api.groq.com/openai/v1",
-        temperature=0.2,
-        max_retries=2,
-    )
+    groq_model_name = settings.LLM_MODEL or "openai/gpt-oss-20b"
+    if (
+        not groq_model_name
+        or "gemini" in groq_model_name.lower()
+        or "120b" in groq_model_name.lower()
+    ):
+        groq_model_name = "openai/gpt-oss-20b"
+    if groq_model_name.lower().strip() in ("gpt-oss-20b", "gpt oss 20b", "gpt_oss_20b"):
+        groq_model_name = "openai/gpt-oss-20b"
+
+    kwargs: dict[str, Any] = {
+        "model": groq_model_name,
+        "api_key": SecretStr(groq_key),
+        "base_url": settings.LLM_BASE_URL or "https://api.groq.com/openai/v1",
+        "temperature": 0.2,
+        "max_tokens": 2048,
+        "max_retries": 2,
+    }
+    if "oss" in groq_model_name.lower() or "20b" in groq_model_name.lower():
+        kwargs["reasoning_effort"] = "low"
+
+    return ChatOpenAI(**kwargs)
 
 
 def _get_openai_model() -> Any:
@@ -59,7 +71,7 @@ def _get_openai_model() -> Any:
 
 
 def get_agent_chat_model() -> Any:
-    """Return configured LangChain chat model with resilient dual-provider fallback."""
+    """Return LangChain chat model with GPT-OSS-20B primary and Gemini fallback."""
     provider = (settings.LLM_PROVIDER or "groq").lower()
 
     gemini_model = _get_gemini_model()
@@ -67,13 +79,23 @@ def get_agent_chat_model() -> Any:
 
     if groq_model is not None and gemini_model is not None:
         if provider == "gemini":
-            logger.info("agent_llm_configured", primary="gemini", fallback="groq")
+            logger.info(
+                "agent_llm_configured",
+                primary="gemini",
+                fallback="groq (openai/gpt-oss-20b)",
+            )
             return gemini_model.with_fallbacks([groq_model])
-        logger.info("agent_llm_configured", primary="groq", fallback="gemini")
+        logger.info(
+            "agent_llm_configured",
+            primary="groq (openai/gpt-oss-20b)",
+            fallback="gemini",
+        )
         return groq_model.with_fallbacks([gemini_model])
 
     if groq_model is not None:
-        logger.info("agent_llm_configured", primary="groq", fallback=None)
+        logger.info(
+            "agent_llm_configured", primary="groq (openai/gpt-oss-20b)", fallback=None
+        )
         return groq_model
     if gemini_model is not None:
         logger.info("agent_llm_configured", primary="gemini", fallback=None)

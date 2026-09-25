@@ -47,9 +47,16 @@ def _resolve_openai_compatible_config(
             or settings.OPENAI_API_KEY
             or ""
         )
-        model = settings.LLM_MODEL or "openai/gpt-oss-120b"
-        if not model or "gemini" in model.lower() or "llama-3.3" in model.lower():
-            model = "openai/gpt-oss-120b"
+        model = settings.LLM_MODEL or "openai/gpt-oss-20b"
+        if (
+            not model
+            or "gemini" in model.lower()
+            or "llama" in model.lower()
+            or "120b" in model.lower()
+        ):
+            model = "openai/gpt-oss-20b"
+        if model.lower().strip() in ("gpt-oss-20b", "gpt oss 20b", "gpt_oss_20b"):
+            model = "openai/gpt-oss-20b"
         base_url = settings.LLM_BASE_URL or "https://api.groq.com/openai/v1"
     elif provider == "deepseek":
         api_key = (
@@ -99,13 +106,22 @@ async def _generate_with_openai_compatible(
         model=model,
     )
 
+    extra_params: dict[str, Any] = {}
+    is_reasoning_model = any(
+        m in model.lower() for m in ("oss", "20b", "120b", "o1", "o3", "r1")
+    )
+    if is_reasoning_model and "groq.com" in (base_url or ""):
+        extra_params["reasoning_effort"] = "low"
+    max_tokens = 2048 if is_reasoning_model else 1024
+
     for attempt in range(2):
         try:
             response = await client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.2,
-                max_tokens=1024,
+                max_tokens=max_tokens,
+                **extra_params,
             )
             text = response.choices[0].message.content or ""
             if text and text.strip():
@@ -221,8 +237,8 @@ async def _generate_with_gemini(
 
 
 async def generate_response_from_llm(prompt: str) -> str:
-    """Generate response with failover between Gemini and Groq/OpenAI."""
-    primary_provider = (settings.LLM_PROVIDER or "gemini").lower()
+    """Generate response with GPT-OSS-20B primary and Gemini failover."""
+    primary_provider = (settings.LLM_PROVIDER or "groq").lower()
 
     if primary_provider == "gemini":
         try:
@@ -347,12 +363,21 @@ async def _stream_with_openai_compatible(
         model=model,
     )
 
+    extra_params: dict[str, Any] = {}
+    is_reasoning_model = any(
+        m in model.lower() for m in ("oss", "20b", "120b", "o1", "o3", "r1")
+    )
+    if is_reasoning_model and "groq.com" in (base_url or ""):
+        extra_params["reasoning_effort"] = "low"
+    max_tokens = 2048 if is_reasoning_model else 1024
+
     response = await client.chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
-        max_tokens=1024,
+        max_tokens=max_tokens,
         stream=True,
+        **extra_params,
     )
     async for chunk in response:
         delta = chunk.choices[0].delta.content if chunk.choices else ""
@@ -361,8 +386,8 @@ async def _stream_with_openai_compatible(
 
 
 async def generate_stream_from_llm(prompt: str) -> AsyncIterator[str]:
-    """Stream response tokens with failover between Gemini and Groq/OpenAI."""
-    primary_provider = (settings.LLM_PROVIDER or "gemini").lower()
+    """Stream response tokens with GPT-OSS-20B primary and Gemini failover."""
+    primary_provider = (settings.LLM_PROVIDER or "groq").lower()
 
     if primary_provider == "gemini":
         try:

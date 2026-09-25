@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # LLM Provider & Model Selection
     # Supported: "gemini" | "groq" | "openai" | "deepseek" | "ollama" | "custom"
     LLM_PROVIDER: str = "groq"
-    LLM_MODEL: str | None = None
+    LLM_MODEL: str = "openai/gpt-oss-20b"
     LLM_API_KEY: str | None = None
     LLM_BASE_URL: str | None = None
     GROQ_API_KEY: str | None = None
