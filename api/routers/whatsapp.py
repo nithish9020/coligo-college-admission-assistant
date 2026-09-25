@@ -821,24 +821,30 @@ async def _answer_student_task(message: ParsedMessage) -> None:
     if message.message_id:
         await mark_message_as_read(message.message_id)
 
-    voice_prefix = ""
     query = (message.text or "").strip()
 
     # ── 0. Handle WhatsApp Audio / Voice Note Transcriptions ──
     if message.message_type in ("audio", "voice") and message.media_id:
         from api.services.audio_service import transcribe_audio_message
 
-        logger.info("transcribing_incoming_voice_note", media_id=message.media_id)
+        logger.info(
+            "transcribing_incoming_voice_note",
+            media_id=message.media_id,
+            mime_type=message.mime_type,
+            sender=message.sender,
+        )
         transcript = await transcribe_audio_message(message.media_id)
         if transcript:
             query = transcript
-            voice_prefix = f'🎙️ _"Voice note: {transcript}"_\n\n'
             logger.info("voice_note_transcribed_successfully", transcript=transcript)
+            # Reassure student by echoing back their transcribed question first
+            await send_text(message.sender, f'🎙️ _Voice note:_ "{transcript}"')
         else:
             await send_text(
                 message.sender,
-                "🎙️ Sorry, I had trouble listening to your audio message clearly. "
-                "Could you please type your admission query as text?",
+                "🎙️ *I received your voice note*, but couldn't quite hear the audio clearly.\n\n"
+                "Could you please try speaking again in a quiet place, or type your query? "
+                "I'm happy to help with cutoffs, courses, and admissions! 🎓",
             )
             return
 
@@ -1110,9 +1116,7 @@ async def _answer_student_task(message: ParsedMessage) -> None:
                 session_key=session_key,
                 system_calculated_cutoff=calculated_cutoff,
             )
-            formatted_answer = (
-                f"{voice_prefix}{format_whatsapp_response(query, answer, sources)}"
-            )
+            formatted_answer = format_whatsapp_response(query, answer, sources)
             await send_text(message.sender, formatted_answer)
 
             # ── Contextual interactive quick-reply buttons on EVERY turn ──
