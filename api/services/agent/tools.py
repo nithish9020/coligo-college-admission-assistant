@@ -385,6 +385,32 @@ def create_agent_tools(db: AsyncSession, session_key: str = "") -> list[Any]:
             )
         return _calc_cutoff_impl(maths, physics, chemistry)
 
+    @tool
+    def query_college_placements(college: str, branch: Optional[str] = None) -> str:
+        """Query placement stats, highest CTC, average CTC, and top recruiters.
+
+        Args:
+            college: College name or alias (e.g. SKCET, PSG, CIT, KCT, Bannari).
+            branch: Optional department to focus on (e.g. CSE, ECE, Mech).
+        """
+        logger.info("tool_invoked_query_placements", college=college, branch=branch)
+        from api.services.placement_service import format_placement_card
+
+        return format_placement_card(college, branch)
+
+    @tool
+    def predict_tnea_rank_tool(cutoff: float, community: str = "BC") -> str:
+        """Predict expected TNEA State Overall Rank and Counselling Round.
+
+        Args:
+            cutoff: Student's TNEA cutoff score out of 200.0.
+            community: Student's community (OC, BC, BCM, MBC, SC, ST).
+        """
+        logger.info("tool_invoked_predict_rank", cutoff=cutoff, community=community)
+        from api.services.rank_predictor import format_rank_prediction_message
+
+        return format_rank_prediction_message(cutoff, community)
+
     return [
         list_available_colleges,
         query_college_cutoffs,
@@ -392,4 +418,6 @@ def create_agent_tools(db: AsyncSession, session_key: str = "") -> list[Any]:
         get_choice_filling_recommendations_tool,
         search_admission_brochures,
         calculate_cutoff_from_marks,
+        query_college_placements,
+        predict_tnea_rank_tool,
     ]

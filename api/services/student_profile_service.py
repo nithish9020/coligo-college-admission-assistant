@@ -19,6 +19,8 @@ class StudentProfile(BaseModel):
     chemistry_mark: Optional[float] = None
     preferred_colleges: List[str] = Field(default_factory=list)
     preferred_branches: List[str] = Field(default_factory=list)
+    preferred_district: Optional[str] = None
+    matchmaker_step: Optional[int] = None
     last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     def is_complete(self) -> bool:
@@ -82,12 +84,21 @@ def update_student_profile(
     chemistry: Optional[float] = None,
     colleges: Optional[List[str]] = None,
     branches: Optional[List[str]] = None,
+    district: Optional[str] = None,
+    matchmaker_step: Optional[int] = None,
+    clear_matchmaker: bool = False,
 ) -> StudentProfile:
     """Update profile with newly extracted entities while preserving state."""
     profile = get_student_profile(session_key)
 
     _apply_academic_attributes(profile, cutoff, community, maths, physics, chemistry)
     _apply_target_preferences(profile, colleges, branches)
+    if district:
+        profile.preferred_district = district
+    if clear_matchmaker:
+        profile.matchmaker_step = None
+    elif matchmaker_step is not None:
+        profile.matchmaker_step = matchmaker_step
 
     profile.last_updated = datetime.now(timezone.utc)
     logger.debug(
@@ -97,6 +108,8 @@ def update_student_profile(
         community=profile.community,
         colleges=profile.preferred_colleges,
         branches=profile.preferred_branches,
+        district=profile.preferred_district,
+        matchmaker_step=profile.matchmaker_step,
     )
     return profile
 

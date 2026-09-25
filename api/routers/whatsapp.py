@@ -1,4 +1,6 @@
+import re
 import time
+from typing import Any
 
 from fastapi import (
     APIRouter,
@@ -221,7 +223,14 @@ async def _handle_choice_list_query(sender: str, query: str, session_key: str) -
             "• Or type marks: *Maths 90, Physics 85, Chemistry 80*\n"
             "• And your community quota (e.g. *BC*, *MBC*, *OC*, *SC*)"
         )
-        await send_text(sender, prompt_msg)
+        buttons = [
+            ("btn_matchmaker", "Find My College"),
+            ("btn_cutoff", "Check Cutoff"),
+            ("btn_placements", "Placement Stats"),
+        ]
+        sent_p = await send_interactive_buttons(sender, prompt_msg, buttons)
+        if not sent_p:
+            await send_text(sender, prompt_msg)
         return True
 
     async with async_session_factory() as db:
@@ -256,7 +265,555 @@ async def _handle_choice_list_query(sender: str, query: str, session_key: str) -
             )
         except Exception as pdf_err:
             logger.error("choice_sheet_pdf_delivery_failed", error=str(pdf_err))
+
+        cta_buttons = [
+            ("btn_download_pdf", "Download PDF"),
+            ("btn_change_dist", "Change District"),
+            ("btn_contact", "Talk to Counselor"),
+        ]
+        await send_interactive_buttons(
+            sender, "💡 *Next Steps for Choice Filling:*", cta_buttons
+        )
     return True
+
+
+async def _handle_download_pdf_query(sender: str, query: str, session_key: str) -> bool:
+    """Send or re-send downloadable TNEA choice sheet PDF."""
+    q_lower = query.lower()
+    if q_lower not in ("btn_download_pdf", "download pdf", "download pdf sheet"):
+        return False
+
+    from api.services.choice_list_service import generate_choice_sheet_file
+    from api.services.student_profile_service import get_student_profile
+
+    profile = get_student_profile(session_key)
+    cutoff = profile.calculated_cutoff or 185.0
+    community = profile.community or "BC"
+
+    async with async_session_factory() as db:
+        try:
+            _, pdf_url = await generate_choice_sheet_file(
+                db=db,
+                cutoff=cutoff,
+                community=community,
+                preferred_branches=profile.preferred_branches or None,
+                preferred_colleges=profile.preferred_colleges or None,
+                session_key=session_key,
+            )
+            await send_document(
+                to=sender,
+                document_url=pdf_url,
+                caption=(
+                    f"📄 *Official TNEA Choice Sheet ({community} - {cutoff:g})*\n"
+                    "Ready for choice locking on tneaonline.org!"
+                ),
+                filename="TNEA_Choice_Filling_Sheet.pdf",
+            )
+        except Exception as e:
+            logger.error("download_pdf_failed", error=str(e))
+            await send_text(
+                sender,
+                "⚠️ Could not generate PDF right now. Please send your cutoff score first!",
+            )
+    return True
+
+
+async def _handle_change_district_query(
+    sender: str, query: str, session_key: str
+) -> bool:
+    """Prompt for changing preferred region / district."""
+    q_lower = query.lower()
+    if q_lower not in ("btn_change_dist", "change district"):
+        return False
+
+    from api.services.student_profile_service import get_student_profile
+
+    profile = get_student_profile(session_key)
+    profile.matchmaker_step = 3
+    step3_msg = (
+        "📍 *Select your preferred location / district:*\n"
+        "Tap below to regenerate your choice sheet for that region:"
+    )
+    buttons = [
+        ("btn_dist_cbe", "Coimbatore"),
+        ("btn_dist_chn", "Chennai"),
+        ("btn_dist_all", "Anywhere (TN)"),
+    ]
+    await send_interactive_buttons(sender, step3_msg, buttons)
+    return True
+
+
+async def _handle_rank_predictor_query(
+    sender: str, query: str, session_key: str
+) -> bool:
+    """Predict TNEA State Overall Rank and Counselling Round."""
+    q_lower = query.lower()
+    if q_lower not in (
+        "btn_rank_predictor",
+        "rank predictor",
+        "predict rank",
+        "predict my rank",
+    ):
+        return False
+
+    from api.services.rank_predictor import format_rank_prediction_message
+    from api.services.student_profile_service import get_student_profile
+
+    profile = get_student_profile(session_key)
+    if profile.calculated_cutoff is not None:
+        msg = format_rank_prediction_message(
+            profile.calculated_cutoff, profile.community or "BC"
+        )
+        await send_text(sender, msg)
+        buttons = [
+            ("btn_choice_list", "3-Tier Choice List"),
+            ("btn_placements", "Placement Stats"),
+            ("btn_colleges", "Compare College"),
+        ]
+        await send_interactive_buttons(
+            sender, "💡 *What would you like to explore next?*", buttons
+        )
+    else:
+        prompt_msg = (
+            "📈 *TNEA Rank & Counselling Round Predictor*\n\n"
+            "To predict your State Overall Rank & Counselling Round:\n"
+            "• Send your cutoff mark (e.g. *188*)\n"
+            "• Or send your marks: *Maths 90, Physics 85, Chemistry 88*\n"
+            "• And your community (e.g. *BC*, *MBC*, *OC*, *SC*)"
+        )
+        await send_text(sender, prompt_msg)
+    return True
+
+
+async def _handle_placement_query(sender: str, query: str) -> bool:
+    """Send structured placement analytics card."""
+    q_lower = query.lower()
+    if q_lower not in ("btn_placements", "placement stats"):
+        return False
+
+    from api.services.placement_service import format_placement_card
+
+    card = format_placement_card("skcet")
+    await send_text(sender, card)
+    buttons = [
+        ("btn_cutoff", "Check Cutoff"),
+        ("btn_choice_list", "3-Tier Choice List"),
+        ("btn_fees", "Fee Details"),
+    ]
+    await send_interactive_buttons(
+        sender, "💡 *What would you like to explore next?*", buttons
+    )
+    return True
+
+
+async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> bool:
+    """Run interactive 3-step college matchmaker diagnostic flow.
+
+    Step 1: Cutoff score (or subject marks)
+    Step 2: Community category (OC, BC, BCM, MBC, SC, ST)
+    Step 3: Preferred district (Coimbatore, Chennai, Erode, or Anywhere)
+    Delivers instant personalized admission roadmap + choice-sheet PDF in < 2 seconds.
+    """
+    from api.services.choice_list_service import (
+        generate_choice_sheet_file,
+        generate_tnea_choice_list,
+    )
+    from api.services.message_formatter import calculate_tnea_cutoff
+    from api.services.rank_predictor import predict_tnea_rank
+    from api.services.student_profile_service import (
+        get_student_profile,
+        update_student_profile,
+    )
+
+    profile = get_student_profile(session_key)
+    q_lower = query.strip().lower()
+
+    matchmaker_triggers = (
+        "btn_matchmaker",
+        "btn_find_college",
+        "matchmaker",
+        "find my college",
+        "college matchmaker",
+        "find college",
+        "start matchmaker",
+        "diagnostic",
+    )
+    is_trigger = any(t in q_lower for t in matchmaker_triggers)
+    is_active_step = profile.matchmaker_step in (1, 2, 3)
+
+    if not is_trigger and not is_active_step:
+        return False
+
+    if is_trigger and not is_active_step:
+        inline_cutoff = calculate_tnea_cutoff(query)
+        if inline_cutoff is None:
+            c_match = re.search(
+                r"\b(1\d{2}(?:\.\d+)?|200(?:\.0+)?|\d{2}(?:\.\d+)?)\b", query
+            )
+            if c_match:
+                val = float(c_match.group(1))
+                if 77.5 <= val <= 200.0:
+                    inline_cutoff = val
+
+        if inline_cutoff is not None:
+            update_student_profile(session_key, cutoff=inline_cutoff)
+            profile.matchmaker_step = 2
+        elif profile.calculated_cutoff is not None:
+            profile.matchmaker_step = 2 if not profile.community else 3
+        else:
+            profile.matchmaker_step = 1
+
+    # ── Step 1: Cutoff score or subject marks ──
+    if profile.matchmaker_step == 1:
+        extracted_cutoff = calculate_tnea_cutoff(query)
+        if extracted_cutoff is None:
+            c_match = re.search(
+                r"\b(1\d{2}(?:\.\d+)?|200(?:\.0+)?|\d{2}(?:\.\d+)?)\b", query
+            )
+            if c_match:
+                val = float(c_match.group(1))
+                if 77.5 <= val <= 200.0:
+                    extracted_cutoff = val
+
+        if extracted_cutoff is not None:
+            update_student_profile(session_key, cutoff=extracted_cutoff)
+            if profile.community:
+                profile.matchmaker_step = 3
+                step3_msg = (
+                    f"🎯 *TNEA College Matchmaker (Step 3 of 3)*\n\n"
+                    f"• Cutoff: *{extracted_cutoff:g}* | Quota: *{profile.community}* ✅\n\n"
+                    f"👉 *Step 3: What is your preferred study location / district?*\n"
+                    f"Tap below or type your preferred city:"
+                )
+                buttons = [
+                    ("btn_dist_cbe", "Coimbatore"),
+                    ("btn_dist_chn", "Chennai"),
+                    ("btn_dist_all", "Anywhere (TN)"),
+                ]
+                await send_interactive_buttons(sender, step3_msg, buttons)
+                return True
+            else:
+                profile.matchmaker_step = 2
+                step2_msg = (
+                    f"🎯 *TNEA College Matchmaker (Step 2 of 3)*\n\n"
+                    f"• Cutoff registered: *{extracted_cutoff:g} / 200.0* ✅\n\n"
+                    f"👉 *Step 2: What is your Community Quota category?*\n"
+                    f"Tap a button below or type your category (OC, BC, BCM, MBC, SC, ST):"
+                )
+                buttons = [
+                    ("btn_comm_bc", "BC Community"),
+                    ("btn_comm_mbc", "MBC Community"),
+                    ("btn_comm_oc", "OC Community"),
+                ]
+                await send_interactive_buttons(sender, step2_msg, buttons)
+                return True
+        else:
+            step1_msg = (
+                "🎯 *TNEA College Matchmaker (Step 1 of 3)*\n\n"
+                "Welcome to the 3-Step Guided College Matchmaker! 🎓 Let's discover "
+                "your ideal engineering colleges & branches in seconds.\n\n"
+                "👉 *Step 1: What is your 12th Cutoff score?*\n"
+                "• Send your cutoff mark (e.g. *186.5*)\n"
+                "• Or type marks: *Maths 95, Physics 90, Chemistry 88*"
+            )
+            await send_text(sender, step1_msg)
+            return True
+
+    # ── Step 2: Community Category (OC, BC, BCM, MBC, SC, ST) ──
+    if profile.matchmaker_step == 2:
+        comm_match = re.search(r"\b(OC|BC|BCM|MBC|SC|SCA|ST)\b", query, re.IGNORECASE)
+        if comm_match or "btn_comm_" in q_lower:
+            if "btn_comm_bc" in q_lower:
+                comm = "BC"
+            elif "btn_comm_mbc" in q_lower:
+                comm = "MBC"
+            elif "btn_comm_oc" in q_lower:
+                comm = "OC"
+            elif "btn_comm_sc" in q_lower:
+                comm = "SC"
+            elif comm_match:
+                comm = comm_match.group(1).upper()
+            else:
+                comm = "BC"
+
+            update_student_profile(session_key, community=comm)
+            profile.matchmaker_step = 3
+            c_score = profile.calculated_cutoff or 185.0
+            step3_msg = (
+                f"🎯 *TNEA College Matchmaker (Step 3 of 3)*\n\n"
+                f"• Cutoff: *{c_score:g}* | Quota: *{comm}* ✅\n\n"
+                f"👉 *Step 3: What is your preferred study location / district?*\n"
+                f"Tap below or type your preferred city:"
+            )
+            buttons = [
+                ("btn_dist_cbe", "Coimbatore"),
+                ("btn_dist_chn", "Chennai"),
+                ("btn_dist_all", "Anywhere (TN)"),
+            ]
+            await send_interactive_buttons(sender, step3_msg, buttons)
+            return True
+        else:
+            c_score = profile.calculated_cutoff or 185.0
+            step2_msg = (
+                f"🎯 *TNEA College Matchmaker (Step 2 of 3)*\n\n"
+                f"• Cutoff registered: *{c_score:g} / 200.0* ✅\n\n"
+                f"👉 *Step 2: What is your Community Quota category?*\n"
+                f"Tap a button below or type your category (OC, BC, BCM, MBC, SC, ST):"
+            )
+            buttons = [
+                ("btn_comm_bc", "BC Community"),
+                ("btn_comm_mbc", "MBC Community"),
+                ("btn_comm_oc", "OC Community"),
+            ]
+            await send_interactive_buttons(sender, step2_msg, buttons)
+            return True
+
+    # ── Step 3: Preferred District / Region ──
+    if profile.matchmaker_step == 3:
+        dist = "Anywhere"
+        if any(k in q_lower for k in ("coimbatore", "cbe", "kovai", "btn_dist_cbe")):
+            dist = "Coimbatore"
+        elif any(k in q_lower for k in ("chennai", "chn", "btn_dist_chn")):
+            dist = "Chennai"
+        elif any(k in q_lower for k in ("erode", "sathy", "perundurai")):
+            dist = "Erode"
+        elif any(
+            k in q_lower
+            for k in ("anywhere", "all", "tn", "tamil nadu", "btn_dist_all")
+        ):
+            dist = "Anywhere"
+        elif (
+            query.strip()
+            and not is_trigger
+            and not any(k in q_lower for k in ("step", "matchmaker", "find my college"))
+        ):
+            dist = query.strip().title()
+        else:
+            c_score = profile.calculated_cutoff or 185.0
+            comm_val = profile.community or "BC"
+            step3_msg = (
+                f"🎯 *TNEA College Matchmaker (Step 3 of 3)*\n\n"
+                f"• Cutoff: *{c_score:g}* | Quota: *{comm_val}* ✅\n\n"
+                f"👉 *Step 3: What is your preferred study location / district?*\n"
+                f"Tap below or type your preferred city:"
+            )
+            buttons = [
+                ("btn_dist_cbe", "Coimbatore"),
+                ("btn_dist_chn", "Chennai"),
+                ("btn_dist_all", "Anywhere (TN)"),
+            ]
+            await send_interactive_buttons(sender, step3_msg, buttons)
+            return True
+
+        update_student_profile(session_key, district=dist, clear_matchmaker=True)
+
+        cutoff_val = profile.calculated_cutoff or 185.0
+        comm_val = profile.community or "BC"
+        rank_data = predict_tnea_rank(cutoff_val, comm_val)
+
+        async with async_session_factory() as db:
+            pref_colls = None
+            if dist.lower() == "coimbatore":
+                pref_colls = ["SKCET", "PSG", "CIT", "KCT", "GCT", "Sri Eshwar"]
+            elif dist.lower() == "chennai":
+                pref_colls = ["CEG", "MIT", "SSN", "REC", "SVCE"]
+
+            choice_draft = await generate_tnea_choice_list(
+                db=db,
+                cutoff=cutoff_val,
+                community=comm_val,
+                preferred_branches=profile.preferred_branches or None,
+                preferred_colleges=pref_colls,
+            )
+
+            roadmap_msg = (
+                f"🎉 *Your TNEA Personalized Admission Roadmap!* 🎓\n\n"
+                f"• *Cutoff Score:* *{cutoff_val:g} / 200.0*\n"
+                f"• *Community Quota:* *{comm_val}*\n"
+                f"• *Preferred Region:* *{dist}*\n\n"
+                f"🎯 *Predicted State Overall Rank:* *~{rank_data['overall_rank_min']:,} to {rank_data['overall_rank_max']:,}*\n"
+                f"🏷️ *Predicted Community Rank ({comm_val}):* *~{rank_data['community_rank_min']:,} to {rank_data['community_rank_max']:,}*\n"
+                f"🏁 *Eligible Counselling:* *ROUND {rank_data['round_number']}* — _{rank_data['round_name']}_\n\n"
+                f"💡 *Expert Round Strategy:*\n{rank_data['strategy']}\n\n"
+                f"{choice_draft}\n\n"
+                f"📄 _Delivering your official PDF Choice Sheet below..._"
+            )
+            await send_text(sender, roadmap_msg)
+
+            try:
+                _, pdf_url = await generate_choice_sheet_file(
+                    db=db,
+                    cutoff=cutoff_val,
+                    community=comm_val,
+                    preferred_branches=profile.preferred_branches or None,
+                    preferred_colleges=pref_colls,
+                    session_key=session_key,
+                )
+                await send_document(
+                    to=sender,
+                    document_url=pdf_url,
+                    caption=(
+                        f"📄 *Official TNEA Choice Sheet ({comm_val} - {cutoff_val:g})*\n"
+                        f"Personalized for {dist} region. Ready for choice locking!"
+                    ),
+                    filename=f"TNEA_Choice_Sheet_{int(cutoff_val)}.pdf",
+                )
+            except Exception as pdf_e:
+                logger.error("matchmaker_pdf_delivery_failed", error=str(pdf_e))
+
+            cta_buttons = [
+                ("btn_download_pdf", "Download PDF"),
+                ("btn_change_dist", "Change District"),
+                ("btn_contact", "Talk to Counselor"),
+            ]
+            await send_interactive_buttons(
+                sender, "💡 *Next Steps for Choice Filling:*", cta_buttons
+            )
+            return True
+
+    return True
+
+
+def _build_dynamic_reply_buttons(
+    query: str, answer: str, profile: Any
+) -> list[tuple[str, str]]:
+    """Build exactly 3 contextual WhatsApp quick-reply buttons based on response.
+
+    Rules:
+    - Maximum 3 buttons per WhatsApp interactive message.
+    - Each button title must be <= 20 characters.
+    - After cutoff inquiry: [3-Tier Choice List], [Fee Details], [Compare College]
+    - After college comparison: [Download PDF Sheet], [Hostel & Campus], [Other Branches]
+    - After choice list: [Download PDF], [Change District], [Talk to Counselor]
+    - Default turns: [Find My College], [Check Cutoff], [Placement Stats]
+    """
+    q_low = query.lower()
+    ans_low = answer.lower()
+
+    # 1. After choice list inquiry / recommendation
+    if (
+        any(
+            k in q_low
+            for k in (
+                "choice",
+                "recommend",
+                "ambitious",
+                "order draft",
+                "choice list",
+            )
+        )
+        or "3-tier" in ans_low
+        or "choice filling" in ans_low
+    ):
+        return [
+            ("btn_download_pdf", "Download PDF"),
+            ("btn_change_dist", "Change District"),
+            ("btn_contact", "Talk to Counselor"),
+        ]
+
+    # 2. After college comparison
+    if (
+        any(
+            k in q_low
+            for k in (
+                "compare",
+                " vs ",
+                "versus",
+                "difference between",
+                "better than",
+            )
+        )
+        or "comparison" in ans_low
+        or (
+            " vs " in ans_low
+            and ("college" in ans_low or "skcet" in ans_low or "psg" in ans_low)
+        )
+    ):
+        return [
+            ("btn_download_pdf", "Download PDF Sheet"),
+            ("btn_campus", "Hostel & Campus"),
+            ("btn_courses", "Other Branches"),
+        ]
+
+    # 3. After cutoff inquiry
+    if (
+        any(
+            k in q_low
+            for k in (
+                "cutoff",
+                "cut-off",
+                "cut off",
+                "mark",
+                "marks",
+                "maths",
+                "physics",
+                "chemistry",
+            )
+        )
+        or "cutoff marks" in ans_low
+        or "closing cutoff" in ans_low
+    ):
+        return [
+            ("btn_choice_list", "3-Tier Choice List"),
+            ("btn_fees", "Fee Details"),
+            ("btn_colleges", "Compare College"),
+        ]
+
+    # 4. After placement inquiry
+    if (
+        any(
+            k in q_low
+            for k in (
+                "placement",
+                "package",
+                "ctc",
+                "recruiter",
+                "salary",
+                "lpa",
+            )
+        )
+        or "highest ctc" in ans_low
+        or "average ctc" in ans_low
+    ):
+        return [
+            ("btn_cutoff", "Check Cutoff"),
+            ("btn_choice_list", "3-Tier Choice List"),
+            ("btn_fees", "Fee Details"),
+        ]
+
+    # 5. After rank prediction inquiry
+    if (
+        any(
+            k in q_low
+            for k in (
+                "rank",
+                "round",
+                "predictor",
+                "overall rank",
+                "community rank",
+            )
+        )
+        or "predicted state overall rank" in ans_low
+    ):
+        return [
+            ("btn_choice_list", "3-Tier Choice List"),
+            ("btn_placements", "Placement Stats"),
+            ("btn_colleges", "Compare College"),
+        ]
+
+    # 6. Default / General turns
+    if getattr(profile, "calculated_cutoff", None) is not None:
+        return [
+            ("btn_rank_predictor", "Rank Predictor"),
+            ("btn_choice_list", "3-Tier Choice List"),
+            ("btn_placements", "Placement Stats"),
+        ]
+
+    return [
+        ("btn_matchmaker", "Find My College"),
+        ("btn_cutoff", "Check Cutoff"),
+        ("btn_placements", "Placement Stats"),
+    ]
 
 
 async def _answer_student_task(message: ParsedMessage) -> None:
@@ -368,6 +925,21 @@ async def _answer_student_task(message: ParsedMessage) -> None:
     if await _handle_contact_query(message.sender, query):
         return
 
+    if await _handle_download_pdf_query(message.sender, query, session_key):
+        return
+
+    if await _handle_change_district_query(message.sender, query, session_key):
+        return
+
+    if await _handle_matchmaker_flow(message.sender, query, session_key):
+        return
+
+    if await _handle_rank_predictor_query(message.sender, query, session_key):
+        return
+
+    if await _handle_placement_query(message.sender, query):
+        return
+
     if await _handle_college_menu_query(message.sender, query):
         return
 
@@ -377,9 +949,9 @@ async def _answer_student_task(message: ParsedMessage) -> None:
     if is_greeting(query):
         welcome_txt = get_welcome_message()
         buttons = [
-            ("btn_courses", "View Courses"),
+            ("btn_matchmaker", "Find My College"),
             ("btn_cutoff", "Check Cutoff"),
-            ("btn_fees", "Fee Details"),
+            ("btn_placements", "Placement Stats"),
         ]
         sent_buttons = await send_interactive_buttons(
             message.sender, welcome_txt, buttons
@@ -413,7 +985,7 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         buttons = [
             ("btn_cutoff_cse", "CSE Cutoffs"),
             ("btn_cutoff_ece", "ECE Cutoffs"),
-            ("btn_fees", "Fee Details"),
+            ("btn_matchmaker", "Find My College"),
         ]
         sent_cutoff_btns = await send_interactive_buttons(
             message.sender, cutoff_msg, buttons
@@ -456,6 +1028,11 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         "btn_fees": "What is the complete tuition fee, hostel fee, and transport fee structure?",
         "btn_cutoff_cse": "What are the TNEA cutoff marks for Computer Science Engineering (CSE)?",
         "btn_cutoff_ece": "What are the TNEA cutoff marks for Electronics and Communication Engineering (ECE)?",
+        "btn_matchmaker": "Help me find colleges with the 3-step college matchmaker diagnostic",
+        "btn_find_college": "Help me find colleges with the 3-step college matchmaker diagnostic",
+        "btn_campus": "Tell me about the hostel rooms, mess food, sports facilities, and campus amenities.",
+        "btn_placements": "What is the highest package, average CTC, and top recruiters for engineering colleges?",
+        "btn_rank_predictor": "Predict my TNEA State Overall Rank and counselling round based on my cutoff marks.",
         "cse_info": "What is the intake, TNEA cutoff, and placement record for Computer Science Engineering (CSE)?",
         "ece_info": "What is the intake, TNEA cutoff, and placement record for Electronics and Communication Engineering (ECE)?",
         "it_info": "What is the intake, TNEA cutoff, and placement record for Information Technology (IT)?",
@@ -538,73 +1115,13 @@ async def _answer_student_task(message: ParsedMessage) -> None:
             )
             await send_text(message.sender, formatted_answer)
 
-            # Contextual interactive quick-action CTA buttons
-            q_lower = query.lower()
-            if any(
-                k in q_lower
-                for k in (
-                    "cutoff",
-                    "mark",
-                    "rank",
-                    "maths",
-                    "physics",
-                    "community",
-                )
-            ):
-                if not profile.community:
-                    comm_cta = [
-                        ("btn_comm_bc", "BC Community"),
-                        ("btn_comm_mbc", "MBC Community"),
-                        ("btn_comm_oc", "OC Community"),
-                    ]
-                    await send_interactive_buttons(
-                        message.sender,
-                        "💡 *Select your community to check exact closing ranks:*",
-                        comm_cta,
-                    )
-                else:
-                    cta = [
-                        ("btn_choice_list", "Choice List Draft"),
-                        ("btn_colleges", "Explore Colleges"),
-                        ("btn_brochure", "Get Brochure"),
-                    ]
-                    await send_interactive_buttons(
-                        message.sender,
-                        "💡 *What would you like to explore next?*",
-                        cta,
-                    )
-            elif any(
-                k in q_lower
-                for k in ("location", "campus", "address", "reach", "hostel")
-            ):
-                cta = [
-                    ("btn_location", "Campus Location"),
-                    ("btn_contact", "Admission Desk"),
-                    ("btn_fees", "Fee Details"),
-                ]
-                await send_interactive_buttons(
-                    message.sender, "💡 *Campus & Visit Information:*", cta
-                )
-            elif any(
-                k in q_lower for k in ("fee", "fees", "cost", "hostel", "tuition")
-            ):
-                cta = [
-                    ("btn_cutoff", "Check Cutoff"),
-                    ("btn_courses", "View Courses"),
-                    ("btn_brochure", "Get Brochure"),
-                ]
-                await send_interactive_buttons(
-                    message.sender, "💡 *Explore more options:*", cta
-                )
-            elif any(
-                k in q_lower for k in ("course", "branch", "cse", "ece", "mech", "it")
-            ):
-                cta = [
-                    ("btn_cutoff", "Check Cutoff"),
-                    ("btn_fees", "Fee Details"),
-                    ("btn_brochure", "Get Brochure"),
-                ]
-                await send_interactive_buttons(message.sender, "💡 *Next Steps:*", cta)
+            # ── Contextual interactive quick-reply buttons on EVERY turn ──
+            buttons = _build_dynamic_reply_buttons(query, formatted_answer, profile)
+            await send_interactive_buttons(
+                message.sender,
+                "💡 *Quick Actions:*",
+                buttons,
+            )
         except Exception as e:
             logger.error("rag_query_failed", sender=message.sender, error=str(e))
             await send_text(message.sender, FALLBACK_REPLY)
