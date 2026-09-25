@@ -77,6 +77,17 @@ def restore_session_from_cookie() -> None:
     except (ValueError, KeyError, TypeError):
         return
 
+    if role == "student":
+        st.session_state.token = token
+        st.session_state.role = "student"
+        st.session_state.phone = payload.get("phone", "Student")
+        st.session_state.session_key = payload.get(
+            "session_key", "whatsapp:demo_student"
+        )
+        st.session_state.nav = payload.get("nav", "AI Admissions Chatbot")
+        st.session_state.authenticated = True
+        return
+
     try:
         from utils.api_client import get_me
 
@@ -114,6 +125,35 @@ def log_in(token_response: dict, email: str | None = None) -> None:
             "college_id": st.session_state.college_id,
             "college_name": st.session_state.college_name,
             "email": st.session_state.email,
+        }
+    )
+
+
+def log_in_student(
+    phone: str,
+    session_key: str,
+    cutoff: float = 186.5,
+    community: str = "BC",
+    district: str = "Coimbatore",
+) -> None:
+    st.session_state["token"] = f"student_{phone}"
+    st.session_state["role"] = "student"
+    st.session_state["authenticated"] = True
+    st.session_state["phone"] = phone
+    st.session_state["session_key"] = session_key
+    st.session_state["nav"] = "AI Admissions Chatbot"
+    st.session_state["cutoff"] = cutoff
+    st.session_state["community"] = community
+    st.session_state["district"] = district
+    st.session_state["history_synced"] = False
+    st.session_state.pop("messages", None)
+
+    _set_remember_cookie(
+        {
+            "access_token": st.session_state["token"],
+            "role": "student",
+            "phone": phone,
+            "session_key": session_key,
         }
     )
 

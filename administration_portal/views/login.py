@@ -8,7 +8,7 @@ if _REPO_ROOT not in sys.path:
 
 import streamlit as st
 from utils.api_client import APIError, login
-from utils.auth import log_in
+from utils.auth import log_in, log_in_student
 from utils.styling import image_data_uri
 
 from api.services.otp_service import (
@@ -123,22 +123,13 @@ def render_login() -> None:
                         if verified:
                             norm_phone = st.session_state["otp_sent_to"]
                             session_key = f"whatsapp:{norm_phone}"
-                            st.session_state["token"] = f"student_{norm_phone}"
-                            st.session_state["role"] = "student"
-                            st.session_state["authenticated"] = True
-                            st.session_state["phone"] = norm_phone
-                            st.session_state["session_key"] = session_key
-                            st.session_state["nav"] = "AI Admissions Chatbot"
-                            st.session_state["history_synced"] = False
-                            st.session_state.pop("messages", None)
-
                             profile = get_student_profile(session_key)
-                            st.session_state["cutoff"] = (
-                                profile.calculated_cutoff or 186.5
-                            )
-                            st.session_state["community"] = profile.community or "BC"
-                            st.session_state["district"] = (
-                                profile.preferred_district or "Coimbatore"
+                            log_in_student(
+                                phone=norm_phone,
+                                session_key=session_key,
+                                cutoff=profile.calculated_cutoff or 186.5,
+                                community=profile.community or "BC",
+                                district=profile.preferred_district or "Coimbatore",
                             )
                             st.success("Verification successful! Welcome to Coligo.")
                             st.rerun()
@@ -147,24 +138,19 @@ def render_login() -> None:
 
             if demo_clicked:
                 session_key = "whatsapp:demo_student"
-                st.session_state["token"] = "student_demo_token"
-                st.session_state["role"] = "student"
-                st.session_state["authenticated"] = True
-                st.session_state["phone"] = "919999999999 (Demo Student)"
-                st.session_state["session_key"] = session_key
-                st.session_state["nav"] = "AI Admissions Chatbot"
-                st.session_state["history_synced"] = False
-                st.session_state.pop("messages", None)
-
                 update_student_profile(
                     session_key=session_key,
                     cutoff=186.5,
                     community="BC",
                     district="Coimbatore",
                 )
-                st.session_state["cutoff"] = 186.5
-                st.session_state["community"] = "BC"
-                st.session_state["district"] = "Coimbatore"
+                log_in_student(
+                    phone="919999999999 (Demo Student)",
+                    session_key=session_key,
+                    cutoff=186.5,
+                    community="BC",
+                    district="Coimbatore",
+                )
                 st.rerun()
 
         with tab_admin:
