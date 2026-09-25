@@ -105,6 +105,58 @@ async def _query_cutoffs_impl(
         return f"Error retrieving cutoffs for {college}: {str(e)}"
 
 
+async def _compare_colleges_impl(
+    db: AsyncSession,
+    colleges: list[str],
+    branch: Optional[str] = None,
+    community: Optional[str] = None,
+) -> str:
+    """Fetch verified TNEA cutoffs comparing two or more colleges."""
+    try:
+        from api.services.rag_service import detect_college_keyword
+
+        search_colleges = [
+            detect_college_keyword(c) or c for c in colleges if c and c.strip()
+        ]
+        records = await get_cutoff_records(
+            db,
+            colleges=search_colleges,
+            branch=branch,
+            community=community,
+            limit=40,
+        )
+        if not records:
+            return (
+                f"No comparative cutoff records found for {', '.join(colleges)} "
+                f"(Branch: {branch or 'All'}, Community: {community or 'All'})."
+            )
+
+        comm_label = f"[{community.upper()}]" if community else "[All Communities]"
+        lines = [
+            f"Official TNEA Cutoff Comparison for "
+            f"{', '.join(c.upper() for c in colleges)} {comm_label}:"
+        ]
+
+        seen: set[tuple[str, str, str]] = set()
+        by_college: dict[str, list[TNEACutoff]] = {}
+        for r in records:
+            key = (r.college_code, r.branch_name, r.community)
+            if key not in seen:
+                seen.add(key)
+                by_college.setdefault(r.college_name, []).append(r)
+
+        for col_name, recs in by_college.items():
+            lines.append(f"\n🏛️ *{col_name}*")
+            for r in recs[:6]:
+                lines.append(
+                    f"• *{r.branch_name}*: *{r.cutoff_mark:g}* ({r.community})"
+                )
+        return "\n".join(lines)
+    except Exception as e:
+        logger.error("tool_compare_colleges_failed", error=str(e))
+        return f"Error comparing colleges: {str(e)}"
+
+
 async def _choice_recs_impl(
     db: AsyncSession,
     cutoff: float,
@@ -232,6 +284,28 @@ def create_agent_tools(db: AsyncSession, session_key: str = "") -> list[Any]:
         return await _query_cutoffs_impl(db, college, branch, community)
 
     @tool
+    async def compare_colleges_cutoffs(
+        colleges: List[str],
+        branch: Optional[str] = None,
+        community: Optional[str] = None,
+    ) -> str:
+        """Compare official TNEA cutoffs between two or more colleges
+        (e.g. ['PSG', 'SKCET']).
+
+        Args:
+            colleges: List of college names or aliases (e.g. ['PSG', 'SKCET', 'CIT']).
+            branch: Optional department to compare (e.g. 'CSE', 'ECE').
+            community: Optional reservation community (e.g. 'BC', 'OC').
+        """
+        logger.info(
+            "tool_invoked_compare_colleges_cutoffs",
+            colleges=colleges,
+            branch=branch,
+            community=community,
+        )
+        return await _compare_colleges_impl(db, colleges, branch, community)
+
+    @tool
     async def get_choice_filling_recommendations_tool(
         cutoff: float,
         community: str = "OC",
@@ -294,6 +368,7 @@ def create_agent_tools(db: AsyncSession, session_key: str = "") -> list[Any]:
     return [
         list_available_colleges,
         query_college_cutoffs,
+        compare_colleges_cutoffs,
         get_choice_filling_recommendations_tool,
         search_admission_brochures,
         calculate_cutoff_from_marks,

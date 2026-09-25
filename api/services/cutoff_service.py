@@ -100,6 +100,7 @@ async def seed_cutoffs_from_file(
 async def get_cutoff_records(
     db: AsyncSession,
     college: str | None = None,
+    colleges: list[str] | None = None,
     branch: str | None = None,
     community: str | None = None,
     limit: int = 50,
@@ -107,8 +108,24 @@ async def get_cutoff_records(
     """Query cutoff records with college, branch, and community filters."""
     stmt = select(TNEACutoff)
 
-    if college:
-        stmt = stmt.where(TNEACutoff.college_name.ilike(f"%{college}%"))
+    if colleges:
+        col_conds = [
+            or_(
+                TNEACutoff.college_name.ilike(f"%{c}%"),
+                TNEACutoff.college_code == c.strip(),
+            )
+            for c in colleges
+            if c and c.strip()
+        ]
+        if col_conds:
+            stmt = stmt.where(or_(*col_conds))
+    elif college:
+        stmt = stmt.where(
+            or_(
+                TNEACutoff.college_name.ilike(f"%{college}%"),
+                TNEACutoff.college_code == college.strip(),
+            )
+        )
     if branch:
         b_lower = branch.strip().lower()
         patterns = BRANCH_KEYWORD_PATTERNS.get(b_lower, [branch])

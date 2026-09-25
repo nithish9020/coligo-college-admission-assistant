@@ -179,14 +179,127 @@ def calculate_tnea_cutoff(text: str) -> Optional[float]:
     return None
 
 
+def convert_markdown_tables_to_whatsapp(text: str) -> str:
+    """Convert Markdown tables (| col1 | col2 |) into clean, mobile-friendly WhatsApp card blocks.
+
+    WhatsApp cannot render Markdown tables. Tables render with broken vertical
+    pipes (|) and awkward line wrapping on mobile screens. This function converts
+    tables into structured, mobile-native bullet cards.
+    """
+    lines = text.split("\n")
+    output_lines: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        # Check if line looks like table header (contains | and next line is markdown table divider)
+        if (
+            "|" in line
+            and i + 1 < len(lines)
+            and re.match(r"^\s*\|?\s*[-:]+[-| :]*\|?\s*$", lines[i + 1])
+        ):
+            header_cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            i += 2  # Skip header and divider
+
+            rows: list[list[str]] = []
+            while (
+                i < len(lines)
+                and "|" in lines[i]
+                and not lines[i].strip().startswith("```")
+            ):
+                row_cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+                if not all(re.match(r"^[-:]+$", c) for c in row_cells if c):
+                    rows.append(row_cells)
+                i += 1
+
+            if not rows:
+                continue
+
+            h0_clean = header_cells[0].strip("*_# ")
+            is_index_col = h0_clean.lower() in ("", "#", "no", "s.no", "sl.no", "sno")
+            has_tier = any("tier" in h.lower() for h in header_cells)
+
+            # Case 1: 2-column key-value table (e.g. Profile Summary, Detail/Info)
+            if len(header_cells) == 2:
+                for row in rows:
+                    if len(row) >= 2:
+                        k = row[0].strip("*_")
+                        v = row[1].strip("*_")
+                        output_lines.append(f"• *{k}*: {v}")
+                    elif len(row) == 1:
+                        output_lines.append(f"• {row[0].strip('*_')}")
+                output_lines.append("")
+
+            # Case 2: 3+ columns with index (#) as first column
+            elif is_index_col and len(header_cells) >= 3:
+                for row in rows:
+                    if len(row) >= 3:
+                        title = row[1].strip("*_")
+                        val = row[2].strip("*_")
+                        extras = [
+                            f"{header_cells[j].strip('*_')}: {row[j].strip('*_')}"
+                            for j in range(3, len(row))
+                            if j < len(header_cells) and row[j]
+                        ]
+                        extra_str = f" ({', '.join(extras)})" if extras else ""
+                        output_lines.append(f"• *{title}*: *{val}*{extra_str}")
+                    elif len(row) >= 2:
+                        output_lines.append(f"• *{row[1].strip('*_')}*")
+                output_lines.append("")
+
+            # Case 3: 3-Tier recommendation table
+            elif has_tier:
+                for row in rows:
+                    if len(row) >= 3:
+                        tier = row[0].strip("*_")
+                        col = row[1].strip("*_")
+                        branch = row[2].strip("*_") if len(row) > 2 else ""
+                        cutoff = row[3].strip("*_") if len(row) > 3 else ""
+                        output_lines.append(f"• *{tier}* – *{col}*")
+                        if branch:
+                            output_lines.append(f"  - *Branch:* {branch}")
+                        if cutoff:
+                            output_lines.append(f"  - *Cutoff:* {cutoff}")
+                    else:
+                        output_lines.append(
+                            f"• {' | '.join(c.strip('*_') for c in row)}"
+                        )
+                output_lines.append("")
+
+            # Case 4: General multi-column table (e.g. College comparison)
+            else:
+                for row in rows:
+                    if not row or not any(row):
+                        continue
+                    first_col = row[0].strip("*_")
+                    output_lines.append(f"🏛️ *{first_col}*")
+                    for j in range(1, len(row)):
+                        if j < len(header_cells) and row[j]:
+                            h_label = header_cells[j].strip("*_")
+                            v_clean = row[j].strip("*_")
+                            output_lines.append(f"  • *{h_label}:* {v_clean}")
+                output_lines.append("")
+        else:
+            output_lines.append(line)
+            i += 1
+
+    return "\n".join(output_lines)
+
+
 def format_whatsapp_response(query: str, answer: str, sources: List[str]) -> str:
     """Dynamically enhance WhatsApp response formatting based on query intent.
 
     Applies WhatsApp rich text styling (bold headers, bullet styling, and source tags).
     """
     cleaned_answer = answer.strip()
+
+    # 0. Convert any Markdown tables to clean mobile-native WhatsApp cards
+    cleaned_answer = convert_markdown_tables_to_whatsapp(cleaned_answer)
+
     # Convert markdown double asterisks (**text**) to WhatsApp single asterisks (*text*)
     cleaned_answer = re.sub(r"\*\*(.*?)\*\*", r"*\1*", cleaned_answer)
+    # Collapse multiple consecutive asterisks (e.g. ***text***) to single asterisks
+    cleaned_answer = re.sub(r"\*{2,}", "*", cleaned_answer)
+
     lower_query = query.lower()
 
     # 1. Automatic Cutoff Calculation if student typed marks
