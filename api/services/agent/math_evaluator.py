@@ -35,32 +35,46 @@ def extract_marks_from_text(
     """Extract subject marks or directly stated cutoff mark from user text."""
     lower = text.lower()
 
-    # 1. Check for directly stated cutoff, e.g., "cutoff is 185", "cutoff: 178.5"
-    cutoff_match = re.search(
-        r"(?:my\s+)?cutoff\s*(?:is|=|:)?\s*(\d{2,3}(?:\.\d{1,2})?)", lower
+    # 1. Check for directly stated cutoff or calculated cutoff in text/history
+    calc_match = re.search(
+        r"cutoff[^\n]*?=\s*[\d\.\+\-\/\s]+=\s*[*`]*(\d{2,3}(?:\.\d{1,2})?)",
+        lower,
     )
     direct_cutoff = None
-    if cutoff_match:
-        val = float(cutoff_match.group(1))
-        if 0.0 <= val <= 200.0:
-            direct_cutoff = val
+    if calc_match:
+        direct_cutoff = float(calc_match.group(1))
+    else:
+        cutoff_match = re.search(
+            r"(?:my\s+)?cutoff\s*(?:score)?\s*(?:is|=|:)?\s*[*`]*(\d{2,3}(?:\.\d{1,2})?)",
+            lower,
+        )
+        if cutoff_match:
+            val = float(cutoff_match.group(1))
+            if 0.0 <= val <= 200.0:
+                direct_cutoff = val
 
     # 2. Extract subject marks: Maths, Physics, Chemistry
-    # Patterns: "maths is 100", "maths: 100", "m: 100", "phy: 60", "chem: 90"
+    # Supports "maths: 100", "85 in maths", "physics: 90", "95 in physics"
     m_match = re.search(
-        r"\b(?:maths?|mat|m)\s*(?:is|=|:|\-)?\s*(\d{1,3}(?:\.\d{1,2})?)", lower
+        r"(?:(?:maths?|mat|m)\s*(?:is|=|:|\-)?\s*(\d{1,3}(?:\.\d{1,2})?)"
+        r"|(\d{1,3}(?:\.\d{1,2})?)\s*(?:in|for|marks?\s*in)?\s*(?:maths?|mat|m)\b)",
+        lower,
     )
     p_match = re.search(
-        r"\b(?:physics?|phy|p)\s*(?:is|=|:|\-)?\s*(\d{1,3}(?:\.\d{1,2})?)", lower
+        r"(?:(?:physics?|phy|p)\s*(?:is|=|:|\-)?\s*(\d{1,3}(?:\.\d{1,2})?)"
+        r"|(\d{1,3}(?:\.\d{1,2})?)\s*(?:in|for|marks?\s*in)?\s*(?:physics?|phy|p)\b)",
+        lower,
     )
     c_match = re.search(
-        r"\b(?:chemistry?|chem|che|c)\s*(?:is|=|:|\-)?\s*(\d{1,3}(?:\.\d{1,2})?)", lower
+        r"(?:(?:chemistry?|chem|che|c)\s*(?:is|=|:|\-)?\s*(\d{1,3}(?:\.\d{1,2})?)"
+        r"|(\d{1,3}(?:\.\d{1,2})?)\s*(?:in|for|marks?\s*in)?\s*(?:chemistry?|chem|che|c)\b)",
+        lower,
     )
 
     if m_match and p_match and c_match:
-        m_val = float(m_match.group(1))
-        p_val = float(p_match.group(1))
-        c_val = float(c_match.group(1))
+        m_val = float(m_match.group(1) or m_match.group(2))
+        p_val = float(p_match.group(1) or p_match.group(2))
+        c_val = float(c_match.group(1) or c_match.group(2))
 
         if 0.0 <= m_val <= 100.0 and 0.0 <= p_val <= 100.0 and 0.0 <= c_val <= 100.0:
             return {

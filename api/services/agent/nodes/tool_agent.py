@@ -54,6 +54,10 @@ def _build_agent_messages(
         profile_info.append(f"Cutoff: {state['calculated_cutoff']}")
     if state.get("community"):
         profile_info.append(f"Community: {state['community']}")
+    if state.get("colleges"):
+        profile_info.append(f"Target Colleges: {', '.join(state['colleges'])}")
+    if state.get("branches"):
+        profile_info.append(f"Preferred Branches: {', '.join(state['branches'])}")
     if profile_info:
         messages.append(
             SystemMessage(content=f"Student Profile Context: {', '.join(profile_info)}")
@@ -141,8 +145,9 @@ async def tool_agent_node(state: AgentState, config: RunnableConfig) -> dict[str
     db: AsyncSession = config["configurable"]["db"]
     raw_message = state.get("raw_message", "")
     history_text = state.get("history_text", "")
+    session_key = state.get("session_key", "")
 
-    tools = create_agent_tools(db)
+    tools = create_agent_tools(db, session_key=session_key)
     tool_map = {t.name: t for t in tools}
     llm = get_agent_chat_model().bind_tools(tools)
 

@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     # LLM Provider & Model Selection
     # Supported: "gemini" | "groq" | "openai" | "deepseek" | "ollama" | "custom"
-    LLM_PROVIDER: str = "gemini"
+    LLM_PROVIDER: str = "groq"
     LLM_MODEL: str | None = None
     LLM_API_KEY: str | None = None
     LLM_BASE_URL: str | None = None
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
     # Google Gemini API Settings
     GEMINI_API_KEY: str | None = None
-    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
+    GEMINI_MODEL: str = "gemini-2.5-flash-lite"
     GEMINI_EMBEDDING_MODEL: str = "models/gemini-embedding-001"
     EMBEDDING_DIMENSION: int = 768
 
@@ -43,9 +43,9 @@ class Settings(BaseSettings):
 
     # Conversation memory. TTL matches WhatsApp's own 24h service-conversation
     # window: a student returning the next day starts a fresh thread.
-    # MAX_TURNS caps how much history reaches the prompt (6 = ~3 exchanges).
+    # MAX_TURNS caps how much history reaches the prompt (12 = ~6 exchanges).
     CONVERSATION_TTL_HOURS: int = 24
-    CONVERSATION_MAX_TURNS: int = 6
+    CONVERSATION_MAX_TURNS: int = 12
     # Condense follow-ups into standalone questions before embedding. Costs one
     # extra LLM call per message that has history; disable to save Gemini quota
     # at the cost of follow-up questions retrieving the wrong chunks.

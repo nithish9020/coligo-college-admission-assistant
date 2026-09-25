@@ -197,7 +197,7 @@ def _calc_cutoff_impl(maths: float, physics: float, chemistry: float) -> str:
     )
 
 
-def create_agent_tools(db: AsyncSession) -> list[Any]:
+def create_agent_tools(db: AsyncSession, session_key: str = "") -> list[Any]:
     """Create and bind database-connected tools for the TNEA counselor agent."""
 
     @tool
@@ -276,6 +276,19 @@ def create_agent_tools(db: AsyncSession) -> list[Any]:
             physics: Physics mark (0 to 100).
             chemistry: Chemistry mark (0 to 100).
         """
+        cutoff = round(maths + (physics / 2.0) + (chemistry / 2.0), 2)
+        if session_key:
+            from api.services.student_profile_service import (
+                update_student_profile,
+            )
+
+            update_student_profile(
+                session_key=session_key,
+                cutoff=cutoff,
+                maths=maths,
+                physics=physics,
+                chemistry=chemistry,
+            )
         return _calc_cutoff_impl(maths, physics, chemistry)
 
     return [
