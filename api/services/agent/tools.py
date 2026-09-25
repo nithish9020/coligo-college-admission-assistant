@@ -256,7 +256,9 @@ def _calc_cutoff_impl(maths: float, physics: float, chemistry: float) -> str:
     )
 
 
-def create_agent_tools(db: AsyncSession, session_key: str = "") -> list[Any]:
+def create_agent_tools(  # noqa: C901
+    db: AsyncSession, session_key: str = ""
+) -> list[Any]:
     """Create and bind database-connected tools for the TNEA counselor agent."""
 
     @tool
@@ -406,6 +408,95 @@ def create_agent_tools(db: AsyncSession, session_key: str = "") -> list[Any]:
 
         return format_rank_prediction_message(cutoff, community)
 
+    @tool
+    async def download_choice_sheet_pdf_tool(
+        cutoff: float,
+        community: str = "BC",
+        preferred_branches: Optional[List[str]] = None,
+        district: Optional[str] = None,
+    ) -> str:
+        """Generate and deliver an official TNEA Choice Filling Sheet PDF.
+
+        Args:
+            cutoff: Student's TNEA cutoff score out of 200.0.
+            community: Student's community (OC, BC, BCM, MBC, SC, ST).
+            preferred_branches: Optional desired branches (e.g. ['CSE', 'ECE']).
+            district: Optional district filter (e.g. 'Coimbatore', 'Chennai').
+        """
+        logger.info(
+            "tool_invoked_generate_pdf",
+            cutoff=cutoff,
+            community=community,
+            branches=preferred_branches,
+            district=district,
+        )
+        from api.services.choice_list_service import generate_choice_sheet_file
+
+        try:
+            _, pdf_url = await generate_choice_sheet_file(
+                db=db,
+                cutoff=cutoff,
+                community=community,
+                preferred_branches=preferred_branches,
+                district=district,
+                session_key=session_key,
+            )
+            return (
+                f"✅ Your official TNEA Choice Sheet PDF has been generated!\n"
+                f"Download link: {pdf_url}\n"
+                f"Cutoff: {cutoff:g} | Community: {community.upper()}\n"
+                f"Please review the choices and lock them on tneaonline.org."
+            )
+        except Exception as e:
+            logger.error("tool_generate_pdf_failed", error=str(e))
+            return f"Error generating PDF choice sheet: {str(e)}"
+
+    @tool
+    async def simulate_upward_movement_tool(
+        allotted_college: str,
+        allotted_branch: str,
+        cutoff: float,
+        community: str = "BC",
+        target_branches: Optional[List[str]] = None,
+    ) -> str:
+        """Simulate TNEA Upward Movement outcomes, probabilities, and best option.
+
+        Call this when a student asks about upward movement, tentative allotment,
+        or whether to Accept & Join vs Accept & Upward.
+
+        Args:
+            allotted_college: Tentatively allotted college (e.g. 'SKCET', 'PSG').
+            allotted_branch: Tentatively allotted department (e.g. 'MECH', 'ECE').
+            cutoff: Candidate's cutoff mark (out of 200).
+            community: Candidate's reservation category (OC, BC, BCM, MBC, SC, ST).
+            target_branches: Optional higher preference branches (e.g. ['CSE', 'IT']).
+        """
+        logger.info(
+            "tool_invoked_upward_simulation",
+            college=allotted_college,
+            branch=allotted_branch,
+            cutoff=cutoff,
+            community=community,
+        )
+        from api.services.upward_movement_simulator import (
+            format_upward_movement_text,
+            simulate_upward_movement,
+        )
+
+        try:
+            sim_data = await simulate_upward_movement(
+                db=db,
+                allotted_college=allotted_college,
+                allotted_branch=allotted_branch,
+                student_cutoff=cutoff,
+                community=community,
+                target_branches=target_branches,
+            )
+            return format_upward_movement_text(sim_data)
+        except Exception as e:
+            logger.error("tool_upward_simulation_failed", error=str(e))
+            return f"Error simulating upward movement: {str(e)}"
+
     return [
         list_available_colleges,
         query_college_cutoffs,
@@ -415,4 +506,6 @@ def create_agent_tools(db: AsyncSession, session_key: str = "") -> list[Any]:
         calculate_cutoff_from_marks,
         query_college_placements,
         predict_tnea_rank_tool,
+        download_choice_sheet_pdf_tool,
+        simulate_upward_movement_tool,
     ]

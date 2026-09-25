@@ -11,6 +11,7 @@ from app.components.matrix_view import render_matrix_view
 from app.components.placement_view import render_placement_view
 from app.components.rank_predictor_view import render_rank_predictor_view
 from app.components.sidebar import render_sidebar
+from app.components.upward_simulator_view import render_upward_simulator_view
 
 # Configure page settings
 st.set_page_config(
@@ -88,6 +89,8 @@ def main() -> None:
         render_choice_sheet_view()
     elif selected_view == "📈 TNEA Rank & Round Predictor":
         render_rank_predictor_view()
+    elif selected_view == "🔄 Upward Movement Simulator":
+        render_upward_simulator_view()
 
 
 if __name__ == "__main__":

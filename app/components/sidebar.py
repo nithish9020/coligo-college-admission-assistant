@@ -87,6 +87,7 @@ def render_sidebar() -> str:
             "💼 Placement & Recruiter Analytics",
             "📋 3-Tier Choice Sheet Builder",
             "📈 TNEA Rank & Round Predictor",
+            "🔄 Upward Movement Simulator",
         ]
         selected_view = st.radio(
             "Go to View",

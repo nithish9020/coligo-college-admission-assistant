@@ -179,6 +179,7 @@ async def generate_choice_sheet_file(
     community: str = "BC",
     preferred_branches: Optional[List[str]] = None,
     preferred_colleges: Optional[List[str]] = None,
+    district: Optional[str] = None,
     session_key: str = "",
 ) -> tuple[str, str]:
     """Build structured choices and export a downloadable PDF choice sheet.
@@ -189,15 +190,23 @@ async def generate_choice_sheet_file(
     from api.services.pdf_generator import generate_tnea_choice_sheet_pdf
 
     comm = community.upper() if community else "BC"
-    stmt = (
-        select(TNEACutoff)
-        .where(
-            TNEACutoff.community == comm,
-            TNEACutoff.cutoff_mark >= max(cutoff - 15.0, 77.5),
-            TNEACutoff.cutoff_mark <= cutoff + 3.0,
-        )
-        .order_by(TNEACutoff.cutoff_mark.desc())
+    stmt = select(TNEACutoff).where(
+        TNEACutoff.community == comm,
+        TNEACutoff.cutoff_mark >= max(cutoff - 15.0, 77.5),
+        TNEACutoff.cutoff_mark <= cutoff + 3.0,
     )
+    if district:
+        from sqlalchemy import or_
+
+        from api.services.cutoff_service import DISTRICT_KEYWORD_PATTERNS
+
+        d_lower = district.strip().lower()
+        d_patterns = DISTRICT_KEYWORD_PATTERNS.get(d_lower, [district])
+        stmt = stmt.where(
+            or_(*(TNEACutoff.college_name.ilike(f"%{p}%") for p in d_patterns))
+        )
+
+    stmt = stmt.order_by(TNEACutoff.cutoff_mark.desc())
     res = await db.execute(stmt)
     records = list(res.scalars().all())
 

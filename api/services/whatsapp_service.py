@@ -281,15 +281,20 @@ async def send_document(
         "https://graph.facebook.com/"
         f"{settings.WHATSAPP_API_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
     )
+    doc_dict: dict[str, str] = {
+        "caption": caption[:1024],
+        "filename": filename,
+    }
+    if document_url.startswith("http://") or document_url.startswith("https://"):
+        doc_dict["link"] = document_url
+    else:
+        doc_dict["id"] = document_url
+
     payload = {
         "messaging_product": "whatsapp",
         "to": to,
         "type": "document",
-        "document": {
-            "link": document_url,
-            "caption": caption[:1024],
-            "filename": filename,
-        },
+        "document": doc_dict,
     }
     headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
 

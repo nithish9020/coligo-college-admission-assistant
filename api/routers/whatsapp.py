@@ -292,7 +292,7 @@ async def _handle_download_pdf_query(sender: str, query: str, session_key: str) 
 
     async with async_session_factory() as db:
         try:
-            _, pdf_url = await generate_choice_sheet_file(
+            filepath, pdf_url = await generate_choice_sheet_file(
                 db=db,
                 cutoff=cutoff,
                 community=community,
@@ -300,9 +300,29 @@ async def _handle_download_pdf_query(sender: str, query: str, session_key: str) 
                 preferred_colleges=profile.preferred_colleges or None,
                 session_key=session_key,
             )
+            doc_target = pdf_url
+            try:
+                import os
+
+                from api.services.whatsapp_service import upload_media
+
+                if os.path.exists(filepath):
+                    with open(filepath, "rb") as f:
+                        media_id = await upload_media(
+                            f.read(),
+                            mime_type="application/pdf",
+                            filename=f"TNEA_Choice_Sheet_{cutoff:g}.pdf",
+                        )
+                        if media_id:
+                            doc_target = media_id
+            except Exception as up_err:
+                logger.warning(
+                    "pdf_media_upload_failed_falling_back_to_url", error=str(up_err)
+                )
+
             await send_document(
                 to=sender,
-                document_url=pdf_url,
+                document_url=doc_target,
                 caption=(
                     f"📄 *Official TNEA Choice Sheet ({community} - {cutoff:g})*\n"
                     "Ready for choice locking on tneaonline.org!"
