@@ -40,3 +40,14 @@ services:
         value: /redoc
       - key: OPENAPI_URL
         value: /openapi.json
+
+  - type: web
+    name: coligo-admin-portal
+    env: docker
+    dockerfilePath: ./Dockerfile.portal
+    plan: free
+    region: singapore
+    envVars:
+      # Point the admin portal at the FastAPI backend service
+      - key: COLIGO_API_BASE_URL
+        value: https://coligo.onrender.com
