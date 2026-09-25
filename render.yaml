@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: coligo-api
+    name: coligo
     env: docker
     dockerfilePath: ./Dockerfile
     plan: free
@@ -11,11 +11,15 @@ services:
       - key: DEBUG
         value: "false"
       - key: PROJECT_NAME
-        value: "Coligo College Admission Assistant API"
+        value: "Coligo College Admission Assistant"
       - key: DATABASE_URL
-        fromDatabase:
-          name: coligo-db
-          property: connectionString
+        sync: false
+      - key: LLM_PROVIDER
+        value: groq
+      - key: LLM_MODEL
+        value: openai/gpt-oss-120b
+      - key: GROQ_API_KEY
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: WHATSAPP_PHONE_NUMBER_ID
@@ -26,10 +30,13 @@ services:
         sync: false
       - key: WHATSAPP_VERIFY_TOKEN
         sync: false
-
-databases:
-  - name: coligo-db
-    plan: free
-    region: singapore
-    databaseName: dte_chatbot
-    user: dte
+      - key: ADMIN_NUMBERS
+        sync: false
+      - key: USE_LANGGRAPH
+        value: "true"
+      - key: DOCS_URL
+        value: /docs
+      - key: REDOC_URL
+        value: /redoc
+      - key: OPENAPI_URL
+        value: /openapi.json

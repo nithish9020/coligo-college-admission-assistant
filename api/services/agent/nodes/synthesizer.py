@@ -70,9 +70,9 @@ async def synthesizer_node(state: AgentState) -> dict[str, Any]:
         msg = _build_ungrounded_msg(header_prefix, colleges, community, cutoff)
         return {"response_text": msg, "sources": sources}
 
-    # 3. Assemble Grounding Context
+    # 3. Assemble Grounding Context (cap to top 6 to respect model token limits)
     context_parts = []
-    for c in chunks:
+    for c in chunks[:6]:
         doc_ref = c.get("document_ref", "document")
         idx = c.get("chunk_index", 0)
         text = c.get("text_content", "")
