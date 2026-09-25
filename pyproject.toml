@@ -30,6 +30,9 @@ dependencies = [
     "langchain-openai>=1.6.0",
     "langchain-google-genai>=4.4.0",
     "reportlab>=4.0.0",
+    "streamlit>=1.35.0",
+    "altair>=5.0.0",
+    "pandas>=2.0.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -68,6 +71,7 @@ ignore = ["B008"]
 # layout without making it easier to follow. Everything under api/ stays
 # subject to the full rule set.
 "administration_portal/**" = ["C901", "E501"]
+"app/**" = ["C901", "E501"]
 "api/routers/whatsapp.py" = ["C901", "E501"]
 "api/services/whatsapp_service.py" = ["C901", "E501"]
 "api/services/rag_service.py" = ["C901", "E501"]

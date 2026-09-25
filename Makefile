@@ -1,4 +1,4 @@
-.PHONY: venv install-deps install-hooks setup lint format check dev clean
+.PHONY: venv install-deps install-hooks setup lint format check dev clean streamlit
 
 # Create virtual environment if it does not exist
 venv:
@@ -34,6 +34,10 @@ check:
 # just duplicate every line.
 dev:
 	.venv/bin/uvicorn api.main:app --reload --port 8000 --no-access-log
+
+# Start the Streamlit visual admissions and analytics portal
+streamlit:
+	.venv/bin/streamlit run app/main.py --server.port 8501 --server.headless true
 
 # Clean up bytecode cache directories and temporary files
 clean:
