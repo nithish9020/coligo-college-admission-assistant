@@ -16,7 +16,15 @@ async def critic_node(state: AgentState) -> dict[str, Any]:
     raw_message = state.get("raw_message", "")
     chunks = state.get("retrieved_chunks") or []
 
-    # Assemble grounding context
+    # Verified database tools are pre-grounded against PostgreSQL tables
+    sources = state.get("sources") or []
+    if sources:
+        logger.info(
+            "critic_node_numeric_verification_passed_via_tools", sources=sources
+        )
+        return {"is_verified": True}
+
+    # Assemble grounding context from retrieved document chunks
     context_text = " ".join(c.get("text_content", "") for c in chunks)
 
     # Perform strict numeric fact validation

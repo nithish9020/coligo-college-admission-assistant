@@ -127,8 +127,9 @@ def _resolve_cutoff(
     raw_text: str,
     state_cutoff: float | None,
     profile_cutoff: float | None,
+    history_text: str = "",
 ) -> tuple[dict[str, float] | None, float | None]:
-    """Extract marks or direct cutoff with fallback to state and profile."""
+    """Extract marks or direct cutoff with fallback to state, profile, and history."""
     marks, direct_cutoff = extract_marks_from_text(raw_text)
     calculated_cutoff = state_cutoff
 
@@ -144,6 +145,18 @@ def _resolve_cutoff(
         calculated_cutoff = direct_cutoff
     elif profile_cutoff is not None:
         calculated_cutoff = profile_cutoff
+    elif history_text:
+        hist_marks, hist_direct = extract_marks_from_text(history_text)
+        if hist_marks:
+            try:
+                calc_val, _ = calculate_tnea_cutoff(
+                    hist_marks["maths"], hist_marks["physics"], hist_marks["chemistry"]
+                )
+                calculated_cutoff = calc_val
+            except ValueError:
+                pass
+        elif hist_direct is not None:
+            calculated_cutoff = hist_direct
 
     return marks, calculated_cutoff
 
@@ -203,17 +216,20 @@ async def router_node(state: AgentState) -> dict[str, Any]:
 
     profile = get_student_profile(session_key) if session_key else None
 
-    # 3. Extract community (fallback to profile)
+    history_text = state.get("history_text", "")
+
+    # 3. Extract community (fallback to profile and history)
     community = (
         state.get("community")
         or _detect_community(raw_text)
         or (profile.community if profile else None)
+        or (_detect_community(history_text) if history_text else None)
     )
 
-    # 4. Deterministic mark & cutoff evaluation (fallback to profile)
+    # 4. Deterministic mark & cutoff evaluation (fallback to profile and history)
     prof_cutoff = profile.calculated_cutoff if profile else None
     marks, calculated_cutoff = _resolve_cutoff(
-        raw_text, state.get("calculated_cutoff"), prof_cutoff
+        raw_text, state.get("calculated_cutoff"), prof_cutoff, history_text
     )
 
     # 5. Extract college names

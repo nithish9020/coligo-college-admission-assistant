@@ -47,9 +47,9 @@ def _resolve_openai_compatible_config(
             or settings.OPENAI_API_KEY
             or ""
         )
-        model = settings.LLM_MODEL or "qwen/qwen3.8-27b"
+        model = settings.LLM_MODEL or "openai/gpt-oss-120b"
         if not model or "gemini" in model.lower() or "llama-3.3" in model.lower():
-            model = "qwen/qwen3.8-27b"
+            model = "openai/gpt-oss-120b"
         base_url = settings.LLM_BASE_URL or "https://api.groq.com/openai/v1"
     elif provider == "deepseek":
         api_key = (
@@ -145,7 +145,9 @@ async def _generate_with_gemini(
     client = _get_gemini_client()
     models_to_try = candidate_models or [
         settings.GEMINI_MODEL,
-        "gemini-3.8-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-3.5-flash-lite",
+        "gemini-flash-latest",
     ]
     deduped_models: list[str] = []
     seen: set[str] = set()
