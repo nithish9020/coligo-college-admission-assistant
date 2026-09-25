@@ -3,7 +3,8 @@ FROM python:3.12-slim
 WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH="/app"
 
 # Install Nginx and envsubst (gettext-base) for dynamic port binding on Render
 RUN apt-get update && apt-get install -y --no-install-recommends \

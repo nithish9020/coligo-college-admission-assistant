@@ -73,7 +73,7 @@ ignore = ["B008"]
 # Splitting them to satisfy the complexity limit would fragment the page
 # layout without making it easier to follow. Everything under api/ stays
 # subject to the full rule set.
-"administration_portal/**" = ["C901", "E501"]
+"administration_portal/**" = ["C901", "E501", "E402"]
 "app/**" = ["C901", "E501"]
 "api/routers/whatsapp.py" = ["C901", "E501"]
 "api/services/whatsapp_service.py" = ["C901", "E501"]

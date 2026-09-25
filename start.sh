@@ -12,6 +12,7 @@ echo " - FastAPI starting on internal 127.0.0.1:8001"
 echo " - Streamlit Portal starting on internal 127.0.0.1:8501"
 
 export COLIGO_API_BASE_URL="http://127.0.0.1:8001"
+export PYTHONPATH="/app:${PYTHONPATH:-}"
 
 # 1. Start FastAPI backend
 uvicorn api.main:app --host 127.0.0.1 --port 8001 --no-access-log &

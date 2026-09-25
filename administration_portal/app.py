@@ -1,3 +1,19 @@
+import sys
+from pathlib import Path
+
+# Ensure repo root is top of sys.path so 'api' and 'app' packages resolve correctly
+_REPO_ROOT = str(Path(__file__).resolve().parent.parent)
+_PORTAL_DIR = str(Path(__file__).resolve().parent)
+if _PORTAL_DIR in sys.path:
+    sys.path.remove(_PORTAL_DIR)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+if _PORTAL_DIR not in sys.path:
+    sys.path.append(_PORTAL_DIR)
+
+if "app" in sys.modules and not hasattr(sys.modules["app"], "__path__"):
+    del sys.modules["app"]
+
 import streamlit as st
 from utils.auth import init_session_state, is_authenticated, restore_session_from_cookie
 from utils.styling import inject_base_css
