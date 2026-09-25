@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import AsyncIterator
 from typing import Any
 
 from openai import AsyncOpenAI
@@ -273,4 +274,131 @@ async def generate_response_from_llm(prompt: str) -> str:
                     raise DocumentProcessingError(
                         f"Both {primary_provider} and Gemini failed: {err_summary}"
                     ) from gemini_err
+            raise openai_err
+
+
+async def _stream_with_gemini(
+    prompt: str, candidate_models: list[str] | None = None
+) -> AsyncIterator[str]:
+    """Stream response tokens using Gemini API with candidate model failover."""
+    from google.genai import types as genai_types
+
+    client = _get_gemini_client()
+    models_to_try = candidate_models or [
+        settings.GEMINI_MODEL,
+        "gemini-2.5-flash-lite",
+        "gemini-flash-latest",
+    ]
+    deduped_models: list[str] = []
+    seen: set[str] = set()
+    for m in models_to_try:
+        if m not in seen:
+            seen.add(m)
+            deduped_models.append(m)
+
+    last_error: Exception | None = None
+    for model_name in deduped_models:
+        logger.debug("streaming_prompt_to_gemini_llm", model=model_name)
+        try:
+            stream = await client.aio.models.generate_content_stream(
+                model=model_name,
+                contents=prompt,
+                config=genai_types.GenerateContentConfig(
+                    temperature=0.2,
+                    top_p=1.0,
+                    max_output_tokens=1024,
+                ),
+            )
+            yielded = False
+            async for chunk in stream:
+                text = chunk.text or ""
+                if text:
+                    yielded = True
+                    yield text
+            if yielded:
+                return
+        except Exception as e:
+            last_error = e
+            logger.warning(
+                "gemini_stream_failed_trying_next_model",
+                model=model_name,
+                error=str(e),
+            )
+            continue
+
+    if last_error:
+        raise DocumentProcessingError(
+            f"All Gemini models failed to stream: {str(last_error)}"
+        ) from last_error
+    raise DocumentProcessingError("Failed to stream response from Gemini API")
+
+
+async def _stream_with_openai_compatible(
+    prompt: str, provider_override: str | None = None
+) -> AsyncIterator[str]:
+    """Stream response tokens using an OpenAI-compatible endpoint."""
+    api_key, model, base_url = _resolve_openai_compatible_config(provider_override)
+    client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+
+    active_provider = provider_override or settings.LLM_PROVIDER
+    logger.debug(
+        "streaming_prompt_to_openai_compatible_llm",
+        provider=active_provider,
+        model=model,
+    )
+
+    response = await client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
+        max_tokens=1024,
+        stream=True,
+    )
+    async for chunk in response:
+        delta = chunk.choices[0].delta.content if chunk.choices else ""
+        if delta:
+            yield delta
+
+
+async def generate_stream_from_llm(prompt: str) -> AsyncIterator[str]:
+    """Stream response tokens with failover between Gemini and Groq/OpenAI."""
+    primary_provider = (settings.LLM_PROVIDER or "gemini").lower()
+
+    if primary_provider == "gemini":
+        try:
+            async for token in _stream_with_gemini(prompt):
+                yield token
+            return
+        except Exception as gemini_err:
+            logger.warning(
+                "gemini_primary_stream_failed_attempting_failover",
+                error=str(gemini_err),
+            )
+            has_groq = bool(
+                settings.GROQ_API_KEY or settings.LLM_API_KEY or settings.OPENAI_API_KEY
+            )
+            if has_groq:
+                logger.info("failing_over_to_groq_streaming")
+                async for token in _stream_with_openai_compatible(
+                    prompt, provider_override="groq"
+                ):
+                    yield token
+                return
+            raise gemini_err
+    else:
+        try:
+            async for token in _stream_with_openai_compatible(prompt):
+                yield token
+            return
+        except Exception as openai_err:
+            logger.warning(
+                "openai_compatible_stream_failed_attempting_failover",
+                provider=primary_provider,
+                error=str(openai_err),
+            )
+            if settings.GEMINI_API_KEY:
+                logger.info("failing_over_to_gemini_streaming")
+                async for token in _stream_with_gemini(prompt):
+                    yield token
+                return
             raise openai_err

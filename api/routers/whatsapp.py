@@ -19,6 +19,7 @@ from api.services.message_formatter import (
     format_whatsapp_response,
     get_course_list_menu_sections,
     get_welcome_message,
+    is_brochure_query,
     is_greeting,
 )
 from api.services.rag_service import handle_rag_query
@@ -28,6 +29,7 @@ from api.services.whatsapp_service import (
     is_admin_number,
     mark_message_as_read,
     match_admin_command,
+    send_document,
     send_interactive_buttons,
     send_interactive_list,
     send_text,
@@ -302,6 +304,35 @@ async def _answer_student_task(message: ParsedMessage) -> None:
             await send_text(message.sender, cutoff_msg)
         return
 
+    # ── Automated Brochure Delivery ──
+    if is_brochure_query(query) or query.lower() == "btn_brochure":
+        college_label = "Sri Krishna College of Engg & Tech (SKCET)"
+        filename = "SKCET_Admission_Brochure.pdf"
+        if "psg" in query.lower():
+            college_label = "PSG College of Technology"
+            filename = "PSG_Tech_Admission_Brochure.pdf"
+
+        brochure_url = (
+            "https://coligo-college-admission-assistant.onrender.com"
+            "/static/skcet_tnea_knowledge_base.pdf"
+        )
+        caption = f"📄 *{college_label} - Official Admission Guide & Cutoffs*"
+
+        sent_doc = await send_document(
+            to=message.sender,
+            document_url=brochure_url,
+            caption=caption,
+            filename=filename,
+        )
+        if not sent_doc:
+            await send_text(
+                message.sender,
+                f"📄 *{college_label} Official Guide*\n\n"
+                f"Download brochure here:\n{brochure_url}\n\n"
+                "💡 Reply with *Cutoff* or *Fees* to explore more!",
+            )
+        return
+
     # Map menu selection IDs to structured query prompts
     menu_query_map = {
         "btn_fees": "What is the complete tuition fee, hostel fee, and transport fee structure?",
@@ -360,6 +391,50 @@ async def _answer_student_task(message: ParsedMessage) -> None:
                 f"{voice_prefix}{format_whatsapp_response(query, answer, sources)}"
             )
             await send_text(message.sender, formatted_answer)
+
+            # Contextual interactive quick-action CTA buttons
+            q_lower = query.lower()
+            if any(
+                k in q_lower
+                for k in (
+                    "cutoff",
+                    "mark",
+                    "rank",
+                    "maths",
+                    "physics",
+                    "community",
+                )
+            ):
+                cta = [
+                    ("btn_fees", "Fee Details"),
+                    ("btn_courses", "View Courses"),
+                    ("btn_brochure", "Get Brochure"),
+                ]
+                await send_interactive_buttons(
+                    message.sender,
+                    "💡 *What would you like to explore next?*",
+                    cta,
+                )
+            elif any(
+                k in q_lower for k in ("fee", "fees", "cost", "hostel", "tuition")
+            ):
+                cta = [
+                    ("btn_cutoff", "Check Cutoff"),
+                    ("btn_courses", "View Courses"),
+                    ("btn_brochure", "Get Brochure"),
+                ]
+                await send_interactive_buttons(
+                    message.sender, "💡 *Explore more options:*", cta
+                )
+            elif any(
+                k in q_lower for k in ("course", "branch", "cse", "ece", "mech", "it")
+            ):
+                cta = [
+                    ("btn_cutoff", "Check Cutoff"),
+                    ("btn_fees", "Fee Details"),
+                    ("btn_brochure", "Get Brochure"),
+                ]
+                await send_interactive_buttons(message.sender, "💡 *Next Steps:*", cta)
         except Exception as e:
             logger.error("rag_query_failed", sender=message.sender, error=str(e))
             await send_text(message.sender, FALLBACK_REPLY)

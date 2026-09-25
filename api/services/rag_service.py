@@ -1,6 +1,7 @@
 import re
 import time
-from typing import Dict, List, Tuple
+from collections.abc import AsyncIterator
+from typing import Any, Dict, List, Tuple
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +16,14 @@ from api.services.conversation_service import (
     get_recent_turns,
 )
 from api.services.embedding_service import get_embeddings
-from api.services.llm_service import generate_response_from_llm
+from api.services.llm_service import (
+    generate_response_from_llm,
+    generate_stream_from_llm,
+)
+from api.services.message_formatter import (
+    calculate_tnea_cutoff,
+    get_suggested_followups,
+)
 from api.services.query_normalizer import normalize_query
 from api.services.query_rewriter import condense_question
 
@@ -220,12 +228,12 @@ def validate_numeric_facts(
     generated_answer: str,
     context_str: str,
     system_calculated_cutoff: float | None = None,
+    query_text: str | None = None,
 ) -> bool:
-    """Validate that numeric facts (cutoffs, ranks, fees) in the generated reply are grounded in context.
+    """Validate that numeric facts in the generated reply are grounded in context.
 
     Returns True if valid, False if ungrounded numeric hallucination is detected.
     """
-    # Extract numbers (integers and floats) from the generated answer
     answer_numbers = set(re.findall(r"\b\d+(?:\.\d+)?\b", generated_answer))
     if not answer_numbers:
         return True
@@ -246,9 +254,12 @@ def validate_numeric_facts(
         "2026",
     }
 
+    if query_text:
+        for q_num in re.findall(r"\b\d+(?:\.\d+)?\b", query_text):
+            allowed_constants.add(q_num)
+
     if system_calculated_cutoff is not None:
         allowed_constants.add(str(system_calculated_cutoff))
-        # Also add integer version if it's a whole number (e.g. 180.0 -> "180")
         if system_calculated_cutoff.is_integer():
             allowed_constants.add(str(int(system_calculated_cutoff)))
 
@@ -504,3 +515,171 @@ async def handle_rag_query(
 
     logger.info("rag_query_handled_successfully", source_count=len(sources))
     return answer, sources
+
+
+async def stream_rag_query(
+    db: AsyncSession,
+    query_text: str,
+    session_key: str | None = None,
+    system_calculated_cutoff: float | None = None,
+) -> AsyncIterator[dict[str, Any]]:
+    """Stream RAG response tokens with real-time SSE events for student chat."""
+    logger.info("streaming_rag_query_start", query=query_text, session_key=session_key)
+
+    conversation = None
+    history_str = ""
+    if session_key:
+        try:
+            conversation = await get_or_create_conversation(db, session_key)
+            turns = await get_recent_turns(db, conversation.id)
+            history_str = format_history(turns)
+        except Exception as e:
+            logger.warning("conversation_load_failed", error=str(e))
+            conversation = None
+            history_str = ""
+
+    if system_calculated_cutoff is None:
+        system_calculated_cutoff = calculate_tnea_cutoff(query_text)
+
+    retrieval_query = query_text
+    if (
+        history_str and settings.ENABLE_QUERY_REWRITING
+    ) or "yenaku" in query_text.lower():
+        retrieval_query = await condense_question(history_str, query_text)
+
+    normalized_retrieval_query = normalize_query(retrieval_query)
+    query_embeddings = await get_embeddings([normalized_retrieval_query])
+    query_vector = query_embeddings[0]
+
+    college_kws = detect_college_keywords(retrieval_query)
+    for kw in detect_college_keywords(query_text):
+        if kw not in college_kws:
+            college_kws.append(kw)
+
+    rows: List[Tuple[DocumentChunk, str]] = []
+    if len(college_kws) > 1:
+        per_college_k = max(4, settings.RAG_TOP_K // len(college_kws))
+        seen_ids: set[int] = set()
+        for kw in college_kws:
+            col_filter = Document.document_ref.ilike(
+                f"%{kw}%"
+            ) | DocumentChunk.text_content.ilike(f"%{kw}%")
+            col_stmt = (
+                select(DocumentChunk, Document.document_ref)
+                .join(Document, DocumentChunk.document_id == Document.id)
+                .where(col_filter)
+                .order_by(DocumentChunk.embedding.cosine_distance(query_vector))
+                .limit(per_college_k)
+            )
+            col_res = await db.execute(col_stmt)
+            for ch, d_ref in col_res.all():
+                if ch.id not in seen_ids:
+                    seen_ids.add(ch.id)
+                    rows.append((ch, d_ref))
+    else:
+        stmt = select(DocumentChunk, Document.document_ref).join(
+            Document, DocumentChunk.document_id == Document.id
+        )
+        if college_kws:
+            kw = college_kws[0]
+            stmt = stmt.where(
+                Document.document_ref.ilike(f"%{kw}%")
+                | DocumentChunk.text_content.ilike(f"%{kw}%")
+            )
+        stmt = stmt.order_by(
+            DocumentChunk.embedding.cosine_distance(query_vector)
+        ).limit(settings.RAG_TOP_K)
+        result = await db.execute(stmt)
+        rows = [(row[0], row[1]) for row in result.all()]
+
+    reordered_rows = reorder_chunks_lost_in_middle(rows)
+
+    context_parts: List[str] = []
+    sources: List[str] = []
+    for chunk, document_ref in reordered_rows:
+        context_parts.append(
+            f"--- Source: {document_ref} (Chunk Index: {chunk.chunk_index}) ---\n"
+            f"{chunk.text_content}"
+        )
+        if document_ref not in sources:
+            sources.append(document_ref)
+
+    yield {
+        "event": "sources",
+        "sources": sources,
+        "calculated_cutoff": system_calculated_cutoff,
+    }
+
+    if not context_parts:
+        empty_msg = (
+            "Sorry, I could not find verified TNEA cutoff or admission records for "
+            "that query in our database. Please ask about SKCET, PSG Tech, or other top colleges."
+        )
+        yield {"event": "delta", "text": empty_msg}
+        yield {
+            "event": "done",
+            "full_text": empty_msg,
+            "sources": [],
+            "suggested_followups": [
+                "What colleges are in the system?",
+                "Check my cutoff mark",
+            ],
+            "calculated_cutoff": system_calculated_cutoff,
+        }
+        return
+
+    context_str = "\n\n".join(context_parts)
+    llm_question = query_text
+    if system_calculated_cutoff is not None:
+        llm_question = (
+            f"[System Calculated Cutoff: {system_calculated_cutoff:g} / 200] "
+            f"{query_text}"
+        )
+
+    prompt = SYSTEM_PROMPT_TEMPLATE.format(
+        history=(
+            HISTORY_BLOCK_TEMPLATE.format(history=history_str) if history_str else ""
+        ),
+        context=context_str,
+        question=llm_question,
+    )
+
+    accumulated: list[str] = []
+    async for token in generate_stream_from_llm(prompt):
+        accumulated.append(token)
+        yield {"event": "delta", "text": token}
+
+    full_text = "".join(accumulated).strip()
+    is_factually_grounded = validate_numeric_facts(
+        full_text, context_str, system_calculated_cutoff
+    )
+    if not is_factually_grounded:
+        warning_note = (
+            "\n\n⚠️ _Some numbers may not match official records. "
+            "Please verify with the college website or TNEA portal._"
+        )
+        full_text += warning_note
+        yield {"event": "delta", "text": warning_note}
+
+    if sources and "📌 Source:" not in full_text:
+        source_note = f"\n\n📌 Source: {', '.join(sources)}"
+        full_text += source_note
+        yield {"event": "delta", "text": source_note}
+
+    followups = get_suggested_followups(query_text, full_text)
+
+    if conversation is not None:
+        try:
+            await append_turn(db, conversation, "user", query_text)
+            await append_turn(db, conversation, "assistant", full_text)
+            await db.commit()
+        except Exception as e:
+            logger.error("stream_history_save_failed", error=str(e))
+
+    yield {
+        "event": "done",
+        "full_text": full_text,
+        "sources": sources,
+        "suggested_followups": followups,
+        "calculated_cutoff": system_calculated_cutoff,
+    }

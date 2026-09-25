@@ -108,6 +108,18 @@ def calculate_tnea_cutoff(text: str) -> Optional[float]:
         if 0 <= m <= 100 and 0 <= p <= 100 and 0 <= c <= 100:
             cutoff = m + (p / 2.0) + (c / 2.0)
             return round(cutoff, 2)
+
+    # Direct cutoff detection (e.g., '185 cutoff', 'cutoff 185.5', 'cutoff is 180')
+    direct_match = re.search(r"\b(?:cutoff|cut-off)\D*(\d{2,3}(?:\.\d+)?)\b", cleaned)
+    if not direct_match:
+        direct_match = re.search(
+            r"\b(\d{2,3}(?:\.\d+)?)\s*(?:cutoff|cut-off)\b", cleaned
+        )
+    if direct_match:
+        val = float(direct_match.group(1))
+        if 50.0 <= val <= 200.0:
+            return round(val, 2)
+
     return None
 
 
@@ -175,3 +187,81 @@ def format_whatsapp_response(query: str, answer: str, sources: List[str]) -> str
     # The user requested to remove the source template from the final WhatsApp message.
 
     return cleaned_answer
+
+
+def calculate_admission_chance(
+    candidate_cutoff: float, closing_cutoff: float
+) -> tuple[str, str]:
+    """Return badge and advisory comparing candidate cutoff with previous cutoff."""
+    margin = round(candidate_cutoff - closing_cutoff, 2)
+    if margin >= 2.0:
+        return (
+            "🟢 *Safe Choice*",
+            f"High chance! Your cutoff is +{margin:g} above last year's closing mark.",
+        )
+    elif margin >= -2.0:
+        return (
+            "🟡 *Target Choice*",
+            f"Competitive! Cutoff is within {abs(margin):g} marks of closing mark.",
+        )
+    return (
+        "🔴 *Reach Choice*",
+        f"Aspirational! Previous closing mark was {abs(margin):g} marks higher.",
+    )
+
+
+def get_suggested_followups(query: str, answer: str) -> list[str]:
+    """Generate 3 contextual follow-up questions tailored to student interest."""
+    lowered = f"{query} {answer}".lower()
+
+    if any(k in lowered for k in ("cutoff", "mark", "rank", "admission chance")):
+        return [
+            "What is the fee structure for this branch?",
+            "Show placement statistics and top recruiters",
+            "What are the hostel and mess facilities?",
+        ]
+    if any(k in lowered for k in ("fee", "fees", "tuition", "cost", "scholarship")):
+        return [
+            "What are the cutoff marks required?",
+            "Are government scholarships available?",
+            "What is the average placement salary package?",
+        ]
+    if any(
+        k in lowered for k in ("placement", "salary", "package", "recruiter", "company")
+    ):
+        return [
+            "What is the closing cutoff for CSE and IT?",
+            "Which companies offer internships?",
+            "Download college brochure",
+        ]
+    if any(
+        k in lowered for k in ("hostel", "room", "food", "transport", "bus", "campus")
+    ):
+        return [
+            "What are the hostel fees per year?",
+            "What is the fee structure for courses?",
+            "Check my admission cutoff eligibility",
+        ]
+    return [
+        "Check my TNEA cutoff eligibility",
+        "Compare top engineering colleges",
+        "What are the most popular branches?",
+    ]
+
+
+def is_brochure_query(text: str) -> bool:
+    """Return True if student query requests a brochure or prospectus."""
+    cleaned = text.strip().lower()
+    return any(
+        k in cleaned
+        for k in (
+            "brochure",
+            "prospectus",
+            "handbook",
+            "booklet",
+            "pdf",
+            "btn_brochure",
+            "download brochure",
+            "send brochure",
+        )
+    )

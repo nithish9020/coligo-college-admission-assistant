@@ -48,3 +48,13 @@ class ChatResponse(BaseModel):
         ),
         examples=["student-42"],
     )
+    suggested_followups: List[str] = Field(
+        default_factory=list,
+        description="Suggested follow-up questions relevant to the student query",
+        examples=[["What is the fee structure for this branch?"]],
+    )
+    calculated_cutoff: Optional[float] = Field(
+        default=None,
+        description="System-calculated TNEA cutoff out of 200 if student gave marks",
+        examples=[182.5],
+    )

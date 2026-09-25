@@ -1,9 +1,11 @@
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from api.core import settings
 from api.core.exceptions import (
@@ -133,6 +135,10 @@ app.include_router(brochure_router)
 app.include_router(escalation_router)
 app.include_router(analytics_router)
 app.include_router(cutoff_router)
+
+# Mount static files directory so official brochures and PDFs are accessible
+if os.path.exists("data"):
+    app.mount("/static", StaticFiles(directory="data"), name="static")
 
 
 # Register global exception handlers for document processing errors

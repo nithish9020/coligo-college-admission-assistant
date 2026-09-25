@@ -12,9 +12,12 @@ Rules:
 the conversation.
 - Keep the user's original intent and any details they gave (community, marks, \
 rank, branch, college, year).
+- If the student writes in colloquial Tanglish or Tamil (e.g. 'yenaku 185 cutoff \
+cse kedaikuma', 'hostel fees evalo varum'), translate the intent into a clear \
+English question (e.g. 'Can I get CSE with 185 cutoff in TNEA counselling?').
 - If the user asks a general question like "which college" or "top colleges", DO \
 NOT restrict it to a specific college from the history. Keep it general.
-- If the follow-up is already a standalone question, return it unchanged.
+- If the follow-up is already a standalone question in English, return it unchanged.
 - Output ONLY the rewritten question. No preamble, no quotes, no explanation.
 
 Conversation:
@@ -30,15 +33,34 @@ Standalone question:"""
 # explaining itself, so the raw text is safer to embed than its rambling.
 MAX_CONDENSED_CHARS = 500
 
+_TANGLISH_KEYWORDS = (
+    "yenaku",
+    "enakku",
+    "evalo",
+    "evlo",
+    "kedaikuma",
+    "epdi",
+    "iruku",
+    "iruka",
+    "panna",
+    "solunga",
+    "solungo",
+)
+
+
+def is_tanglish(text: str) -> bool:
+    """Return True if message contains colloquial Tamil/Tanglish phrasing."""
+    cleaned = text.lower()
+    return any(w in cleaned for w in _TANGLISH_KEYWORDS)
+
 
 async def condense_question(history: str, question: str) -> str:
-    """Rewrite a follow-up into a standalone question for retrieval.
+    """Rewrite a follow-up or Tanglish query into a standalone question for retrieval.
 
-    Returns the original question unchanged when there is no history, when
-    rewriting is not useful, or on any failure — a bad rewrite must never be
-    worse than today's stateless behaviour.
+    Returns the original question unchanged when there is no history and no
+    Tanglish, or on any failure.
     """
-    if not history.strip():
+    if not history.strip() and not is_tanglish(question):
         return question
 
     prompt = CONDENSE_PROMPT_TEMPLATE.format(history=history, question=question)

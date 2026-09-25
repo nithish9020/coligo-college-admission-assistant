@@ -101,8 +101,9 @@ async def synthesizer_node(state: AgentState) -> dict[str, Any]:
             "Please check back shortly or refer to the official TNEA portal."
         )
 
-    # 5. Execute Numeric Fact Verification Guardrail
-    is_valid = validate_numeric_facts(raw_response, compiled_context, cutoff)
+    is_valid = validate_numeric_facts(
+        raw_response, compiled_context, cutoff, query_text=raw_message
+    )
     if not is_valid:
         logger.warning("numeric_validation_failed_in_agent_synthesis")
         raw_response += (
