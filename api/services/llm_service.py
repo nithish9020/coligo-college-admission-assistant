@@ -27,9 +27,14 @@ def _get_gemini_client() -> Any:
     return _gemini_client
 
 
-def _resolve_openai_compatible_config() -> tuple[str, str, str | None]:
-    """Resolve (api_key, model, base_url) based on LLM_PROVIDER."""
-    provider = (settings.LLM_PROVIDER or "gemini").lower()
+def _resolve_openai_compatible_config(
+    provider_override: str | None = None,
+) -> tuple[str, str, str | None]:
+    """Resolve (api_key, model, base_url) based on LLM_PROVIDER or override."""
+    provider = (provider_override or settings.LLM_PROVIDER or "gemini").lower()
+    if provider_override is None and provider == "gemini" and settings.GROQ_API_KEY:
+        provider = "groq"
+
     api_key: str = ""
     model: str = "gpt-4o-mini"
     base_url: str | None = None
@@ -41,7 +46,9 @@ def _resolve_openai_compatible_config() -> tuple[str, str, str | None]:
             or settings.OPENAI_API_KEY
             or ""
         )
-        model = settings.LLM_MODEL or "llama-3.3-70b-versatile"
+        model = settings.LLM_MODEL or "qwen/qwen3.8-27b"
+        if not model or "gemini" in model.lower() or "llama-3.3" in model.lower():
+            model = "qwen/qwen3.8-27b"
         base_url = settings.LLM_BASE_URL or "https://api.groq.com/openai/v1"
     elif provider == "deepseek":
         api_key = (
@@ -74,21 +81,24 @@ def _resolve_openai_compatible_config() -> tuple[str, str, str | None]:
     return api_key, model, base_url
 
 
-async def _generate_with_openai_compatible(prompt: str) -> str:
-    """Generate completions using an OpenAI-compatible endpoint.
+async def _generate_with_openai_compatible(
+    prompt: str, provider_override: str | None = None
+) -> str:
+    """Generate completions using an OpenAI-compatible endpoint with retries.
 
     Supports Groq, OpenAI, DeepSeek, Ollama, OpenRouter.
     """
-    api_key, model, base_url = _resolve_openai_compatible_config()
+    api_key, model, base_url = _resolve_openai_compatible_config(provider_override)
     client = AsyncOpenAI(api_key=api_key, base_url=base_url)
 
+    active_provider = provider_override or settings.LLM_PROVIDER
     logger.debug(
         "sending_prompt_to_openai_compatible_llm",
-        provider=settings.LLM_PROVIDER,
+        provider=active_provider,
         model=model,
     )
 
-    for attempt in range(3):
+    for attempt in range(2):
         try:
             response = await client.chat.completions.create(
                 model=model,
@@ -97,93 +107,170 @@ async def _generate_with_openai_compatible(prompt: str) -> str:
                 max_tokens=1024,
             )
             text = response.choices[0].message.content or ""
-            if text:
+            if text and text.strip():
                 return text.strip()
             raise DocumentProcessingError("LLM returned an empty response.")
         except Exception as e:
-            if "429" in str(e) or "rate" in str(e).lower():
-                logger.warning("llm_rate_limited_retrying", attempt=attempt + 1)
-                await asyncio.sleep(2.0 ** (attempt + 1))
-            else:
+            err_str = str(e)
+            is_transient = any(
+                token in err_str
+                for token in ("429", "500", "502", "503", "504", "rate", "overloaded")
+            )
+            if is_transient and attempt == 0:
                 logger.warning(
-                    "llm_request_error_retrying", attempt=attempt + 1, error=str(e)
+                    "openai_compatible_transient_error_retrying",
+                    attempt=1,
+                    error=err_str,
                 )
-                if attempt == 2:
-                    raise DocumentProcessingError(
-                        f"Request to LLM provider '{settings.LLM_PROVIDER}' "
-                        f"failed: {str(e)}"
-                    ) from e
                 await asyncio.sleep(2.0)
+                continue
+            if attempt == 1:
+                raise DocumentProcessingError(
+                    f"Request to LLM provider '{active_provider}' failed: {err_str}"
+                ) from e
+            await asyncio.sleep(1.0)
 
     raise DocumentProcessingError(
-        f"Failed to generate response from provider '{settings.LLM_PROVIDER}'"
+        f"Failed to generate response from provider '{active_provider}'"
     )
 
 
-async def _generate_with_gemini(prompt: str) -> str:
-    """Generate response using Google Gemini API (google-genai SDK)."""
-    from google.genai import errors as genai_errors
+async def _generate_with_gemini(
+    prompt: str, candidate_models: list[str] | None = None
+) -> str:
+    """Generate response using Google Gemini API with multi-model fallback."""
     from google.genai import types as genai_types
 
     client = _get_gemini_client()
-    logger.debug("sending_prompt_to_gemini_llm", model=settings.GEMINI_MODEL)
-    for attempt in range(3):
-        try:
+    models_to_try = candidate_models or [
+        settings.GEMINI_MODEL,
+        "gemini-2.5-flash-lite",
+        "gemini-flash-latest",
+    ]
+    deduped_models: list[str] = []
+    seen: set[str] = set()
+    for m in models_to_try:
+        if m not in seen:
+            seen.add(m)
+            deduped_models.append(m)
 
-            def _generate(current_client: Any) -> str:
-                response = current_client.models.generate_content(
-                    model=settings.GEMINI_MODEL,
-                    contents=prompt,
-                    config=genai_types.GenerateContentConfig(
-                        temperature=0.2,
-                        top_p=1.0,
-                        max_output_tokens=1024,
-                    ),
-                )
-                return response.text or ""
+    last_error: Exception | None = None
+    for model_name in deduped_models:
+        logger.debug("sending_prompt_to_gemini_llm", model=model_name)
+        for attempt in range(2):
+            try:
 
-            text = await asyncio.to_thread(_generate, client)
+                def _generate(
+                    current_client: Any, target_model: str = model_name
+                ) -> str:
+                    response = current_client.models.generate_content(
+                        model=target_model,
+                        contents=prompt,
+                        config=genai_types.GenerateContentConfig(
+                            temperature=0.2,
+                            top_p=1.0,
+                            max_output_tokens=1024,
+                        ),
+                    )
+                    return response.text or ""
 
-            if text:
-                return text.strip()
-            else:
-                raise DocumentProcessingError("Gemini API returned an empty response.")
-
-        except genai_errors.ClientError as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                logger.warning("gemini_llm_rate_limited_retrying", attempt=attempt + 1)
-                await asyncio.sleep(2.0 ** (attempt + 1))
-            else:
-                raise DocumentProcessingError(f"Gemini API error: {str(e)}") from e
-
-        except Exception as e:
-            logger.warning(
-                "gemini_llm_request_error_retrying", attempt=attempt + 1, error=str(e)
-            )
-            if attempt == 2:
+                text = await asyncio.to_thread(_generate, client, model_name)
+                if text and text.strip():
+                    return text.strip()
                 raise DocumentProcessingError(
-                    f"Request to Gemini API failed: {str(e)}"
-                ) from e
-            await asyncio.sleep(2.0)
+                    f"Gemini model '{model_name}' returned an empty response."
+                )
 
+            except Exception as e:
+                last_error = e
+                err_str = str(e)
+                is_transient = any(
+                    token in err_str
+                    for token in (
+                        "429",
+                        "500",
+                        "502",
+                        "503",
+                        "504",
+                        "RESOURCE_EXHAUSTED",
+                        "UNAVAILABLE",
+                        "demand",
+                    )
+                )
+                if is_transient and attempt == 0:
+                    logger.warning(
+                        "gemini_llm_transient_error_retrying",
+                        model=model_name,
+                        attempt=1,
+                        error=err_str,
+                    )
+                    await asyncio.sleep(1.5)
+                    continue
+                logger.warning(
+                    "gemini_model_attempt_failed", model=model_name, error=err_str
+                )
+                break  # Try next candidate model
+
+    if last_error:
+        raise DocumentProcessingError(
+            f"All Gemini models failed. Last error: {str(last_error)}"
+        ) from last_error
     raise DocumentProcessingError("Failed to generate response from Gemini API")
 
 
 async def generate_response_from_llm(prompt: str) -> str:
-    """Generate response using configured provider (Groq, Gemini, OpenAI, Ollama)."""
-    provider = (settings.LLM_PROVIDER or "gemini").lower()
+    """Generate response with failover between Gemini and Groq/OpenAI."""
+    primary_provider = (settings.LLM_PROVIDER or "gemini").lower()
 
-    # Fallback to Gemini if Groq is selected but no key is configured
-    if provider == "groq" and not (
-        settings.GROQ_API_KEY or settings.LLM_API_KEY or settings.OPENAI_API_KEY
-    ):
-        if settings.GEMINI_API_KEY:
-            logger.warning(
-                "groq_api_key_missing_falling_back_to_gemini",
-                hint="Set GROQ_API_KEY in .env to use Groq LPU acceleration",
-            )
+    if primary_provider == "gemini":
+        try:
             return await _generate_with_gemini(prompt)
-
-    if provider == "gemini":
-        return await _generate_with_gemini(prompt)
-    return await _generate_with_openai_compatible(prompt)
+        except Exception as gemini_err:
+            logger.warning(
+                "gemini_primary_llm_failed_attempting_failover",
+                error=str(gemini_err),
+            )
+            has_groq = bool(
+                settings.GROQ_API_KEY or settings.LLM_API_KEY or settings.OPENAI_API_KEY
+            )
+            if has_groq:
+                try:
+                    logger.info("failing_over_to_groq_llm")
+                    return await _generate_with_openai_compatible(
+                        prompt, provider_override="groq"
+                    )
+                except Exception as groq_err:
+                    logger.error(
+                        "all_llm_providers_failed",
+                        gemini_error=str(gemini_err),
+                        groq_error=str(groq_err),
+                    )
+                    err_summary = f"{gemini_err} | {groq_err}"
+                    raise DocumentProcessingError(
+                        f"Both Gemini and Groq failover failed: {err_summary}"
+                    ) from groq_err
+            raise gemini_err
+    else:
+        try:
+            return await _generate_with_openai_compatible(prompt)
+        except Exception as openai_err:
+            logger.warning(
+                "openai_compatible_primary_llm_failed_attempting_failover",
+                provider=primary_provider,
+                error=str(openai_err),
+            )
+            if settings.GEMINI_API_KEY:
+                try:
+                    logger.info("failing_over_to_gemini_llm")
+                    return await _generate_with_gemini(prompt)
+                except Exception as gemini_err:
+                    logger.error(
+                        "all_llm_providers_failed",
+                        openai_error=str(openai_err),
+                        gemini_error=str(gemini_err),
+                    )
+                    err_summary = f"{openai_err} | {gemini_err}"
+                    raise DocumentProcessingError(
+                        f"Both {primary_provider} and Gemini failed: {err_summary}"
+                    ) from gemini_err
+            raise openai_err

@@ -25,6 +25,24 @@ CACHE_TTL_SECONDS = 3600  # 1 hour TTL
 MAX_CACHE_ENTRIES = 500
 _RAG_RESPONSE_CACHE: Dict[str, Tuple[str, List[str], float]] = {}
 
+_FALLBACK_PHRASES = (
+    "high inquiry volume",
+    "tiny hiccup",
+    "experiencing high demand",
+    "try asking again",
+    "check back shortly",
+    "trouble connecting",
+    "could not generate",
+)
+
+
+def _is_fallback_or_error_response(answer: str) -> bool:
+    """Return True if answer is an error or fallback message that should never be cached."""
+    if not answer or not answer.strip():
+        return True
+    lowered = answer.lower()
+    return any(phrase in lowered for phrase in _FALLBACK_PHRASES)
+
 
 def clear_rag_response_cache() -> None:
     """Clear all entries in the in-memory RAG response cache."""
@@ -33,19 +51,24 @@ def clear_rag_response_cache() -> None:
 
 
 def get_cached_rag_response(query_text: str) -> Tuple[str, List[str]] | None:
-    """Return cached RAG answer and sources for common queries if unexpired."""
+    """Return cached RAG answer and sources for common queries if unexpired and valid."""
     cache_key = query_text.strip().lower()
     if cache_key in _RAG_RESPONSE_CACHE:
         answer, sources, timestamp = _RAG_RESPONSE_CACHE[cache_key]
         if time.time() - timestamp < CACHE_TTL_SECONDS:
-            logger.info("rag_response_cache_hit", query=query_text)
-            return answer, sources
+            if not _is_fallback_or_error_response(answer):
+                logger.info("rag_response_cache_hit", query=query_text)
+                return answer, sources
+            logger.info("evicting_polluted_cache_entry", query=query_text)
         del _RAG_RESPONSE_CACHE[cache_key]
     return None
 
 
 def set_cached_rag_response(query_text: str, answer: str, sources: List[str]) -> None:
-    """Cache generated RAG answer in memory with timestamp."""
+    """Cache generated RAG answer in memory with timestamp, never caching fallbacks."""
+    if _is_fallback_or_error_response(answer):
+        logger.debug("skipping_cache_for_fallback_response", query=query_text)
+        return
     cache_key = query_text.strip().lower()
     if len(_RAG_RESPONSE_CACHE) >= MAX_CACHE_ENTRIES:
         oldest_key = min(_RAG_RESPONSE_CACHE, key=lambda k: _RAG_RESPONSE_CACHE[k][2])
