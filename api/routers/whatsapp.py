@@ -61,6 +61,16 @@ _COLLEGES_LIST_KEYWORDS = (
     "info about which",
     "contacts about",
     "have information",
+    "endha college",
+    "yendha college",
+    "enna college",
+    "unga kita",
+    "unga kitta",
+    "college details",
+    "colleges details",
+    "colleges iruku",
+    "college iruku",
+    "college list",
 )
 
 
