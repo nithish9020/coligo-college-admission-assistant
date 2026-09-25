@@ -4,35 +4,31 @@ from langgraph.graph import END, StateGraph
 
 from api.services.agent.nodes.critic import critic_node
 from api.services.agent.nodes.escalator import escalator_node
-from api.services.agent.nodes.grader import grader_node
-from api.services.agent.nodes.retriever import retriever_node
 from api.services.agent.nodes.router import router_node
-from api.services.agent.nodes.synthesizer import synthesizer_node
+from api.services.agent.nodes.tool_agent import tool_agent_node
 from api.services.agent.state import AgentState
 
 
 def _route_after_router(
     state: AgentState,
-) -> Literal["escalator", "retriever", "__end__"]:
-    """Conditional edge deciding whether to escalate, exit off-topic, or retrieve."""
+) -> Literal["escalator", "agent", "__end__"]:
+    """Decide whether to escalate, exit off-topic, or run tool agent."""
     if state.get("is_off_topic"):
         return "__end__"
     if state.get("is_escalated"):
         return "escalator"
-    return "retriever"
+    return "agent"
 
 
 def create_counselor_graph() -> StateGraph:
-    """Build and assemble the multi-turn agentic state graph."""
+    """Build multi-turn agentic state graph with LangChain Tool Calling."""
     # Note: TypedDict triggers a known Pyright false-positive with LangGraph's
     # TypedDictLike protocols.
     workflow = StateGraph(AgentState)  # type: ignore
 
     # 1. Register Processing Nodes
     workflow.add_node("router", router_node)
-    workflow.add_node("retriever", retriever_node)
-    workflow.add_node("grader", grader_node)
-    workflow.add_node("synthesizer", synthesizer_node)
+    workflow.add_node("agent", tool_agent_node)
     workflow.add_node("critic", critic_node)
     workflow.add_node("escalator", escalator_node)
 
@@ -44,14 +40,12 @@ def create_counselor_graph() -> StateGraph:
         _route_after_router,
         {
             "escalator": "escalator",
-            "retriever": "retriever",
+            "agent": "agent",
             "__end__": END,
         },
     )
 
-    workflow.add_edge("retriever", "grader")
-    workflow.add_edge("grader", "synthesizer")
-    workflow.add_edge("synthesizer", "critic")
+    workflow.add_edge("agent", "critic")
     workflow.add_edge("critic", END)
     workflow.add_edge("escalator", END)
 

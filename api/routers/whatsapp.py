@@ -45,41 +45,6 @@ FALLBACK_REPLY = (
     "Could you try asking again in a moment?"
 )
 
-# Keywords that indicate the student wants to know which colleges are in the system
-_COLLEGES_LIST_KEYWORDS = (
-    "which college",
-    "what college",
-    "colleges do you have",
-    "colleges you have",
-    "what colleges",
-    "colleges available",
-    "list of colleges",
-    "colleges in the database",
-    "data about which",
-    "which colleges",
-    "know about which",
-    "info about which",
-    "contacts about",
-    "have information",
-    "endha college",
-    "yendha college",
-    "enna college",
-    "unga kita",
-    "unga kitta",
-    "college details",
-    "colleges details",
-    "colleges iruku",
-    "college iruku",
-    "college list",
-)
-
-
-def _is_colleges_list_query(text: str) -> bool:
-    """Return True if the student is asking which colleges are available."""
-    cleaned = text.strip().lower()
-    return any(kw in cleaned for kw in _COLLEGES_LIST_KEYWORDS)
-
-
 router = APIRouter(prefix="/webhook", tags=["WhatsApp Webhook"])
 logger = get_logger(__name__)
 
@@ -373,55 +338,6 @@ async def _answer_student_task(message: ParsedMessage) -> None:
                 return
     except Exception as esc_check_err:
         logger.warning("escalation_check_skipped", error=str(esc_check_err))
-
-    # ── Colleges-list shortcut: answer directly from DB, not from RAG ──
-    # Vector search ranks individual chunks by similarity, so a generic
-    # "which colleges" query surfaces whichever college appears most often
-    # in the top-K results — not all ingested colleges. We fix this by
-    # querying the documents table directly and formatting the answer here.
-    if _is_colleges_list_query(query):
-        from sqlalchemy import select
-
-        async with async_session_factory() as db:
-            try:
-                from api.models import Document
-
-                result = await db.execute(select(Document.document_ref))
-                refs = [row[0] for row in result.all()]
-
-                # Build human-readable college names from document refs
-                college_lines = []
-                seen: set[str] = set()
-                for ref in refs:
-                    import os
-
-                    base = os.path.basename(ref).replace("_", " ").replace("-", " ")
-                    # Strip file extensions
-                    for ext in (".pdf", ".txt"):
-                        base = base.replace(ext, "")
-                    # Group duplicates (e.g. aggregated cutoff file)
-                    if "raw cutoffs" in base.lower() or "aggregated" in base.lower():
-                        label = "Cutoff data: Bannari Amman, CIT, Kongu, SKCET, PSG Tech, Kumaraguru + more"
-                    else:
-                        label = base.title()
-                    if label not in seen:
-                        seen.add(label)
-                        college_lines.append(f"• {label}")
-
-                if college_lines:
-                    reply = (
-                        "🏫 *Colleges with TNEA data in my system:*\n\n"
-                        + "\n".join(college_lines)
-                        + "\n\n💡 Ask me the cutoff, fees, or courses for any of these!"
-                    )
-                else:
-                    reply = "No college data has been ingested yet. Please ask an admin to upload documents."
-            except Exception as e:
-                logger.error("colleges_list_query_failed", error=str(e))
-                reply = FALLBACK_REPLY
-
-        await send_text(message.sender, reply)
-        return
 
     if await _handle_location_query(message.sender, query):
         return
