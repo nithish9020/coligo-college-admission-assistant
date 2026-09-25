@@ -70,30 +70,39 @@ async def _list_colleges_impl(db: AsyncSession) -> str:
 
 async def _query_cutoffs_impl(
     db: AsyncSession,
-    college: str,
+    college: Optional[str] = None,
     branch: Optional[str] = None,
     community: Optional[str] = None,
+    district: Optional[str] = None,
 ) -> str:
     """Fetch verified TNEA cutoffs from the database."""
     try:
         from api.services.rag_service import detect_college_keyword
 
-        search_col = detect_college_keyword(college) or college
+        search_col = detect_college_keyword(college) if college else None
         records = await get_cutoff_records(
             db,
-            college=search_col,
+            college=search_col or college,
             branch=branch,
             community=community,
-            limit=15,
+            district=district,
+            limit=20,
         )
         if not records:
+            target_str = f"'{college}' " if college else ""
+            dist_str = f"in {district} " if district else ""
             return (
-                f"No exact cutoff record found for '{college}' (Branch: "
-                f"{branch or 'All'}, Community: {community or 'All'})."
+                f"No exact cutoff record found for {target_str}{dist_str}"
+                f"(Branch: {branch or 'All'}, Community: {community or 'All'})."
             )
 
+        target_label = (
+            college.upper()
+            if college
+            else (f"{district.title()} District" if district else "Top Colleges")
+        )
         comm_label = f"[{community.upper()}]" if community else "[All Communities]"
-        lines = [f"Official TNEA Cutoffs for {college.upper()} {comm_label}:"]
+        lines = [f"Official TNEA Cutoffs for {target_label} {comm_label}:"]
         for r in records:
             lines.append(
                 f"• {r.college_name} | {r.branch_name} | "
@@ -102,7 +111,7 @@ async def _query_cutoffs_impl(
         return "\n".join(lines)
     except Exception as e:
         logger.error("tool_query_cutoffs_failed", error=str(e))
-        return f"Error retrieving cutoffs for {college}: {str(e)}"
+        return f"Error retrieving cutoffs: {str(e)}"
 
 
 async def _compare_colleges_impl(
@@ -162,6 +171,7 @@ async def _choice_recs_impl(
     cutoff: float,
     community: str,
     preferred_branches: Optional[List[str]],
+    district: Optional[str] = None,
 ) -> str:
     """Generate 3-tier choice filling list."""
     try:
@@ -170,9 +180,11 @@ async def _choice_recs_impl(
             cutoff=cutoff,
             community=community,
             branches=preferred_branches,
+            district=district,
         )
+        dist_label = f" in {district.title()}" if district else ""
         lines = [
-            f"TNEA 3-Tier Choice Filling List ({cutoff:g} / 200.0 | "
+            f"TNEA 3-Tier Choice Filling List{dist_label} ({cutoff:g} / 200.0 | "
             f"{community.upper()}):",
             "\n🌟 AMBITIOUS (Reach Options):",
         ]
@@ -264,24 +276,27 @@ def create_agent_tools(db: AsyncSession, session_key: str = "") -> list[Any]:
 
     @tool
     async def query_college_cutoffs(
-        college: str,
+        college: Optional[str] = None,
         branch: Optional[str] = None,
         community: Optional[str] = None,
+        district: Optional[str] = None,
     ) -> str:
-        """Query official verified TNEA closing cutoffs (out of 200) for a college.
+        """Query official verified TNEA closing cutoffs (out of 200).
 
         Args:
-            college: College name (e.g. SKCET, CIT, PSG, Bannari, Kongu).
+            college: Optional college name (e.g. SKCET, CIT, PSG, Bannari, Kongu).
             branch: Optional department (CSE, ECE, IT, AIDS, MECH).
             community: Optional reservation community (OC, BC, BCM, MBC, SC, ST).
+            district: Optional district filter (e.g. Coimbatore, Chennai, Erode).
         """
         logger.info(
             "tool_invoked_query_college_cutoffs",
             college=college,
             branch=branch,
             community=community,
+            district=district,
         )
-        return await _query_cutoffs_impl(db, college, branch, community)
+        return await _query_cutoffs_impl(db, college, branch, community, district)
 
     @tool
     async def compare_colleges_cutoffs(
@@ -310,6 +325,7 @@ def create_agent_tools(db: AsyncSession, session_key: str = "") -> list[Any]:
         cutoff: float,
         community: str = "OC",
         preferred_branches: Optional[List[str]] = None,
+        district: Optional[str] = None,
     ) -> str:
         """Generate a 3-tier TNEA Choice Filling List based on student cutoff.
 
@@ -317,14 +333,18 @@ def create_agent_tools(db: AsyncSession, session_key: str = "") -> list[Any]:
             cutoff: Student's TNEA cutoff score out of 200.0.
             community: Student's community: 'OC', 'BC', 'BCM', 'MBC', 'SC', 'ST'.
             preferred_branches: Optional desired branches (e.g. ['CSE', 'ECE']).
+            district: Optional regional filter (e.g. 'Coimbatore', 'Erode').
         """
         logger.info(
             "tool_invoked_choice_recommendations",
             cutoff=cutoff,
             community=community,
             branches=preferred_branches,
+            district=district,
         )
-        return await _choice_recs_impl(db, cutoff, community, preferred_branches)
+        return await _choice_recs_impl(
+            db, cutoff, community, preferred_branches, district
+        )
 
     @tool
     async def search_admission_brochures(

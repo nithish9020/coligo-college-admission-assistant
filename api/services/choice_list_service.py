@@ -171,3 +171,88 @@ async def generate_tnea_choice_list(
         safe_count=len(safe),
     )
     return "\n".join(body_parts)
+
+
+async def generate_choice_sheet_file(
+    db: AsyncSession,
+    cutoff: float,
+    community: str = "BC",
+    preferred_branches: Optional[List[str]] = None,
+    preferred_colleges: Optional[List[str]] = None,
+    session_key: str = "",
+) -> tuple[str, str]:
+    """Build structured choices and export a downloadable PDF choice sheet.
+
+    Returns:
+        tuple[str, str]: (filepath, public_url)
+    """
+    from api.services.pdf_generator import generate_tnea_choice_sheet_pdf
+
+    comm = community.upper() if community else "BC"
+    stmt = (
+        select(TNEACutoff)
+        .where(
+            TNEACutoff.community == comm,
+            TNEACutoff.cutoff_mark >= max(cutoff - 15.0, 77.5),
+            TNEACutoff.cutoff_mark <= cutoff + 3.0,
+        )
+        .order_by(TNEACutoff.cutoff_mark.desc())
+    )
+    res = await db.execute(stmt)
+    records = list(res.scalars().all())
+
+    if not records:
+        stmt_fallback = (
+            select(TNEACutoff)
+            .where(
+                TNEACutoff.cutoff_mark >= max(cutoff - 15.0, 77.5),
+                TNEACutoff.cutoff_mark <= cutoff + 3.0,
+            )
+            .order_by(TNEACutoff.cutoff_mark.desc())
+            .limit(30)
+        )
+        res_fb = await db.execute(stmt_fallback)
+        records = list(res_fb.scalars().all())
+
+    reach, target, safe = _bucket_choices(
+        records, cutoff, preferred_branches, preferred_colleges
+    )
+
+    choices_data = []
+    for r in reach:
+        choices_data.append(
+            {
+                "college_code": r.college_code,
+                "college_name": r.college_name,
+                "branch_name": r.branch_name,
+                "cutoff_mark": r.cutoff_mark,
+                "tier": "Ambitious",
+            }
+        )
+    for r in target:
+        choices_data.append(
+            {
+                "college_code": r.college_code,
+                "college_name": r.college_name,
+                "branch_name": r.branch_name,
+                "cutoff_mark": r.cutoff_mark,
+                "tier": "Target",
+            }
+        )
+    for r in safe:
+        choices_data.append(
+            {
+                "college_code": r.college_code,
+                "college_name": r.college_name,
+                "branch_name": r.branch_name,
+                "cutoff_mark": r.cutoff_mark,
+                "tier": "Safe",
+            }
+        )
+
+    return generate_tnea_choice_sheet_pdf(
+        cutoff=cutoff,
+        community=comm,
+        choices=choices_data,
+        session_key=session_key,
+    )

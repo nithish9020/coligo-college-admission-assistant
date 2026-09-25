@@ -232,7 +232,30 @@ async def _handle_choice_list_query(sender: str, query: str, session_key: str) -
             preferred_branches=profile.preferred_branches or None,
             preferred_colleges=profile.preferred_colleges or None,
         )
-    await send_text(sender, choice_draft)
+        await send_text(sender, choice_draft)
+
+        try:
+            from api.services.choice_list_service import generate_choice_sheet_file
+
+            _, pdf_url = await generate_choice_sheet_file(
+                db=db,
+                cutoff=profile.calculated_cutoff,
+                community=profile.community or "BC",
+                preferred_branches=profile.preferred_branches or None,
+                preferred_colleges=profile.preferred_colleges or None,
+                session_key=session_key,
+            )
+            await send_document(
+                to=sender,
+                document_url=pdf_url,
+                caption=(
+                    "📄 *Your Official TNEA Choice Filling Sheet (PDF)*\n"
+                    "Save or print this to fill choices on tneaonline.org!"
+                ),
+                filename="TNEA_Choice_Filling_Sheet.pdf",
+            )
+        except Exception as pdf_err:
+            logger.error("choice_sheet_pdf_delivery_failed", error=str(pdf_err))
     return True
 
 

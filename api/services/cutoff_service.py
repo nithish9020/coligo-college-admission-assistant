@@ -25,6 +25,32 @@ BRANCH_KEYWORD_PATTERNS = {
     "bme": ["biomedical", "bme"],
 }
 
+# District search mapping for regional college filtering
+DISTRICT_KEYWORD_PATTERNS: dict[str, list[str]] = {
+    "coimbatore": [
+        "coimbatore",
+        "cbe",
+        "kovai",
+        "pollachi",
+        "peelamedu",
+        "kuniamuthur",
+        "saravanampatti",
+        "sulur",
+        "neelambur",
+    ],
+    "chennai": [
+        "chennai",
+        "guindy",
+        "chromepet",
+        "kalavakkam",
+        "kancheepuram",
+    ],
+    "erode": ["erode", "sathyamangalam", "perundurai", "sathy"],
+    "salem": ["salem"],
+    "madurai": ["madurai", "thiruparankundram"],
+    "trichy": ["trichy", "tiruchirappalli"],
+}
+
 
 async def seed_cutoffs_from_file(
     db: AsyncSession, filepath: str = "data/tnea_top_colleges_cutoffs.txt"
@@ -103,9 +129,10 @@ async def get_cutoff_records(
     colleges: list[str] | None = None,
     branch: str | None = None,
     community: str | None = None,
+    district: str | None = None,
     limit: int = 50,
 ) -> List[TNEACutoff]:
-    """Query cutoff records with college, branch, and community filters."""
+    """Query cutoff records with college, branch, community, and district filters."""
     stmt = select(TNEACutoff)
 
     if colleges:
@@ -131,6 +158,11 @@ async def get_cutoff_records(
         patterns = BRANCH_KEYWORD_PATTERNS.get(b_lower, [branch])
         branch_cond = or_(*(TNEACutoff.branch_name.ilike(f"%{p}%") for p in patterns))
         stmt = stmt.where(branch_cond)
+    if district:
+        d_lower = district.strip().lower()
+        d_patterns = DISTRICT_KEYWORD_PATTERNS.get(d_lower, [district])
+        dist_cond = or_(*(TNEACutoff.college_name.ilike(f"%{p}%") for p in d_patterns))
+        stmt = stmt.where(dist_cond)
     if community and community != "ALL":
         stmt = stmt.where(TNEACutoff.community == community.upper())
 
@@ -145,6 +177,7 @@ async def generate_choice_filling_recommendations(
     community: str,
     branches: list[str] | None = None,
     colleges: list[str] | None = None,
+    district: str | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     """Generate 3-tier TNEA choice filling preference list.
 
@@ -170,6 +203,13 @@ async def generate_choice_filling_recommendations(
     if colleges:
         col_conds = [TNEACutoff.college_name.ilike(f"%{c}%") for c in colleges]
         base_stmt = base_stmt.where(or_(*col_conds))
+
+    # Filter by district if specified
+    if district:
+        d_lower = district.strip().lower()
+        d_patterns = DISTRICT_KEYWORD_PATTERNS.get(d_lower, [district])
+        dist_cond = or_(*(TNEACutoff.college_name.ilike(f"%{p}%") for p in d_patterns))
+        base_stmt = base_stmt.where(dist_cond)
 
     # 1. Ambitious / Dream choices (Cutoff to Cutoff + 3.0)
     dream_stmt = (

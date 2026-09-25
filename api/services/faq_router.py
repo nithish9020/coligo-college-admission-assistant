@@ -103,6 +103,36 @@ TNEA_PROCESS_REPLY = (
     "college within deadline."
 )
 
+TNEA_SCHEDULE_REPLY = (
+    "📅 *Official TNEA Counselling Schedule & Round Architecture:*\n\n"
+    "• *Round 1:* Typically ranks 1 to 25,000 (Cutoff ~200.0 to 179.0)\n"
+    "• *Round 2:* Typically ranks 25,001 to 65,000 (Cutoff ~178.9 to 145.0)\n"
+    "• *Round 3:* Typically ranks 65,001 to 1,30,000 (Cutoff ~144.9 to 77.5)\n\n"
+    "🕒 *Each Round 5-Day Lifecycle:*\n"
+    "• *Days 1–3 (Choice Filling):* 3 full days to add & order college choices\n"
+    "• *Day 4 (Tentative Allotment):* Result published by 10:00 AM\n"
+    "• *Days 4–5 (Confirmation):* Confirm with Accept / Accept & Upward\n"
+    "• *Day 6:* Final allotment release & college reporting date\n\n"
+    "💡 Reply with *Upward Movement* to understand how to upgrade your seat!"
+)
+
+TNEA_UPWARD_MOVEMENT_REPLY = (
+    "🚀 *How TNEA Upward Movement Works (The Golden Rule):*\n\n"
+    "When you receive your tentative allotment, you get 5 confirmation options:\n\n"
+    "1. ✅ *Accept and Join:* You are 100% happy with this seat and confirm "
+    "admission.\n"
+    "2. 🌟 *Accept and Upward (RECOMMENDED):* You KEEP your currently allotted "
+    "seat as a guaranteed backup, BUT if a higher-priority choice from your list "
+    "becomes vacant, TNEA upgrades you automatically! You NEVER lose your "
+    "current seat.\n"
+    "3. ❌ *Decline and Upward:* You reject the current seat and only wait for "
+    "higher choices.\n"
+    "4. ⏭️ *Decline and Next Round:* You skip to the next counselling round.\n"
+    "5. 🚪 *Quit:* You exit TNEA counselling.\n\n"
+    "💡 *Always select 'Accept and Upward' if you want a better college without "
+    "risking your seat!*"
+)
+
 
 def match_instant_faq(query: str) -> Optional[Tuple[str, list[str]]]:
     """Check if query matches a deterministic institutional FAQ for sub-50ms reply."""
@@ -171,5 +201,38 @@ def match_instant_faq(query: str) -> Optional[Tuple[str, list[str]]]:
     ):
         logger.info("instant_faq_hit", topic="counselling_procedure")
         return TNEA_PROCESS_REPLY, ["TNEA Online Portal Handbook"]
+
+    # 5. Counselling Round Schedule & Timeline
+    if any(
+        phrase in q
+        for phrase in (
+            "schedule",
+            "timeline",
+            "dates",
+            "round 1",
+            "round 2",
+            "round 3",
+            "counselling dates",
+            "counselling schedule",
+            "when is round",
+        )
+    ):
+        logger.info("instant_faq_hit", topic="counselling_schedule")
+        return TNEA_SCHEDULE_REPLY, ["TNEA Official Annual Schedule"]
+
+    # 6. Upward Movement Explanation
+    if any(
+        phrase in q
+        for phrase in (
+            "upward movement",
+            "upward",
+            "what is upward",
+            "accept and upward",
+            "how upward works",
+            "upward option",
+        )
+    ):
+        logger.info("instant_faq_hit", topic="upward_movement")
+        return TNEA_UPWARD_MOVEMENT_REPLY, ["TNEA Candidate Choice-Filling Guidance"]
 
     return None

@@ -25,6 +25,7 @@ CORE RULES:
      (e.g., 'Compare PSG and CIT for CSE' or 'SKCET vs Kumaraguru').
    - Call `get_choice_filling_recommendations_tool` when cutoff and community are
      provided to generate 3-tier Ambitious / Target / Safe recommendations.
+     Pass `district` (e.g. 'Coimbatore', 'Erode') if the student specifies a location.
    - Call `search_admission_brochures` for questions on fees, hostel, placements,
      and campus rules.
    - Call `calculate_cutoff_from_marks` if Maths, Physics, Chemistry marks are given.
