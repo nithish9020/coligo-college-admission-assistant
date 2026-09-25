@@ -19,7 +19,7 @@ uvicorn api.main:app --host 127.0.0.1 --port 8001 --no-access-log &
 FASTAPI_PID=$!
 
 # 2. Start Streamlit admin portal
-streamlit run administration_portal/app.py \
+streamlit run administration_portal/portal.py \
     --server.port 8501 \
     --server.address 127.0.0.1 \
     --server.headless true \
