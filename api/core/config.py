@@ -52,6 +52,20 @@ class Settings(BaseSettings):
     ENABLE_QUERY_REWRITING: bool = True
     USE_LANGGRAPH: bool = True
 
+    # Redis & Asynchronous Caching Settings
+    REDIS_URL: str = "redis://localhost:6379/0"
+    CUTOFF_CACHE_TTL_SECONDS: int = 86400  # 24 hours
+
+    # Speech & Voice Note Settings (Edge-TTS)
+    ENABLE_VOICE_RESPONSES: bool = True
+    DEFAULT_TAMIL_VOICE: str = "ta-IN-PallaviNeural"
+    DEFAULT_ENGLISH_VOICE: str = "en-IN-NeerjaNeural"
+
+    # Hybrid Search & Reranking Settings
+    ENABLE_HYBRID_SEARCH: bool = True
+    ENABLE_RERANKING: bool = True
+    RERANKER_MODEL: str = "ms-marco-TinyBERT-L-2-v2"
+
     # WhatsApp Cloud API (Meta) — see README "WhatsApp Integration"
     WHATSAPP_PHONE_NUMBER_ID: str = ""
     WHATSAPP_ACCESS_TOKEN: str = ""

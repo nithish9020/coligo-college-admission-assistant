@@ -127,14 +127,14 @@ def render_compare_view() -> None:
             f"""
             <div style="background: #F8FAFC; border: 1.5px solid #4F46E5; border-radius: 10px; padding: 16px;">
                 <h4 style="margin: 0 0 6px 0; color: #4F46E5;">{college_a}</h4>
-                <p style="margin: 0 0 8px 0; font-size: 0.9rem; color: #475569;">{spec_a['full_name']}</p>
+                <p style="margin: 0 0 8px 0; font-size: 0.9rem; color: #475569;">{spec_a["full_name"]}</p>
                 <div style="font-size: 0.88rem; line-height: 1.6;">
-                    📍 <strong>District:</strong> {spec_a['district']}<br>
-                    🏆 <strong>NIRF Ranking:</strong> {spec_a['nirf_band']}<br>
-                    🎖️ <strong>NAAC:</strong> {spec_a['naac']}<br>
-                    💼 <strong>Highest Package:</strong> {spec_a['highest_ctc']}<br>
-                    📈 <strong>Average CTC:</strong> {spec_a['avg_ctc']}<br>
-                    ⭐ <strong>Key Strength:</strong> {spec_a['strengths']}
+                    📍 <strong>District:</strong> {spec_a["district"]}<br>
+                    🏆 <strong>NIRF Ranking:</strong> {spec_a["nirf_band"]}<br>
+                    🎖️ <strong>NAAC:</strong> {spec_a["naac"]}<br>
+                    💼 <strong>Highest Package:</strong> {spec_a["highest_ctc"]}<br>
+                    📈 <strong>Average CTC:</strong> {spec_a["avg_ctc"]}<br>
+                    ⭐ <strong>Key Strength:</strong> {spec_a["strengths"]}
                 </div>
             </div>
             """,
@@ -146,14 +146,14 @@ def render_compare_view() -> None:
             f"""
             <div style="background: #F8FAFC; border: 1.5px solid #06B6D4; border-radius: 10px; padding: 16px;">
                 <h4 style="margin: 0 0 6px 0; color: #06B6D4;">{college_b}</h4>
-                <p style="margin: 0 0 8px 0; font-size: 0.9rem; color: #475569;">{spec_b['full_name']}</p>
+                <p style="margin: 0 0 8px 0; font-size: 0.9rem; color: #475569;">{spec_b["full_name"]}</p>
                 <div style="font-size: 0.88rem; line-height: 1.6;">
-                    📍 <strong>District:</strong> {spec_b['district']}<br>
-                    🏆 <strong>NIRF Ranking:</strong> {spec_b['nirf_band']}<br>
-                    🎖️ <strong>NAAC:</strong> {spec_b['naac']}<br>
-                    💼 <strong>Highest Package:</strong> {spec_b['highest_ctc']}<br>
-                    📈 <strong>Average CTC:</strong> {spec_b['avg_ctc']}<br>
-                    ⭐ <strong>Key Strength:</strong> {spec_b['strengths']}
+                    📍 <strong>District:</strong> {spec_b["district"]}<br>
+                    🏆 <strong>NIRF Ranking:</strong> {spec_b["nirf_band"]}<br>
+                    🎖️ <strong>NAAC:</strong> {spec_b["naac"]}<br>
+                    💼 <strong>Highest Package:</strong> {spec_b["highest_ctc"]}<br>
+                    📈 <strong>Average CTC:</strong> {spec_b["avg_ctc"]}<br>
+                    ⭐ <strong>Key Strength:</strong> {spec_b["strengths"]}
                 </div>
             </div>
             """,

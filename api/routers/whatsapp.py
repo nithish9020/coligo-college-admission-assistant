@@ -992,9 +992,10 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         await mark_message_as_read(message.message_id)
 
     query = (message.text or "").strip()
+    is_voice_message = message.message_type in ("audio", "voice")
 
     # ── 0. Handle WhatsApp Audio / Voice Note Transcriptions ──
-    if message.message_type in ("audio", "voice") and message.media_id:
+    if is_voice_message and message.media_id:
         from api.services.audio_service import transcribe_audio_message
 
         logger.info(
@@ -1291,6 +1292,15 @@ async def _answer_student_task(message: ParsedMessage) -> None:
             )
             formatted_answer = format_whatsapp_response(query, answer, sources)
             await send_text(message.sender, formatted_answer)
+
+            # ── If incoming was voice, also dispatch natural spoken voice reply ──
+            if is_voice_message and settings.ENABLE_VOICE_RESPONSES:
+                try:
+                    from api.services.tts_service import send_voice_reply
+
+                    await send_voice_reply(message.sender, formatted_answer)
+                except Exception as tts_err:
+                    logger.warning("voice_reply_dispatch_failed", error=str(tts_err))
 
             # ── Contextual interactive quick-reply buttons on EVERY turn ──
             buttons = _build_dynamic_reply_buttons(query, formatted_answer, profile)

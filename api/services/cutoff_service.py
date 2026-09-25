@@ -171,6 +171,38 @@ async def get_cutoff_records(
     return list(result.scalars().all())
 
 
+def _build_recommendation_base_stmt(
+    community: str,
+    branches: list[str] | None,
+    colleges: list[str] | None,
+    district: str | None,
+) -> Any:
+    """Build base SQLAlchemy statement for recommendation tiers."""
+    base_stmt = select(TNEACutoff).where(TNEACutoff.community == community.upper())
+
+    if branches:
+        branch_conds = []
+        for b in branches:
+            clean_b = b.lower().strip()
+            patterns = BRANCH_KEYWORD_PATTERNS.get(clean_b, [clean_b])
+            for pat in patterns:
+                branch_conds.append(TNEACutoff.branch_name.ilike(f"%{pat}%"))
+        if branch_conds:
+            base_stmt = base_stmt.where(or_(*branch_conds))
+
+    if colleges:
+        col_conds = [TNEACutoff.college_name.ilike(f"%{c}%") for c in colleges]
+        base_stmt = base_stmt.where(or_(*col_conds))
+
+    if district:
+        d_lower = district.strip().lower()
+        d_patterns = DISTRICT_KEYWORD_PATTERNS.get(d_lower, [district])
+        dist_cond = or_(*(TNEACutoff.college_name.ilike(f"%{p}%") for p in d_patterns))
+        base_stmt = base_stmt.where(dist_cond)
+
+    return base_stmt
+
+
 async def generate_choice_filling_recommendations(
     db: AsyncSession,
     cutoff: float,
@@ -185,31 +217,35 @@ async def generate_choice_filling_recommendations(
     - Realistic (Target): cutoff - 2.5 <= mark < cutoff (strong chance)
     - Safe (Backup): cutoff - 6.0 <= mark < cutoff - 2.5 (guaranteed admission)
     """
-    comm = community.upper()
-    base_stmt = select(TNEACutoff).where(TNEACutoff.community == comm)
+    from api.core.config import settings
+    from api.services.cache_service import (
+        get_cached_json,
+        make_choice_filling_cache_key,
+        set_cached_json,
+    )
 
-    # Filter by branches if specified
-    if branches:
-        branch_conds = []
-        for b in branches:
-            clean_b = b.lower().strip()
-            patterns = BRANCH_KEYWORD_PATTERNS.get(clean_b, [clean_b])
-            for pat in patterns:
-                branch_conds.append(TNEACutoff.branch_name.ilike(f"%{pat}%"))
-        if branch_conds:
-            base_stmt = base_stmt.where(or_(*branch_conds))
+    # Check Redis cache first if no ad-hoc college list override
+    cache_key = None
+    if not colleges:
+        cache_key = make_choice_filling_cache_key(
+            cutoff=cutoff,
+            community=community,
+            branches=tuple(branches or []),
+            district=district,
+        )
+        cached_result = await get_cached_json(cache_key)
+        if cached_result is not None and isinstance(cached_result, dict):
+            logger.debug(
+                "choice_recommendations_served_from_cache", cache_key=cache_key
+            )
+            return cached_result
 
-    # Filter by colleges if specified
-    if colleges:
-        col_conds = [TNEACutoff.college_name.ilike(f"%{c}%") for c in colleges]
-        base_stmt = base_stmt.where(or_(*col_conds))
-
-    # Filter by district if specified
-    if district:
-        d_lower = district.strip().lower()
-        d_patterns = DISTRICT_KEYWORD_PATTERNS.get(d_lower, [district])
-        dist_cond = or_(*(TNEACutoff.college_name.ilike(f"%{p}%") for p in d_patterns))
-        base_stmt = base_stmt.where(dist_cond)
+    base_stmt = _build_recommendation_base_stmt(
+        community=community,
+        branches=branches,
+        colleges=colleges,
+        district=district,
+    )
 
     # 1. Ambitious / Dream choices (Cutoff to Cutoff + 3.0)
     dream_stmt = (
@@ -254,8 +290,13 @@ async def generate_choice_filling_recommendations(
             "difference": round(r.cutoff_mark - cutoff, 2),
         }
 
-    return {
+    res = {
         "ambitious": [format_row(r) for r in dream_rows],
         "target": [format_row(r) for r in target_rows],
         "safe": [format_row(r) for r in safe_rows],
     }
+    if cache_key:
+        await set_cached_json(
+            cache_key, res, ttl_seconds=settings.CUTOFF_CACHE_TTL_SECONDS
+        )
+    return res

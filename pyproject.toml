@@ -33,6 +33,9 @@ dependencies = [
     "streamlit>=1.35.0",
     "altair>=5.0.0",
     "pandas>=2.0.0",
+    "edge-tts>=6.1.12",
+    "redis>=5.0.0",
+    "flashrank>=0.2.8",
 ]
 
 [tool.setuptools.packages.find]

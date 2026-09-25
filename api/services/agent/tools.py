@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.core.logging import get_logger
 from api.models.cutoff import TNEACutoff
-from api.models.document import Document, DocumentChunk
+from api.models.document import Document
 from api.services.cutoff_service import (
     generate_choice_filling_recommendations,
     get_cutoff_records,
@@ -218,25 +218,20 @@ async def _choice_recs_impl(
 async def _search_brochures_impl(
     db: AsyncSession, query: str, college: Optional[str]
 ) -> str:
-    """Vector search brochure documents for fees, hostels, and rules."""
+    """Hybrid search brochure documents for fees, hostels, and rules with FlashRank."""
     try:
+        from api.services.hybrid_search import hybrid_search_chunks
+
         query_embeddings = await get_embeddings([query])
         query_vector = query_embeddings[0]
 
-        stmt = select(DocumentChunk, Document.document_ref).join(
-            Document, DocumentChunk.document_id == Document.id
+        chunks = await hybrid_search_chunks(
+            db=db,
+            query=query,
+            query_vector=query_vector,
+            college=college,
+            top_k=4,
         )
-        if college:
-            stmt = stmt.where(
-                Document.document_ref.ilike(f"%{college}%")
-                | DocumentChunk.text_content.ilike(f"%{college}%")
-            )
-        stmt = stmt.order_by(
-            DocumentChunk.embedding.cosine_distance(query_vector)
-        ).limit(4)
-
-        result = await db.execute(stmt)
-        chunks = result.all()
         if not chunks:
             return f"No brochure chunks found matching query '{query}'."
 

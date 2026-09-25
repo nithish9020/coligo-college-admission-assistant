@@ -56,11 +56,17 @@ async def _fetch_college_chunks(
         )
 
     stmt = stmt.order_by(DocumentChunk.embedding.cosine_distance(query_vector)).limit(
-        settings.RAG_TOP_K
+        max(settings.RAG_TOP_K * 2, 8)
     )
 
     result = await db.execute(stmt)
-    return [(row[0], row[1]) for row in result.all()]
+    chunks = [(row[0], row[1]) for row in result.all()]
+    if settings.ENABLE_RERANKING and chunks:
+        from api.services.hybrid_search import rerank_with_flashrank
+
+        target_query = colleges[0] if colleges else "engineering college admissions"
+        chunks = rerank_with_flashrank(target_query, chunks, top_k=settings.RAG_TOP_K)
+    return chunks[: settings.RAG_TOP_K]
 
 
 async def _fetch_structured_context(

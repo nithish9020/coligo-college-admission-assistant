@@ -458,6 +458,84 @@ async def send_contact(
         return False
 
 
+async def upload_media(
+    file_bytes: bytes,
+    mime_type: str = "audio/ogg",
+    filename: str = "voice.ogg",
+) -> str | None:
+    """Upload media file to Meta WhatsApp Cloud API and return the media ID."""
+    if not settings.WHATSAPP_PHONE_NUMBER_ID or not settings.WHATSAPP_ACCESS_TOKEN:
+        logger.error("upload_media_skipped_missing_credentials")
+        return None
+
+    url = (
+        "https://graph.facebook.com/"
+        f"{settings.WHATSAPP_API_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/media"
+    )
+    headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
+    files = {"file": (filename, file_bytes, mime_type)}
+    data = {"messaging_product": "whatsapp", "type": mime_type}
+
+    try:
+        client = _get_http_client()
+        response = await client.post(
+            url, headers=headers, files=files, data=data, timeout=25.0
+        )
+        if response.status_code >= 400:
+            logger.error(
+                "upload_media_failed",
+                status_code=response.status_code,
+                body=response.text,
+            )
+            return None
+        res_data = response.json()
+        media_id = res_data.get("id")
+        logger.info("upload_media_succeeded", media_id=media_id)
+        return str(media_id) if media_id else None
+    except Exception as e:
+        logger.error("upload_media_error", error=str(e))
+        return None
+
+
+async def send_audio(to: str, audio_id_or_url: str, is_id: bool = True) -> bool:
+    """Send an audio note/voice reply via WhatsApp Cloud API."""
+    if not settings.WHATSAPP_PHONE_NUMBER_ID or not settings.WHATSAPP_ACCESS_TOKEN:
+        logger.error("send_audio_skipped_missing_credentials", to=to)
+        return False
+
+    url = (
+        "https://graph.facebook.com/"
+        f"{settings.WHATSAPP_API_VERSION}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+    )
+    audio_obj: dict[str, str] = (
+        {"id": audio_id_or_url} if is_id else {"link": audio_id_or_url}
+    )
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "audio",
+        "audio": audio_obj,
+    }
+    headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
+
+    try:
+        client = _get_http_client()
+        response = await client.post(url, json=payload, headers=headers, timeout=15.0)
+        if response.status_code >= 400:
+            logger.error(
+                "send_audio_failed",
+                to=to,
+                status_code=response.status_code,
+                body=response.text,
+            )
+            return False
+        logger.info("send_audio_succeeded", to=to)
+        return True
+    except httpx.RequestError as e:
+        logger.error("send_audio_request_error", to=to, error=str(e))
+        return False
+
+
 async def execute_admin_command(
     db: AsyncSession, command: str, full_text: str, sender: str
 ) -> None:

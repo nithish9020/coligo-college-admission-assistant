@@ -16,6 +16,19 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: coligo_redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   api:
     build: .
     container_name: coligo_api
@@ -24,6 +37,7 @@ services:
       # Override the host-oriented DATABASE_URL from .env: inside the compose
       # network the database is reachable as "postgres", not localhost.
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dte}:${POSTGRES_PASSWORD:-dte_secret}@postgres:5432/${POSTGRES_DB:-dte_chatbot}
+      REDIS_URL: redis://redis:6379/0
     ports:
       # Host port is overridable: `API_PORT=8001 docker compose up -d` avoids
       # clashing with a `make dev` server already holding 8000 on the host.
@@ -40,6 +54,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - ./api:/app/api
       # Source documents to ingest. Reference them from inside the container
@@ -49,3 +65,4 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
