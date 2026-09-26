@@ -104,3 +104,4 @@ data/scraped/
 data/scraped_colleges/
 data/raw_cutoffs*.txt
 data/choice_sheets/*.pdf
+.obsidian/

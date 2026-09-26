@@ -125,10 +125,14 @@ async def send_voice_reply(
     if not audio_bytes:
         return False
 
+    is_ogg = audio_bytes.startswith(b"OggS")
+    mime_type = "audio/ogg" if is_ogg else "audio/mpeg"
+    filename = "voice_reply.ogg" if is_ogg else "voice_reply.mp3"
+
     media_id = await upload_media(
         file_bytes=audio_bytes,
-        mime_type="audio/ogg",
-        filename="voice_reply.ogg",
+        mime_type=mime_type,
+        filename=filename,
     )
     if not media_id:
         return False
