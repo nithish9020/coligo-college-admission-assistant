@@ -24,7 +24,7 @@ def _build_header_prefix(marks: dict[str, float] | None, cutoff: float | None) -
         except Exception:
             pass
     if cutoff is not None:
-        return f"🎯 **TNEA Cutoff**: **{cutoff:g} / 200.0**\n\n"
+        return f"**TNEA Cutoff**: **{cutoff:g} / 200.0**\n\n"
     return ""
 
 
@@ -78,8 +78,8 @@ def _build_conversational_guidelines(lang_pref: str, is_distress: bool) -> str:
         guidelines.append(
             "[Tone Directive: The student communicated in Tanglish. Respond "
             "warmly and conversationally, mixing friendly Tamil phrases "
-            "naturally (e.g. 'Unga cutoff-ku...', '...chance irukku 🟢'), "
-            "while keeping numbers and college codes exact.]"
+            "naturally (e.g. 'Unga cutoff-ku...', '...chance irukku'), "
+            "while keeping numbers and college codes exact. DO NOT use emojis.]"
         )
     elif lang_pref == "tamil":
         guidelines.append(
@@ -154,13 +154,13 @@ async def synthesizer_node(state: AgentState) -> dict[str, Any]:
     if not is_valid:
         logger.warning("numeric_validation_failed_in_agent_synthesis")
         raw_response += (
-            "\n\n⚠️ _Some numbers may not match official records. "
+            "\n\n_Some numbers may not match official records. "
             "Please verify with the college website or TNEA portal._"
         )
 
     # Append Sources
     if sources:
-        raw_response += f"\n\n📌 Source: {', '.join(sources)}"
+        raw_response += f"\n\nSource: {', '.join(sources)}"
 
     final_output = f"{header_prefix}{raw_response}".strip()
 

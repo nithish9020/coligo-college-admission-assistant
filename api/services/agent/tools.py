@@ -155,7 +155,7 @@ async def _compare_colleges_impl(
                 by_college.setdefault(r.college_name, []).append(r)
 
         for col_name, recs in by_college.items():
-            lines.append(f"\n🏛️ *{col_name}*")
+            lines.append(f"\n*{col_name}*")
             for r in recs[:6]:
                 lines.append(
                     f"• *{r.branch_name}*: *{r.cutoff_mark:g}* ({r.community})"
@@ -186,7 +186,7 @@ async def _choice_recs_impl(
         lines = [
             f"TNEA 3-Tier Choice Filling List{dist_label} ({cutoff:g} / 200.0 | "
             f"{community.upper()}):",
-            "\n🌟 AMBITIOUS (Reach Options):",
+            "\nAMBITIOUS (Reach Options):",
         ]
         for it in recs["ambitious"][:5]:
             d = it["difference"]
@@ -196,14 +196,14 @@ async def _choice_recs_impl(
                 f"Cutoff: {it['cutoff_mark']:g} ({diff})"
             )
 
-        lines.append("\n🎯 TARGET (Realistic Options):")
+        lines.append("\nTARGET (Realistic Options):")
         for it in recs["target"][:6]:
             lines.append(
                 f"• {it['college_name']} | {it['branch_name']} | "
                 f"Cutoff: {it['cutoff_mark']:g} ({it['difference']:g})"
             )
 
-        lines.append("\n🛡️ SAFE (Backup Options):")
+        lines.append("\nSAFE (Backup Options):")
         for it in recs["safe"][:5]:
             lines.append(
                 f"• {it['college_name']} | {it['branch_name']} | "
@@ -442,7 +442,7 @@ def create_agent_tools(  # noqa: C901
                 session_key=session_key,
             )
             return (
-                f"✅ Your official TNEA Choice Sheet PDF has been generated!\n"
+                f"Your official TNEA Choice Sheet PDF has been generated!\n"
                 f"Download link: {pdf_url}\n"
                 f"Cutoff: {cutoff:g} | Community: {community.upper()}\n"
                 f"Please review the choices and lock them on tneaonline.org."

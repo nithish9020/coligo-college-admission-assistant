@@ -8,7 +8,7 @@ from app.services.chart_builder import BENCHMARK_CUTOFFS, build_cutoff_compariso
 
 def render_analytics_view() -> None:
     """Render interactive college cutoff comparison visualizer and data tables."""
-    st.markdown("## 📊 TNEA Cutoff Visualizer & Comparative Analytics")
+    st.markdown("## TNEA Cutoff Visualizer & Comparative Analytics")
     st.caption(
         "Explore historical closing cutoff marks across premier autonomous institutions "
         "and compare departments side-by-side."
@@ -46,7 +46,7 @@ def render_analytics_view() -> None:
         st.metric("Your Cutoff", f"{student_cutoff:g}", delta=None)
 
     # Render Visual Grouped Bar Chart
-    st.markdown("### 📈 Branch Closing Cutoffs Comparison")
+    st.markdown("### Branch Closing Cutoffs Comparison")
     if selected_colleges:
         chart = build_cutoff_comparison_chart(
             selected_colleges=selected_colleges,
@@ -59,7 +59,7 @@ def render_analytics_view() -> None:
         )
 
     # Searchable, sortable Dataframe Table
-    st.markdown("### 📋 Detailed Cutoff Data Table")
+    st.markdown("### Detailed Cutoff Data Table")
     df = pd.DataFrame(BENCHMARK_CUTOFFS)
     df_comm = df[df["community"] == comm_filter]
 
@@ -72,10 +72,10 @@ def render_analytics_view() -> None:
     def get_status(closing_mark: float) -> str:
         diff = student_cutoff - closing_mark
         if diff >= 0:
-            return "🟢 Safe / Highly Likely"
+            return "Safe / Highly Likely"
         elif diff >= -2.5:
-            return "🟡 Target / Strong Chance"
-        return "🟠 Ambitious / Dream"
+            return "Target / Strong Chance"
+        return "Ambitious / Dream"
 
     df_display["Eligibility Status"] = df_display["cutoff"].apply(get_status)
     df_display = df_display.rename(

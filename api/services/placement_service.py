@@ -202,20 +202,20 @@ def format_placement_card(college: str, branch: Optional[str] = None) -> str:
     recruiters_str = ", ".join(data["top_recruiters"])
 
     return (
-        f"💼 *{data['name']} (Code: {data['code']}) Placements*{branch_note}\n\n"
-        f"• 💰 *Highest CTC:* *{data['highest_ctc']}*\n"
-        f"• 📊 *Average CTC:* *{data['average_ctc']}*\n"
-        f"• 📈 *Placement Rate:* *{data['placement_rate']}* "
+        f"*{data['name']} (Code: {data['code']}) Placements*{branch_note}\n\n"
+        f"• *Highest CTC:* *{data['highest_ctc']}*\n"
+        f"• *Average CTC:* *{data['average_ctc']}*\n"
+        f"• *Placement Rate:* *{data['placement_rate']}* "
         f"({data['total_offers']} offers)\n"
-        f"• 🏢 *Top Recruiters:* {recruiters_str}\n\n"
-        f"💡 *Key Highlight:*\n"
+        f"• *Top Recruiters:* {recruiters_str}\n\n"
+        f"*Key Highlight:*\n"
         f"{data['highlights']}"
     )
 
 
 def compare_college_placements(colleges: list[str]) -> str:
     """Compare placement metrics between two or more colleges."""
-    lines = ["📊 *TNEA College Placement Comparison*\n"]
+    lines = ["*TNEA College Placement Comparison*\n"]
 
     matched: list[dict[str, Any]] = []
     for c in colleges:
@@ -229,7 +229,7 @@ def compare_college_placements(colleges: list[str]) -> str:
     for data in matched:
         recs = ", ".join(data["top_recruiters"][:5])
         lines.append(
-            f"🏛️ *{data['name']}* (Code: {data['code']})\n"
+            f"*{data['name']}* (Code: {data['code']})\n"
             f"  • *Highest CTC:* {data['highest_ctc']}\n"
             f"  • *Average CTC:* {data['average_ctc']}\n"
             f"  • *Placement Rate:* {data['placement_rate']}\n"

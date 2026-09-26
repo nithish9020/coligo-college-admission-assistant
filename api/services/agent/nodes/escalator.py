@@ -35,7 +35,7 @@ async def escalator_node(state: AgentState, config: RunnableConfig) -> dict[str,
         logger.error("failed_to_persist_escalation", error=str(e))
 
     response_text = (
-        "⚠️ This inquiry involves admission policies or seats "
+        "This inquiry involves admission policies or seats "
         "that require official human verification.\n\n"
         "• Your query has been flagged for our **Human Counselor** team.\n"
         "• An officer will review your request. For immediate assistance, "

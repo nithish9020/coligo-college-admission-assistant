@@ -19,14 +19,14 @@ def calculate_upward_probability(cutoff_difference: float) -> tuple[str, str, in
     """
     diff = round(cutoff_difference, 2)
     if diff <= 0.5:
-        return "Very High", "🟢", 85
+        return "Very High", "", 85
     if diff <= 1.5:
-        return "High", "🟢", 65
+        return "High", "", 65
     if diff <= 3.0:
-        return "Moderate", "🟡", 40
+        return "Moderate", "", 40
     if diff <= 5.0:
-        return "Reach / Low", "🟠", 18
-    return "Very Low", "🔴", 5
+        return "Reach / Low", "", 18
+    return "Very Low", "", 5
 
 
 async def simulate_upward_movement(
@@ -130,7 +130,7 @@ async def simulate_upward_movement(
         else "Accept and Join (Option 1)"
     )
     strategy_advice = (
-        "✅ **Golden Rule:** Always choose **Accept and Upward**! You will NOT "
+        "**Golden Rule:** Always choose **Accept and Upward**! You will NOT "
         "lose your current seat. If a higher choice vacates, you get upgraded "
         "automatically. If not, your current seat remains 100% secure."
     )
@@ -158,17 +158,16 @@ def format_upward_movement_text(sim_data: dict[str, Any]) -> str:
     advice = sim_data["strategy_advice"]
 
     lines = [
-        "🔄 *TNEA Upward Movement & Seat Vacancy Simulation*",
+        "*TNEA Upward Movement & Seat Vacancy Simulation*",
         f"• *Tentative Seat*: **{coll}** – *{branch}*",
         f"• *Your Cutoff*: **{cutoff:g} / 200** ({comm} Community)\n",
-        "🎯 *Potential Higher Preference Upgrades:*",
+        "*Potential Higher Preference Upgrades:*",
     ]
 
     if not targets:
         lines.append("• No higher-cutoff branches found in the current target set.")
     else:
         for t in targets[:5]:
-            icon = t["probability_icon"]
             lbl = t["probability_label"]
             pct = t["probability_pct"]
             b_name = t["branch_name"]
@@ -176,21 +175,21 @@ def format_upward_movement_text(sim_data: dict[str, Any]) -> str:
             gap = t["cutoff_gap"]
             gap_sign = f"+{gap:g}" if gap > 0 else f"{gap:g}"
             lines.append(
-                f"{icon} *{b_name}* (Cutoff: **{c_mark:g}**, Gap: {gap_sign})\n"
+                f"• *{b_name}* (Cutoff: **{c_mark:g}**, Gap: {gap_sign})\n"
                 f"   └ Chance: **{lbl}** (~{pct}% historical vacancy clearance)"
             )
 
     lines.extend(
         [
             "",
-            f"💡 *Recommended Decision:* **{rec}**",
+            f"*Recommended Decision:* **{rec}**",
             "",
-            "📋 *TNEA Options Breakdown:*",
-            "1️⃣ **Accept and Join**: Locks this seat; you leave counselling "
+            "*TNEA Options Breakdown:*",
+            "1. **Accept and Join**: Locks this seat; you leave counselling "
             "immediately.",
-            "2️⃣ **Accept and Upward** *(Recommended)*: Holds this seat safely while "
+            "2. **Accept and Upward** *(Recommended)*: Holds this seat safely while "
             "competing for higher preferences if vacancies open up.",
-            "3️⃣ **Decline and Upward**: Risky! Relinquishes this seat completely.",
+            "3. **Decline and Upward**: Risky! Relinquishes this seat completely.",
             "",
             advice,
         ]

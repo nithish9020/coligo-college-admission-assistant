@@ -97,7 +97,7 @@ async def _fetch_structured_context(
         lines = [
             "=== OFFICIAL TNEA 3-TIER CHOICE FILLING PREFERENCE DATA ===",
             f"Candidate Cutoff: {cutoff:g} / 200.0 | Community: {comm_label}",
-            "\n🌟 AMBITIOUS / DREAM CHOICES (Reach options):",
+            "\nAMBITIOUS / DREAM CHOICES (Reach options):",
         ]
         for it in recs["ambitious"][:5]:
             d = it["difference"]
@@ -107,7 +107,7 @@ async def _fetch_structured_context(
             c_mark = it["cutoff_mark"]
             lines.append(f"• {c_name} | {b_name} | Cutoff: {c_mark} ({diff})")
 
-        lines.append("\n🎯 TARGET / REALISTIC CHOICES (High probability):")
+        lines.append("\nTARGET / REALISTIC CHOICES (High probability):")
         for it in recs["target"][:6]:
             c_name = it["college_name"]
             b_name = it["branch_name"]
@@ -115,7 +115,7 @@ async def _fetch_structured_context(
             d = it["difference"]
             lines.append(f"• {c_name} | {b_name} | Cutoff: {c_mark} ({d:g})")
 
-        lines.append("\n🛡️ SAFE / BACKUP CHOICES (Safe options):")
+        lines.append("\nSAFE / BACKUP CHOICES (Safe options):")
         for it in recs["safe"][:5]:
             c_name = it["college_name"]
             b_name = it["branch_name"]

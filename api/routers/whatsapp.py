@@ -112,15 +112,15 @@ async def _handle_location_query(sender: str, query: str) -> bool:
         address="Kuniamuthur, Coimbatore, Tamil Nadu 641008",
     )
     guide = (
-        "📍 *Campus Location & Travel Guide*\n\n"
-        "🏫 *Sri Krishna College of Engineering and Technology (Autonomous)*\n"
+        "*Campus Location & Travel Guide*\n\n"
+        "*Sri Krishna College of Engineering and Technology (Autonomous)*\n"
         "Kuniamuthur, Palakkad Main Road, Coimbatore - 641008\n\n"
-        "🚌 *Transit Connectivity:*\n"
+        "*Transit Connectivity:*\n"
         "• *Coimbatore Railway Junction*: 8 km (Bus Route 3, 3A, 4)\n"
         "• *Ukkadam Bus Stand*: 6 km (Direct buses every 5 mins)\n"
         "• *Gandhipuram Central Bus Stand*: 12 km\n"
         "• *Coimbatore Airport (CJB)*: 18 km\n\n"
-        "💡 _You can tap the location pin above to navigate with Google Maps!_"
+        "_You can tap the location pin above to navigate with Google Maps!_"
     )
     await send_text(sender, guide)
     return True
@@ -151,7 +151,7 @@ async def _handle_contact_query(sender: str, query: str) -> bool:
     )
     await send_text(
         sender,
-        "📞 *Official Admissions Contact Card sent above!*\n\n"
+        "*Official Admissions Contact Card sent above!*\n\n"
         "Tap *'Add to Contacts'* or call the admission desk directly for:\n"
         "• Management / Lateral Entry Quota\n"
         "• Sports Quota & 7.5% Govt School Quota\n"
@@ -176,7 +176,7 @@ async def _handle_college_menu_query(sender: str, query: str) -> bool:
     sent = await send_interactive_list(
         to=sender,
         body_text=(
-            "🏫 *Select an Engineering College below to view campus highlights, "
+            "*Select an Engineering College below to view campus highlights, "
             "closing cutoff ranks, and available courses:*"
         ),
         button_label="Explore Colleges",
@@ -185,14 +185,14 @@ async def _handle_college_menu_query(sender: str, query: str) -> bool:
     if not sent:
         await send_text(
             sender,
-            "🏫 *Featured TNEA Institutions:*\n"
+            "*Featured TNEA Institutions:*\n"
             "• SKCET Coimbatore (2722)\n"
             "• PSG Tech Coimbatore (2006)\n"
             "• CIT Coimbatore (2007)\n"
             "• Kumaraguru KCT (2712)\n"
             "• GCT Coimbatore (2005)\n"
             "• CEG Anna Univ (0001)\n\n"
-            "💡 Reply with any college name to see cutoff marks!",
+            "Reply with any college name to see cutoff marks!",
         )
     return True
 
@@ -217,7 +217,7 @@ async def _handle_choice_list_query(sender: str, query: str, session_key: str) -
     profile = get_student_profile(session_key)
     if profile.calculated_cutoff is None:
         prompt_msg = (
-            "📋 *Personalized TNEA Choice Filling Generator*\n\n"
+            "*Personalized TNEA Choice Filling Generator*\n\n"
             "To generate your customized 10-choice order draft, I need your cutoff!\n\n"
             "• Send your cutoff mark (e.g. *185*)\n"
             "• Or type marks: *Maths 90, Physics 85, Chemistry 80*\n"
@@ -258,7 +258,7 @@ async def _handle_choice_list_query(sender: str, query: str, session_key: str) -
                 to=sender,
                 document_url=pdf_url,
                 caption=(
-                    "📄 *Your Official TNEA Choice Filling Sheet (PDF)*\n"
+                    "*Your Official TNEA Choice Filling Sheet (PDF)*\n"
                     "Save or print this to fill choices on tneaonline.org!"
                 ),
                 filename="TNEA_Choice_Filling_Sheet.pdf",
@@ -272,7 +272,7 @@ async def _handle_choice_list_query(sender: str, query: str, session_key: str) -
             ("btn_contact", "Talk to Counselor"),
         ]
         await send_interactive_buttons(
-            sender, "💡 *Next Steps for Choice Filling:*", cta_buttons
+            sender, "*Next Steps for Choice Filling:*", cta_buttons
         )
     return True
 
@@ -324,7 +324,7 @@ async def _handle_download_pdf_query(sender: str, query: str, session_key: str) 
                 to=sender,
                 document_url=doc_target,
                 caption=(
-                    f"📄 *Official TNEA Choice Sheet ({community} - {cutoff:g})*\n"
+                    f"*Official TNEA Choice Sheet ({community} - {cutoff:g})*\n"
                     "Ready for choice locking on tneaonline.org!"
                 ),
                 filename="TNEA_Choice_Filling_Sheet.pdf",
@@ -333,7 +333,7 @@ async def _handle_download_pdf_query(sender: str, query: str, session_key: str) 
             logger.error("download_pdf_failed", error=str(e))
             await send_text(
                 sender,
-                "⚠️ Could not generate PDF right now. Please send your cutoff score first!",
+                "Could not generate PDF right now. Please send your cutoff score first!",
             )
     return True
 
@@ -351,7 +351,7 @@ async def _handle_change_district_query(
     profile = get_student_profile(session_key)
     profile.matchmaker_step = 3
     step3_msg = (
-        "📍 *Select your preferred location / district:*\n"
+        "*Select your preferred location / district:*\n"
         "Tap below to regenerate your choice sheet for that region:"
     )
     buttons = [
@@ -391,11 +391,11 @@ async def _handle_rank_predictor_query(
             ("btn_colleges", "Compare College"),
         ]
         await send_interactive_buttons(
-            sender, "💡 *What would you like to explore next?*", buttons
+            sender, "*What would you like to explore next?*", buttons
         )
     else:
         prompt_msg = (
-            "📈 *TNEA Rank & Counselling Round Predictor*\n\n"
+            "*TNEA Rank & Counselling Round Predictor*\n\n"
             "To predict your State Overall Rank & Counselling Round:\n"
             "• Send your cutoff mark (e.g. *188*)\n"
             "• Or send your marks: *Maths 90, Physics 85, Chemistry 88*\n"
@@ -452,18 +452,18 @@ async def _handle_marks_calculation_query(
     rank_data = predict_tnea_rank(cutoff, comm)
 
     card = (
-        f"📊 *Official TNEA Cutoff Calculation & Rank Roadmap*\n\n"
-        f"• *Calculated Cutoff:* *{cutoff:g} / 200.0* ✅\n"
+        f"*Official TNEA Cutoff Calculation & Rank Roadmap*\n\n"
+        f"• *Calculated Cutoff:* *{cutoff:g} / 200.0*\n"
         f"• *Community Quota:* *{comm}*\n"
         f"• *Estimated State Rank:* *~{rank_data['overall_rank_min']:,} – {rank_data['overall_rank_max']:,}*\n"
         f"• *Estimated Community Rank ({comm}):* *~{rank_data['community_rank_min']:,} – {rank_data['community_rank_max']:,}*\n"
         f"• *Counselling Round:* *ROUND {rank_data['round_number']}* — _{rank_data['round_name']}_\n\n"
-        f"💡 *Round Advisory:*\n{rank_data['strategy']}\n\n"
-        f"🏫 *Top College Matches for Cutoff {cutoff:g}:*\n"
+        f"*Round Advisory:*\n{rank_data['strategy']}\n\n"
+        f"*Top College Matches for Cutoff {cutoff:g}:*\n"
         f"• *SKCET (2722)*: CSE / IT / AI&DS / ECE\n"
         f"• *CIT Coimbatore (2007)*: Circuit & Core branches\n"
         f"• *Kumaraguru KCT (2712)*: Tech & Circuit branches\n\n"
-        f"👉 _Tap below to generate your 3-tier choice order or explore colleges:_"
+        f"_Tap below to generate your 3-tier choice order or explore colleges:_"
     )
     await send_text(sender, card)
 
@@ -472,7 +472,7 @@ async def _handle_marks_calculation_query(
         ("btn_choice_list", "3-Tier Choice Sheet"),
         ("btn_placements", "Placement Stats"),
     ]
-    await send_interactive_buttons(sender, "💡 *Next Recommended Steps:*", buttons)
+    await send_interactive_buttons(sender, "*Next Recommended Steps:*", buttons)
     return True
 
 
@@ -492,7 +492,7 @@ async def _handle_placement_query(sender: str, query: str) -> bool:
         ("btn_fees", "Fee Details"),
     ]
     await send_interactive_buttons(
-        sender, "💡 *What would you like to explore next?*", buttons
+        sender, "*What would you like to explore next?*", buttons
     )
     return True
 
@@ -671,9 +671,9 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
             if profile.community:
                 profile.matchmaker_step = 3
                 step3_msg = (
-                    f"🎯 *TNEA College Matchmaker (Step 3 of 3)*\n\n"
-                    f"• Cutoff: *{extracted_cutoff:g}* | Quota: *{profile.community}* ✅\n\n"
-                    f"👉 *Step 3: What is your preferred study location / district?*\n"
+                    f"*TNEA College Matchmaker (Step 3 of 3)*\n\n"
+                    f"• Cutoff: *{extracted_cutoff:g}* | Quota: *{profile.community}*\n\n"
+                    f"*Step 3: What is your preferred study location / district?*\n"
                     f"Select your preferred educational hub below:"
                 )
                 await _send_district_picker(sender, step3_msg)
@@ -681,19 +681,19 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
             else:
                 profile.matchmaker_step = 2
                 step2_msg = (
-                    f"🎯 *TNEA College Matchmaker (Step 2 of 3)*\n\n"
-                    f"• Cutoff registered: *{extracted_cutoff:g} / 200.0* ✅\n\n"
-                    f"👉 *Step 2: What is your Community Quota category?*\n"
+                    f"*TNEA College Matchmaker (Step 2 of 3)*\n\n"
+                    f"• Cutoff registered: *{extracted_cutoff:g} / 200.0*\n\n"
+                    f"*Step 2: What is your Community Quota category?*\n"
                     f"Select your category below (OC, BC, BCM, MBC, SC, SCA, ST):"
                 )
                 await _send_community_picker(sender, step2_msg)
                 return True
         else:
             step1_msg = (
-                "🎯 *TNEA College Matchmaker (Step 1 of 3)*\n\n"
-                "Welcome to the 3-Step Guided College Matchmaker! 🎓 Let's discover "
+                "*TNEA College Matchmaker (Step 1 of 3)*\n\n"
+                "Welcome to the 3-Step Guided College Matchmaker! Let's discover "
                 "your ideal engineering colleges & branches in seconds.\n\n"
-                "👉 *Step 1: What is your 12th Cutoff score?*\n"
+                "*Step 1: What is your 12th Cutoff score?*\n"
                 "• Send your cutoff mark (e.g. *186.5*)\n"
                 "• Or type marks: *Maths 95, Physics 90, Chemistry 88*"
             )
@@ -727,9 +727,9 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
             profile.matchmaker_step = 3
             c_score = profile.calculated_cutoff or 185.0
             step3_msg = (
-                f"🎯 *TNEA College Matchmaker (Step 3 of 3)*\n\n"
-                f"• Cutoff: *{c_score:g}* | Quota: *{comm}* ✅\n\n"
-                f"👉 *Step 3: What is your preferred study location / district?*\n"
+                f"*TNEA College Matchmaker (Step 3 of 3)*\n\n"
+                f"• Cutoff: *{c_score:g}* | Quota: *{comm}*\n\n"
+                f"*Step 3: What is your preferred study location / district?*\n"
                 f"Select your preferred educational hub below:"
             )
             await _send_district_picker(sender, step3_msg)
@@ -737,9 +737,9 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
         else:
             c_score = profile.calculated_cutoff or 185.0
             step2_msg = (
-                f"🎯 *TNEA College Matchmaker (Step 2 of 3)*\n\n"
-                f"• Cutoff registered: *{c_score:g} / 200.0* ✅\n\n"
-                f"👉 *Step 2: What is your Community Quota category?*\n"
+                f"*TNEA College Matchmaker (Step 2 of 3)*\n\n"
+                f"• Cutoff registered: *{c_score:g} / 200.0*\n\n"
+                f"*Step 2: What is your Community Quota category?*\n"
                 f"Select your category below (OC, BC, BCM, MBC, SC, SCA, ST):"
             )
             await _send_community_picker(sender, step2_msg)
@@ -787,9 +787,9 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
             c_score = profile.calculated_cutoff or 185.0
             comm_val = profile.community or "BC"
             step3_msg = (
-                f"🎯 *TNEA College Matchmaker (Step 3 of 3)*\n\n"
-                f"• Cutoff: *{c_score:g}* | Quota: *{comm_val}* ✅\n\n"
-                f"👉 *Step 3: What is your preferred study location / district?*\n"
+                f"*TNEA College Matchmaker (Step 3 of 3)*\n\n"
+                f"• Cutoff: *{c_score:g}* | Quota: *{comm_val}*\n\n"
+                f"*Step 3: What is your preferred study location / district?*\n"
                 f"Select your preferred educational hub below:"
             )
             await _send_district_picker(sender, step3_msg)
@@ -817,16 +817,16 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
             )
 
             roadmap_msg = (
-                f"🎉 *Your TNEA Personalized Admission Roadmap!* 🎓\n\n"
+                f"*Your TNEA Personalized Admission Roadmap!*\n\n"
                 f"• *Cutoff Score:* *{cutoff_val:g} / 200.0*\n"
                 f"• *Community Quota:* *{comm_val}*\n"
                 f"• *Preferred Region:* *{dist}*\n\n"
-                f"🎯 *Predicted State Overall Rank:* *~{rank_data['overall_rank_min']:,} to {rank_data['overall_rank_max']:,}*\n"
-                f"🏷️ *Predicted Community Rank ({comm_val}):* *~{rank_data['community_rank_min']:,} to {rank_data['community_rank_max']:,}*\n"
-                f"🏁 *Eligible Counselling:* *ROUND {rank_data['round_number']}* — _{rank_data['round_name']}_\n\n"
-                f"💡 *Expert Round Strategy:*\n{rank_data['strategy']}\n\n"
+                f"*Predicted State Overall Rank:* *~{rank_data['overall_rank_min']:,} to {rank_data['overall_rank_max']:,}*\n"
+                f"*Predicted Community Rank ({comm_val}):* *~{rank_data['community_rank_min']:,} to {rank_data['community_rank_max']:,}*\n"
+                f"*Eligible Counselling:* *ROUND {rank_data['round_number']}* — _{rank_data['round_name']}_\n\n"
+                f"*Expert Round Strategy:*\n{rank_data['strategy']}\n\n"
                 f"{choice_draft}\n\n"
-                f"📄 _Delivering your official PDF Choice Sheet below..._"
+                f"_Delivering your official PDF Choice Sheet below..._"
             )
             await send_text(sender, roadmap_msg)
 
@@ -843,7 +843,7 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
                     to=sender,
                     document_url=pdf_url,
                     caption=(
-                        f"📄 *Official TNEA Choice Sheet ({comm_val} - {cutoff_val:g})*\n"
+                        f"*Official TNEA Choice Sheet ({comm_val} - {cutoff_val:g})*\n"
                         f"Personalized for {dist} region. Ready for choice locking!"
                     ),
                     filename=f"TNEA_Choice_Sheet_{int(cutoff_val)}.pdf",
@@ -857,7 +857,7 @@ async def _handle_matchmaker_flow(sender: str, query: str, session_key: str) -> 
                 ("btn_contact", "Talk to Counselor"),
             ]
             await send_interactive_buttons(
-                sender, "💡 *Next Steps for Choice Filling:*", cta_buttons
+                sender, "*Next Steps for Choice Filling:*", cta_buttons
             )
             return True
 
@@ -1029,13 +1029,13 @@ async def _answer_student_task(message: ParsedMessage) -> None:
             query = transcript
             logger.info("voice_note_transcribed_successfully", transcript=transcript)
             # Reassure student by echoing back their transcribed question first
-            await send_text(message.sender, f'🎙️ _Voice note:_ "{transcript}"')
+            await send_text(message.sender, f'Voice note transcript: "{transcript}"')
         else:
             await send_text(
                 message.sender,
-                "🎙️ *I received your voice note*, but couldn't quite hear the audio clearly.\n\n"
+                "*I received your voice note*, but could not hear the audio clearly.\n\n"
                 "Could you please try speaking again in a quiet place, or type your query? "
-                "I'm happy to help with cutoffs, courses, and admissions! 🎓",
+                "I am happy to help with cutoffs, courses, and admissions.",
             )
             return
 
@@ -1062,7 +1062,7 @@ async def _answer_student_task(message: ParsedMessage) -> None:
             await db.commit()
 
         resume_msg = (
-            "🤖 *AI Assistant Resumed!*\n\n"
+            "*AI Assistant Resumed!*\n\n"
             "You are now back in automated mode with Coligo TNEA Assistant. "
             "Ask me anything about engineering college cutoffs, courses, or fee details!"
         )
@@ -1104,11 +1104,11 @@ async def _answer_student_task(message: ParsedMessage) -> None:
                     logger.error("failed_to_log_paused_message", error=str(e))
 
                 pause_notice = (
-                    "⏳ *Your conversation is currently in active consultation with "
+                    "*Your conversation is currently in active consultation with "
                     "an admission counselor.*\n\n"
                     "A human officer is reviewing your queries and will reply here "
                     "on WhatsApp.\n\n"
-                    "💡 _To switch back to automated AI mode at any time, "
+                    "_To switch back to automated AI mode at any time, "
                     "reply with */resume*._"
                 )
                 await send_text(message.sender, pause_notice)
@@ -1169,7 +1169,7 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         sections = get_course_list_menu_sections()
         sent_list = await send_interactive_list(
             message.sender,
-            "🎓 *Select an Engineering Branch below to view intake, cutoffs, and career opportunities:*",
+            "*Select an Engineering Branch below to view intake, cutoffs, and career opportunities:*",
             "Browse Branches",
             sections,
         )
@@ -1178,7 +1178,7 @@ async def _answer_student_task(message: ParsedMessage) -> None:
 
     if query.lower() in ("btn_cutoff", "check cutoff"):
         cutoff_msg = (
-            "📊 *TNEA Cutoff Information & Calculator*\n\n"
+            "*TNEA Cutoff Information & Calculator*\n\n"
             "• Type your marks like: *Maths 95, Physics 90, Chemistry 88* to calculate your TNEA cutoff mark.\n"
             "• Or choose a branch below to view community cutoffs (OC, BC, MBC, SC, ST):"
         )
@@ -1206,7 +1206,7 @@ async def _answer_student_task(message: ParsedMessage) -> None:
             "https://coligo-college-admission-assistant.onrender.com"
             "/files/skcet_tnea_knowledge_base.pdf"
         )
-        caption = f"📄 *{college_label} - Official Admission Guide & Cutoffs*"
+        caption = f"*{college_label} - Official Admission Guide & Cutoffs*"
 
         sent_doc = await send_document(
             to=message.sender,
@@ -1217,9 +1217,9 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         if not sent_doc:
             await send_text(
                 message.sender,
-                f"📄 *{college_label} Official Guide*\n\n"
+                f"*{college_label} Official Guide*\n\n"
                 f"Download brochure here:\n{brochure_url}\n\n"
-                "💡 Reply with *Cutoff* or *Fees* to explore more!",
+                "Reply with *Cutoff* or *Fees* to explore more!",
             )
         return
 
@@ -1257,14 +1257,14 @@ async def _answer_student_task(message: ParsedMessage) -> None:
     if query.lower() in menu_query_map:
         query = menu_query_map[query.lower()]
 
-    if query.lower() in ("btn_helpful", "👍 helpful"):
+    if query.lower() in ("btn_helpful", "helpful"):
         await send_text(
             message.sender,
-            "😊 *Thanks for your feedback!* Good luck with your TNEA college admissions! 🎓",
+            "*Thanks for your feedback!* Good luck with your TNEA college admissions!",
         )
         return
 
-    if query.lower() in ("btn_unhelpful", "👎 need help"):
+    if query.lower() in ("btn_unhelpful", "need help", "unhelpful"):
         async with async_session_factory() as db:
             try:
                 db.add(
@@ -1285,7 +1285,7 @@ async def _answer_student_task(message: ParsedMessage) -> None:
         )
         await send_text(
             message.sender,
-            "📞 *Got it!* I've logged your request for an admission counselor and sent "
+            "*Got it!* I've logged your request for an admission counselor and sent "
             "their direct contact card above so you can reach an officer directly!",
         )
         return
@@ -1313,7 +1313,7 @@ async def _answer_student_task(message: ParsedMessage) -> None:
             formatted_answer = format_whatsapp_response(query, answer, sources)
             await send_text(message.sender, formatted_answer)
 
-            # ── If incoming was voice, also dispatch natural spoken voice reply ──
+            # ── If incoming was voice, reply strictly via text message per specification ──
             if is_voice_message and settings.ENABLE_VOICE_RESPONSES:
                 try:
                     from api.services.tts_service import send_voice_reply
@@ -1326,7 +1326,7 @@ async def _answer_student_task(message: ParsedMessage) -> None:
             buttons = _build_dynamic_reply_buttons(query, formatted_answer, profile)
             await send_interactive_buttons(
                 message.sender,
-                "💡 *Quick Actions:*",
+                "*Quick Actions:*",
                 buttons,
             )
         except Exception as e:

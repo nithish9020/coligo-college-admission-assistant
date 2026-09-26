@@ -307,7 +307,7 @@ async def handle_rag_query(
             # Remove python-appended disclaimers from history so the LLM doesn't learn to repeat them
             if history_str:
                 history_str = re.sub(
-                    r"\n\n⚠️ _Some numbers may not match official records[^_]*_",
+                    r"\n\n(?:\u26a0\ufe0f\s*)?_Some numbers may not match official records[^_]*_",
                     "",
                     history_str,
                 )
@@ -527,7 +527,7 @@ async def handle_rag_query(
             session_key=session_key,
         )
         answer += (
-            "\n\n⚠️ _Some numbers may not match official records. "
+            "\n\n_Some numbers may not match official records. "
             "Please verify with the college website or TNEA portal._"
         )
 
@@ -761,14 +761,14 @@ async def stream_rag_query(
     )
     if not is_factually_grounded:
         warning_note = (
-            "\n\n⚠️ _Some numbers may not match official records. "
+            "\n\n_Some numbers may not match official records. "
             "Please verify with the college website or TNEA portal._"
         )
         full_text += warning_note
         yield {"event": "delta", "text": warning_note}
 
-    if sources and "📌 Source:" not in full_text:
-        source_note = f"\n\n📌 Source: {', '.join(sources)}"
+    if sources and "Source:" not in full_text:
+        source_note = f"\n\nSource: {', '.join(sources)}"
         full_text += source_note
         yield {"event": "delta", "text": source_note}
 

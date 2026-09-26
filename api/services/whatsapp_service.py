@@ -560,13 +560,13 @@ async def execute_admin_command(
         ).scalar() or 0
 
         reply = (
-            f"📊 *Coligo System Status & Stats*\n\n"
+            f"*Coligo System Status & Stats*\n\n"
             f"• *Environment*: {settings.ENVIRONMENT}\n"
             f"• *Ingested Documents*: {doc_count}\n"
             f"• *Vector Chunks*: {chunk_count}\n"
             f"• *Active Chat Threads*: {conv_count}\n"
             f"• *Pending Escalations*: {escalation_count}\n"
-            f"• *Status*: Healthy 🟢"
+            f"• *Status*: Healthy"
         )
         await send_text(sender, reply)
 
@@ -575,12 +575,12 @@ async def execute_admin_command(
         if len(parts) < 2:
             await send_text(
                 sender,
-                "⚠️ *Usage*: `/ingest <document_url_or_path>`\nPlease provide a document URL or path.",
+                "*Usage*: `/ingest <document_url_or_path>`\nPlease provide a document URL or path.",
             )
             return
 
         document_ref = parts[1].strip()
-        await send_text(sender, f"🔄 Starting ingestion for:\n`{document_ref}`...")
+        await send_text(sender, f"Starting ingestion for:\n`{document_ref}`...")
 
         try:
             from api.services.document_service import process_document
@@ -588,7 +588,7 @@ async def execute_admin_command(
             text, total, inserted, reused = await process_document(db, document_ref)
             await send_text(
                 sender,
-                f"✅ *Ingestion Successful!*\n\n"
+                f"*Ingestion Successful!*\n\n"
                 f"• *Ref*: {document_ref}\n"
                 f"• *Extracted Length*: {len(text)} chars\n"
                 f"• *Total Chunks*: {total}\n"
@@ -597,11 +597,11 @@ async def execute_admin_command(
             )
         except Exception as e:
             logger.error("admin_ingest_failed", error=str(e))
-            await send_text(sender, f"❌ *Ingestion Failed*: {str(e)}")
+            await send_text(sender, f"*Ingestion Failed*: {str(e)}")
 
     elif command == "/refresh":
         doc_count = (await db.execute(select(func.count(Document.id)))).scalar() or 0
         await send_text(
             sender,
-            f"🔄 *System Refreshed*\nAll {doc_count} document indexes and tables are active and up to date.",
+            f"*System Refreshed*\nAll {doc_count} document indexes and tables are active and up to date.",
         )

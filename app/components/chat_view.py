@@ -78,7 +78,7 @@ def _build_personalized_chance_badge(
     return f"""
     <div style="background: #F8FAFC; border-left: 4px solid {color}; border-radius: 8px; padding: 10px 14px; margin: 10px 0; border-top: 1px solid #E2E8F0; border-right: 1px solid #E2E8F0; border-bottom: 1px solid #E2E8F0;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-weight: 700; font-size: 0.82rem; color: {color}; text-transform: uppercase; letter-spacing: 0.5px;">🎯 {title}</span>
+            <span style="font-weight: 700; font-size: 0.82rem; color: {color}; text-transform: uppercase; letter-spacing: 0.5px;">{title}</span>
             <span style="font-size: 0.78rem; background: #EEF2FF; color: #4F46E5; padding: 2px 8px; border-radius: 12px; font-weight: 600;">{comm} Quota • Cutoff {cutoff:g}</span>
         </div>
         <div style="font-size: 0.86rem; color: #334155; line-height: 1.45;">
@@ -90,17 +90,15 @@ def _build_personalized_chance_badge(
 
 def _render_source_expander(sources: list[str]) -> None:
     """Render rich collapsible official document verification panel."""
-    with st.expander(
-        "📚 Verified Document Evidence & Official Citations", expanded=False
-    ):
+    with st.expander("Verified Document Evidence & Official Citations", expanded=False):
         st.markdown(
             "<div style='font-size: 0.85rem; color: #475569; margin-bottom: 8px;'>"
-            "🛡️ <strong>Zero-Hallucination Grounding:</strong> Extracted directly from official "
+            "<strong>Zero-Hallucination Grounding:</strong> Extracted directly from official "
             "TNEA government archives and college brochures:</div>",
             unsafe_allow_html=True,
         )
         for s in sources:
-            st.markdown(f"• 📄 **Source Document:** `{s}`")
+            st.markdown(f"• **Source Document:** `{s}`")
         st.caption(
             "All cutoff marks out of 200. Grounded in official TNEA closing ranks."
         )
@@ -108,7 +106,7 @@ def _render_source_expander(sources: list[str]) -> None:
 
 def render_chat_view() -> None:
     """Render interactive AI chat interface with live streaming & contextual charts."""
-    st.markdown("## 💬 Coligo TNEA Admission Assistant")
+    st.markdown("## Coligo TNEA Admission Assistant")
     st.caption(
         "Ask questions about engineering college cutoffs, courses, hostel fees, "
         "placements, and choice filling."
@@ -129,7 +127,7 @@ def render_chat_view() -> None:
                 {
                     "role": "assistant",
                     "content": (
-                        "👋 Hello! I am Coligo, your official TNEA Counselling Assistant. "
+                        "Hello! I am Coligo, your official TNEA Counselling Assistant. "
                         "I can help you check cutoff marks, compare colleges, and generate "
                         "your personalized 3-tier choice filling order. How can I help?"
                     ),
@@ -151,14 +149,14 @@ def render_chat_view() -> None:
     latest_chips = st.session_state.get(
         "latest_chips",
         [
-            "📊 Compare SKCET vs PSG Tech Cutoffs",
-            "💼 Placement packages & top recruiters",
-            "📋 Recommend my 3-tier choice filling list",
+            "Compare SKCET vs PSG Tech Cutoffs",
+            "Placement packages & top recruiters",
+            "Recommend my 3-tier choice filling list",
         ],
     )
 
     st.markdown(
-        "<p style='font-size: 0.85rem; font-weight: 600; color: #64748B; margin: 10px 0 4px 0;'>💡 Suggested Next Questions:</p>",
+        "<p style='font-size: 0.85rem; font-weight: 600; color: #64748B; margin: 10px 0 4px 0;'>Suggested Next Questions:</p>",
         unsafe_allow_html=True,
     )
     chip_cols = st.columns(len(latest_chips))
@@ -166,9 +164,7 @@ def render_chat_view() -> None:
 
     for idx, c_text in enumerate(latest_chips):
         with chip_cols[idx]:
-            if st.button(
-                f"👉 {c_text}", key=f"chip_btn_{idx}", use_container_width=True
-            ):
+            if st.button(c_text, key=f"chip_btn_{idx}", use_container_width=True):
                 quick_query = c_text
 
     # User input bar
@@ -211,7 +207,7 @@ def render_chat_view() -> None:
                 for k in ("cutoff", "compare", "psg", "skcet", "mark", "branch")
             ):
                 st.markdown("---")
-                st.markdown("#### 📊 Comparative Cutoff Visualization")
+                st.markdown("#### Comparative Cutoff Visualization")
                 chart = build_cutoff_comparison_chart(
                     selected_colleges=["SKCET", "PSG Tech", "CIT", "KCT"],
                     community=st.session_state.get("community", "BC"),
@@ -230,7 +226,7 @@ def render_chat_view() -> None:
                 )
             ):
                 st.markdown("---")
-                st.markdown("#### 💼 Institution Placement Analytics")
+                st.markdown("#### Institution Placement Analytics")
                 p_chart = build_placement_comparison_chart()
                 st.altair_chart(p_chart, use_container_width=True)
 
@@ -245,7 +241,7 @@ def render_chat_view() -> None:
                 )
             ):
                 st.markdown("---")
-                st.markdown("#### 🥧 Tamil Nadu Government Quota Breakdown")
+                st.markdown("#### Tamil Nadu Government Quota Breakdown")
                 q_chart = build_quota_pie_chart()
                 st.altair_chart(q_chart, use_container_width=True)
 

@@ -18,7 +18,6 @@ def render_sidebar() -> str:
         st.markdown(
             """
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                <span style="font-size: 2rem;">🎓</span>
                 <div>
                     <h2 style="margin: 0; font-size: 1.35rem; color: #1E293B;">Coligo Portal</h2>
                     <span style="font-size: 0.8rem; color: #4F46E5; font-weight: 600;">TNEA 2026 ASSISTANT</span>
@@ -33,7 +32,7 @@ def render_sidebar() -> str:
         profile = get_student_profile(session_key)
 
         with st.container(border=True):
-            st.markdown(f"**👤 Student:** `{phone}`")
+            st.markdown(f"**Student:** `{phone}`")
             cutoff_val = profile.calculated_cutoff or st.session_state.get(
                 "cutoff", 185.0
             )
@@ -48,9 +47,9 @@ def render_sidebar() -> str:
             with col_b:
                 st.metric("Quota", comm_val)
 
-            st.caption(f"📍 Target Region: **{dist_val}**")
+            st.caption(f"Target Region: **{dist_val}**")
 
-            with st.expander("✏️ Update Cutoff / Quota"):
+            with st.expander("Update Cutoff / Quota"):
                 new_c = st.number_input(
                     "Cutoff Mark",
                     min_value=77.5,
@@ -78,16 +77,16 @@ def render_sidebar() -> str:
                     st.success("Profile updated!")
                     st.rerun()
 
-        st.markdown("### 📌 Navigation")
+        st.markdown("### Navigation")
         nav_options = [
-            "💬 AI Admissions Chatbot",
-            "📊 Cutoff Visualizer & Graphs",
-            "⚖️ Head-to-Head College Comparator",
-            "🥧 Seat Matrix & Quota Pie Charts",
-            "💼 Placement & Recruiter Analytics",
-            "📋 3-Tier Choice Sheet Builder",
-            "📈 TNEA Rank & Round Predictor",
-            "🔄 Upward Movement Simulator",
+            "AI Admissions Chatbot",
+            "Cutoff Visualizer & Graphs",
+            "Head-to-Head College Comparator",
+            "Seat Matrix & Quota Pie Charts",
+            "Placement & Recruiter Analytics",
+            "3-Tier Choice Sheet Builder",
+            "TNEA Rank & Round Predictor",
+            "Upward Movement Simulator",
         ]
         selected_view = st.radio(
             "Go to View",
@@ -101,7 +100,7 @@ def render_sidebar() -> str:
         st.markdown(
             """
             <div style="background: #F8FAFC; padding: 10px; border-radius: 8px; border: 1px solid #E2E8F0; font-size: 0.85rem;">
-                <strong>📞 Official Admissions Desk</strong><br>
+                <strong>Official Admissions Desk</strong><br>
                 <span>Sri Krishna College of Engg & Tech</span><br>
                 <a href="tel:+914222678001" style="color: #4F46E5; text-decoration: none;">+91 422 2678001</a>
             </div>
@@ -110,7 +109,7 @@ def render_sidebar() -> str:
         )
 
         st.write("")
-        if st.button("🚪 Log Out", use_container_width=True):
+        if st.button("Log Out", use_container_width=True):
             st.session_state.clear()
             st.rerun()
 

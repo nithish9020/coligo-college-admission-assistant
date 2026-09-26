@@ -80,7 +80,7 @@ def _render_choice_items(
     for item in items:
         b_code = f" [{item.branch_code}]" if item.branch_code else ""
         lines.append(
-            f"{curr}. {badge} *[{item.college_code}] {item.college_name}*\n"
+            f"{curr}. [{badge}] *[{item.college_code}] {item.college_name}*\n"
             f"   • *Branch*: {item.branch_name}{b_code}\n"
             f"   • *Closing Cutoff*: *{item.cutoff_mark:g}*"
         )
@@ -129,7 +129,7 @@ async def generate_tnea_choice_list(
     )
 
     header = (
-        "📋 *Personalized TNEA Choice Filling Order Draft*\n\n"
+        "*Personalized TNEA Choice Filling Order Draft*\n\n"
         f"• *Candidate Cutoff*: *{cutoff:g} / 200.0*\n"
         f"• *Community Quota*: *{comm}*\n"
         "• *Strategy*: 3-Tier Draft (Dream -> Target -> Safe)\n"
@@ -140,23 +140,23 @@ async def generate_tnea_choice_list(
     body_parts: List[str] = [header]
 
     if reach:
-        body_parts.append("\n🚀 *Aspirational / Dream Choices (Upward Movement):*")
-        reach_lines, choice_no = _render_choice_items(reach, choice_no, "🔴")
+        body_parts.append("\n*Aspirational / Dream Choices (Upward Movement):*")
+        reach_lines, choice_no = _render_choice_items(reach, choice_no, "Reach")
         body_parts.extend(reach_lines)
 
     if target:
-        body_parts.append("\n🎯 *Target Choices (High Probability Match):*")
-        target_lines, choice_no = _render_choice_items(target, choice_no, "🟡")
+        body_parts.append("\n*Target Choices (High Probability Match):*")
+        target_lines, choice_no = _render_choice_items(target, choice_no, "Target")
         body_parts.extend(target_lines)
 
     if safe:
-        body_parts.append("\n🟢 *Safe Backup Choices (Guaranteed Seat):*")
-        safe_lines, choice_no = _render_choice_items(safe, choice_no, "🟢")
+        body_parts.append("\n*Safe Backup Choices (Guaranteed Seat):*")
+        safe_lines, choice_no = _render_choice_items(safe, choice_no, "Safe")
         body_parts.extend(safe_lines)
 
     footer = (
         "\n────────────────────────\n"
-        "💡 *Key TNEA Choice Filling Rule (tneaonline.org):*\n"
+        "*Key TNEA Choice Filling Rule (tneaonline.org):*\n"
         "Always keep Dream/Aspirational choices on top. If allotted a Target "
         "choice, choose *'Accept with Upward Movement'* so you can upgrade!"
     )

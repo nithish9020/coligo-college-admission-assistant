@@ -31,7 +31,6 @@ HERO_HTML = """
             min-height:540px; color:white; display:flex; flex-direction:column;
             justify-content:space-between;">
   <div>
-    <div style="font-size:2rem;">🎓</div>
     <h2 style="color:white; margin-top:1rem;">Coligo — TNEA Admissions &amp; College Hub</h2>
     <p style="color:#E7E4F5; font-size:0.95rem; line-height:1.5;">
       <strong>For Students:</strong> Instant cutoff eligibility, AI counseling assistant,
@@ -59,7 +58,7 @@ def render_login() -> None:
     with right:
         st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
         tab_student, tab_admin = st.tabs(
-            ["🎓 Student Portal (WhatsApp OTP)", "🏛️ College & Admin Login"]
+            ["Student Portal (WhatsApp OTP)", "College & Admin Login"]
         )
 
         with tab_student:
@@ -76,12 +75,10 @@ def render_login() -> None:
 
             c_btn1, c_btn2 = st.columns(2)
             with c_btn1:
-                send_clicked = st.button(
-                    "📲 Send WhatsApp OTP", use_container_width=True
-                )
+                send_clicked = st.button("Send WhatsApp OTP", use_container_width=True)
             with c_btn2:
                 demo_clicked = st.button(
-                    "🚀 Explore Demo Mode", type="primary", use_container_width=True
+                    "Explore Demo Mode", type="primary", use_container_width=True
                 )
 
             if send_clicked:
@@ -101,7 +98,7 @@ def render_login() -> None:
             if st.session_state.get("otp_sent_to"):
                 st.divider()
                 st.markdown(
-                    f"💬 Code sent to WhatsApp: **+{st.session_state['otp_sent_to']}**"
+                    f"Code sent to WhatsApp: **+{st.session_state['otp_sent_to']}**"
                 )
                 otp_code = st.text_input(
                     "6-Digit Verification Code",
@@ -110,7 +107,7 @@ def render_login() -> None:
                     key="student_otp_code_val",
                 )
                 if st.button(
-                    "✅ Verify & Enter Portal",
+                    "Verify & Enter Portal",
                     type="primary",
                     use_container_width=True,
                 ):

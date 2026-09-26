@@ -37,7 +37,7 @@ def _render_extraction_review(token: str, brochure_id: int, result: dict) -> Non
     facilities = result.get("facilities") or []
 
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
-    st.markdown("#### ✨ AI-suggested details from this brochure")
+    st.markdown("#### AI-suggested details from this brochure")
     st.caption(
         "Nothing is saved until you confirm below. Review each field, uncheck "
         "anything you don't want, then apply."
@@ -303,7 +303,7 @@ def render_brochures() -> None:
     )
 
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
-    st.markdown("### 🌐 Web Scraping & Knowledge Base Ingestion")
+    st.markdown("### Web Scraping & Knowledge Base Ingestion")
     st.caption(
         "Scrape college websites, discover sub-pages, and automatically generate vector embeddings for pgvector."
     )
@@ -319,7 +319,7 @@ def render_brochures() -> None:
                 "College Name *", placeholder="e.g. PSG Tech"
             )
         if st.form_submit_button(
-            "🚀 Scrape Website & Ingest Knowledge Base", type="primary"
+            "Scrape Website & Ingest Knowledge Base", type="primary"
         ):
             if not target_url or not target_college_name:
                 st.error("Both Target Website URL and College Name are required.")
@@ -334,7 +334,7 @@ def render_brochures() -> None:
                             urls=[target_url.strip()],
                         )
                         st.success(
-                            f"🎉 Ingestion Success! Total Chunks: {data.get('total_chunks')} | "
+                            f"Ingestion Success! Total Chunks: {data.get('total_chunks')} | "
                             f"Inserted Chunks: {data.get('inserted_chunks')} | Document: {data.get('document_ref')}"
                         )
                     except APIError as ex:
@@ -442,7 +442,7 @@ def render_brochures() -> None:
                     try:
                         pdf_bytes = download_brochure(token, b["id"])
                         st.download_button(
-                            "\U0001f441️",
+                            "View",
                             data=pdf_bytes,
                             file_name=f"{b['title']}.pdf",
                             mime="application/pdf",
@@ -451,15 +451,17 @@ def render_brochures() -> None:
                     except APIError:
                         st.caption("N/A")
                 if ai_col.button(
-                    "✨", key=f"ai_bro_{b['id']}", help="Extract details with AI"
+                    "AI Extract",
+                    key=f"ai_bro_{b['id']}",
+                    help="Extract details with AI",
                 ):
                     with st.spinner("Reading brochure with AI..."):
                         _run_extraction(token, b["id"])
                     st.rerun()
-                if e_col.button("✏️", key=f"edit_bro_{b['id']}"):
+                if e_col.button("Edit", key=f"edit_bro_{b['id']}"):
                     st.session_state[edit_key] = True
                     st.rerun()
-                if d_col.button("\U0001f5d1️", key=f"del_bro_{b['id']}"):
+                if d_col.button("Delete", key=f"del_bro_{b['id']}"):
                     try:
                         delete_brochure(token, b["id"])
                         st.session_state.pop(_extraction_key(b["id"]), None)

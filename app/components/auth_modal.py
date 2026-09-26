@@ -34,7 +34,7 @@ def render_auth_page() -> None:
         )
 
         with st.container(border=True):
-            st.markdown("### 🔐 Student WhatsApp Sign In")
+            st.markdown("### Student WhatsApp Sign In")
             st.markdown(
                 "Enter your WhatsApp mobile number to sync your profile, "
                 "cutoff marks, and chat history seamlessly."
@@ -48,13 +48,9 @@ def render_auth_page() -> None:
 
             c_btn1, c_btn2 = st.columns([1, 1])
             with c_btn1:
-                send_clicked = st.button(
-                    "📲 Send WhatsApp OTP", use_container_width=True
-                )
+                send_clicked = st.button("Send WhatsApp OTP", use_container_width=True)
             with c_btn2:
-                demo_clicked = st.button(
-                    "🚀 Explore Demo Mode", use_container_width=True
-                )
+                demo_clicked = st.button("Explore Demo Mode", use_container_width=True)
 
             if send_clicked:
                 if not phone_input or not is_valid_phone(phone_input):
@@ -76,7 +72,7 @@ def render_auth_page() -> None:
             if st.session_state.get("otp_sent_to"):
                 st.divider()
                 st.markdown(
-                    f"💬 Code sent to WhatsApp: **+{st.session_state['otp_sent_to']}**"
+                    f"Code sent to WhatsApp: **+{st.session_state['otp_sent_to']}**"
                 )
                 otp_code = st.text_input(
                     "6-Digit Verification Code",
@@ -86,7 +82,7 @@ def render_auth_page() -> None:
                 )
 
                 if st.button(
-                    "✅ Verify & Enter",
+                    "Verify & Enter",
                     type="primary",
                     use_container_width=True,
                 ):

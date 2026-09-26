@@ -10,7 +10,7 @@ from utils.styling import (
 
 def render_chat_simulator() -> None:
     page_header(
-        "💬",
+        "",
         "AI Admission Assistant Playground",
         "Interactive test simulator for the multi-college TNEA RAG counseling chatbot",
     )
@@ -37,7 +37,7 @@ def render_chat_simulator() -> None:
             f"Session ID: `{st.session_state.chat_session_id}` (24h memory active)"
         )
     with col_clear:
-        if st.button("🔄 New Conversation", use_container_width=True):
+        if st.button("New Conversation", use_container_width=True):
             st.session_state.chat_session_id = f"test_{uuid.uuid4().hex[:8]}"
             st.session_state.chat_messages = [
                 {
@@ -52,11 +52,11 @@ def render_chat_simulator() -> None:
     st.markdown("**Quick test prompts:**")
     qp1, qp2, qp3 = st.columns(3)
     prompt_to_send = None
-    if qp1.button("🎯 Cutoff: 95, 80, 85 (BC)", use_container_width=True):
+    if qp1.button("Cutoff: 95, 80, 85 (BC)", use_container_width=True):
         prompt_to_send = "My marks are Maths: 95, Physics: 80, Chemistry: 85. My community is BC. Which colleges can I get for CSE?"
-    if qp2.button("🏫 Compare SKCET & CIT", use_container_width=True):
+    if qp2.button("Compare SKCET & CIT", use_container_width=True):
         prompt_to_send = "Compare SKCET and CIT for Computer Science and placements."
-    if qp3.button("📘 PSG ECE Cutoff", use_container_width=True):
+    if qp3.button("PSG ECE Cutoff", use_container_width=True):
         prompt_to_send = (
             "What is the closing cutoff for ECE at PSG College of Technology?"
         )
@@ -66,7 +66,7 @@ def render_chat_simulator() -> None:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             if msg.get("sources"):
-                with st.expander("📌 Cited Sources"):
+                with st.expander("Cited Sources"):
                     for src in msg["sources"]:
                         st.markdown(f"- `{src}`")
 
@@ -95,7 +95,7 @@ def render_chat_simulator() -> None:
 
                     st.markdown(reply_text)
                     if sources:
-                        with st.expander("📌 Cited Sources"):
+                        with st.expander("Cited Sources"):
                             for src in sources:
                                 st.markdown(f"- `{src}`")
 
@@ -107,7 +107,7 @@ def render_chat_simulator() -> None:
                         }
                     )
                 except APIError as e:
-                    err_msg = f"⚠️ Error communicating with assistant: {e.message}"
+                    err_msg = f"Error communicating with assistant: {e.message}"
                     st.error(err_msg)
                     st.session_state.chat_messages.append(
                         {"role": "assistant", "content": err_msg, "sources": []}

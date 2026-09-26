@@ -112,7 +112,7 @@ async def reply_escalation(
     # 2. Transmit message directly to student via Meta Cloud API
     if payload.send_whatsapp and clean_phone and clean_phone.isdigit():
         outbound_text = (
-            f"🎓 *Message from Admission Counselor:*\n\n"
+            f"*Message from Admission Counselor:*\n\n"
             f"{payload.message.strip()}\n\n"
             f"— *Coligo Admission Team*\n"
             f"_(You can reply directly to continue chatting with the counselor)_"

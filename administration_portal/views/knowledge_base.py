@@ -9,7 +9,6 @@ from utils.styling import (
     badge,
     page_header,
     render_footer,
-    row_icon_html,
 )
 
 
@@ -17,16 +16,16 @@ def render_knowledge_base() -> None:
     token = st.session_state.token
 
     page_header(
-        "📚",
+        "",
         "Knowledge Base & Documents",
         "Manage RAG vector embeddings, documents, and web crawler ingestion",
     )
 
     # 1. Ingestion Section with Tabs
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
-    st.markdown("#### 📥 Ingest College Data to Vector Store")
+    st.markdown("#### Ingest College Data to Vector Store")
 
-    tab_scrape, tab_pdf = st.tabs(["🌐 Web Scraper", "📄 Upload PDF / Document URL"])
+    tab_scrape, tab_pdf = st.tabs(["Web Scraper", "Upload PDF / Document URL"])
 
     with tab_scrape:
         st.caption(
@@ -47,7 +46,7 @@ def render_knowledge_base() -> None:
                     height=90,
                 )
 
-            submit_scraper = st.form_submit_button("🚀 Scrape & Ingest", type="primary")
+            submit_scraper = st.form_submit_button("Scrape & Ingest", type="primary")
 
         if submit_scraper:
             urls = [
@@ -62,7 +61,7 @@ def render_knowledge_base() -> None:
                     try:
                         res = scrape_college(token, college_name.strip(), urls)
                         st.success(
-                            f"✅ Successfully ingested! Total chunks: {res.get('total_chunks', 0)}, "
+                            f"Successfully ingested! Total chunks: {res.get('total_chunks', 0)}, "
                             f"Inserted: {res.get('inserted_chunks', 0)}"
                         )
                         st.rerun()
@@ -90,7 +89,7 @@ def render_knowledge_base() -> None:
                 type=["pdf", "txt"],
                 help="PDF handbook, prospectus, or raw text cutoff file",
             )
-            if uploaded_file and st.button("📥 Process & Ingest File", type="primary"):
+            if uploaded_file and st.button("Process & Ingest File", type="primary"):
                 os.makedirs("data", exist_ok=True)
                 target_path = os.path.join("data", uploaded_file.name)
                 with open(target_path, "wb") as f:
@@ -100,7 +99,7 @@ def render_knowledge_base() -> None:
                     try:
                         res = process_document(target_path, token=token)
                         st.success(
-                            f"✅ Ingested {uploaded_file.name}! "
+                            f"Ingested {uploaded_file.name}! "
                             f"Total chunks: {res.get('total_chunks', 0)}, "
                             f"Inserted: {res.get('inserted_chunks', 0)}"
                         )
@@ -113,7 +112,7 @@ def render_knowledge_base() -> None:
                     "Document URL or Local Path *",
                     placeholder="https://example.com/admission_brochure.pdf or data/my_college.pdf",
                 )
-                submit_doc = st.form_submit_button("📥 Ingest Document", type="primary")
+                submit_doc = st.form_submit_button("Ingest Document", type="primary")
 
             if submit_doc:
                 if not doc_ref.strip():
@@ -123,7 +122,7 @@ def render_knowledge_base() -> None:
                         try:
                             res = process_document(doc_ref.strip(), token=token)
                             st.success(
-                                f"✅ Ingested successfully! "
+                                f"Ingested successfully! "
                                 f"Total chunks: {res.get('total_chunks', 0)}, "
                                 f"Inserted: {res.get('inserted_chunks', 0)}"
                             )
@@ -145,7 +144,7 @@ def render_knowledge_base() -> None:
 
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
     st.markdown(
-        f'<div class="coligo-card-header">📄 Ingested Documents ({len(documents)})</div>',
+        f'<div class="coligo-card-header">Ingested Documents ({len(documents)})</div>',
         unsafe_allow_html=True,
     )
 
@@ -163,10 +162,8 @@ def render_knowledge_base() -> None:
         for doc in documents:
             row = st.columns([3.5, 1.2, 1.8, 1])
             with row[0]:
-                doc_icon = row_icon_html("📄", "purple")
                 st.markdown(
                     f'<div class="coligo-item-row">'
-                    f"{doc_icon}"
                     f'<span class="coligo-item-title">{doc["document_ref"]}</span></div>',
                     unsafe_allow_html=True,
                 )
@@ -177,7 +174,7 @@ def render_knowledge_base() -> None:
             with row[2]:
                 st.caption(doc["created_at"][:19].replace("T", " "))
             with row[3]:
-                if st.button("🗑️ Delete", key=f"del_doc_{doc['id']}"):
+                if st.button("Delete", key=f"del_doc_{doc['id']}"):
                     try:
                         delete_document(token, doc["id"])
                         st.success("Document deleted.")

@@ -90,9 +90,7 @@ def generate_tnea_choice_sheet_pdf(
     elements = []
 
     # Title & Subtitle
-    elements.append(
-        Paragraph("🎓 <b>COLIGO TNEA COUNSELLING ASSISTANT</b>", header_style)
-    )
+    elements.append(Paragraph("<b>COLIGO TNEA COUNSELLING ASSISTANT</b>", header_style))
     elements.append(
         Paragraph(
             "Official Personalized Choice Filling Preference Draft • "
@@ -196,7 +194,7 @@ def generate_tnea_choice_sheet_pdf(
     )
 
     elements.append(
-        Paragraph("📌 <b>Essential TNEA Choice-Filling Rules:</b>", notes_title)
+        Paragraph("<b>Essential TNEA Choice-Filling Rules:</b>", notes_title)
     )
     elements.append(Spacer(1, 4))
     elements.append(

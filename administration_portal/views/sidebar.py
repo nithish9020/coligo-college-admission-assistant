@@ -15,33 +15,33 @@ from api.services.student_profile_service import (
 )
 
 STUDENT_NAV = [
-    ("AI Admissions Chatbot", "💬"),
-    ("Cutoff Visualizer & Graphs", "📊"),
-    ("Head-to-Head College Comparator", "⚖️"),
-    ("Seat Matrix & Quota Pie Charts", "🥧"),
-    ("Placement & Recruiter Analytics", "💼"),
-    ("3-Tier Choice Sheet Builder", "📋"),
-    ("TNEA Rank & Round Predictor", "📈"),
-    ("Upward Movement Simulator", "🔄"),
+    ("AI Admissions Chatbot", ""),
+    ("Cutoff Visualizer & Graphs", ""),
+    ("Head-to-Head College Comparator", ""),
+    ("Seat Matrix & Quota Pie Charts", ""),
+    ("Placement & Recruiter Analytics", ""),
+    ("3-Tier Choice Sheet Builder", ""),
+    ("TNEA Rank & Round Predictor", ""),
+    ("Upward Movement Simulator", ""),
 ]
 
 COLLEGE_NAV = [
-    ("Dashboard", "🏠"),
-    ("College Profile", "🏫"),
-    ("Courses", "📘"),
-    ("Infrastructure", "🏗️"),
-    ("Brochures", "📄"),
-    ("Choice Filling", "🎯"),
-    ("Counselor Chat", "💬"),
+    ("Dashboard", ""),
+    ("College Profile", ""),
+    ("Courses", ""),
+    ("Infrastructure", ""),
+    ("Brochures", ""),
+    ("Choice Filling", ""),
+    ("Counselor Chat", ""),
 ]
 
 ADMIN_NAV = [
-    ("Dashboard", "🏠"),
-    ("Colleges", "🏫"),
-    ("Knowledge Base", "📚"),
-    ("Escalations", "⚠️"),
-    ("Choice Filling", "🎯"),
-    ("Counselor Chat", "💬"),
+    ("Dashboard", ""),
+    ("Colleges", ""),
+    ("Knowledge Base", ""),
+    ("Escalations", ""),
+    ("Choice Filling", ""),
+    ("Counselor Chat", ""),
 ]
 
 
@@ -52,9 +52,10 @@ def _slug(label: str) -> str:
 def _render_nav(items: list[tuple[str, str]]) -> None:
     current = st.session_state.nav
     for label, icon in items:
+        prefix = f"{icon} " if icon else ""
         with st.container(key=f"navitem-{_slug(label)}"):
             if st.button(
-                f"{icon}  {label}", key=f"nav_{label}", use_container_width=True
+                f"{prefix}{label}".strip(), key=f"nav_{label}", use_container_width=True
             ):
                 st.session_state.nav = label
                 st.session_state.viewing_college_id = None
@@ -91,7 +92,6 @@ def render_sidebar() -> None:
         st.markdown(
             f"""
             <div class="coligo-brand">
-                <div style="font-size:1.6rem;">🎓</div>
                 <div class="coligo-brand-title">{title}</div>
             </div>
             """,
@@ -126,7 +126,7 @@ def render_sidebar() -> None:
                 with col_b:
                     st.metric("Quota", comm_val)
 
-                with st.expander("✏️ Update Cutoff / Quota"):
+                with st.expander("Update Cutoff / Quota"):
                     new_c = st.number_input(
                         "Cutoff Mark",
                         min_value=77.5,
@@ -167,7 +167,7 @@ def render_sidebar() -> None:
 
         if st.session_state.role == "student":
             if st.button(
-                "🏛️ Switch to College / Admin Login",
+                "Switch to College / Admin Login",
                 key="btn_switch_admin",
                 use_container_width=True,
             ):
@@ -175,7 +175,7 @@ def render_sidebar() -> None:
                 st.rerun()
         else:
             if st.button(
-                "🎓 Switch to Student Portal",
+                "Switch to Student Portal",
                 key="btn_switch_student",
                 use_container_width=True,
             ):
@@ -186,6 +186,6 @@ def render_sidebar() -> None:
                 st.session_state["nav"] = "AI Admissions Chatbot"
                 st.rerun()
 
-        if st.button("🚪 Logout", key="nav_logout", use_container_width=True):
+        if st.button("Logout", key="nav_logout", use_container_width=True):
             log_out()
             st.rerun()

@@ -8,7 +8,7 @@ from api.services.rank_predictor import predict_tnea_rank
 
 def render_rank_predictor_view() -> None:
     """Render interactive TNEA cutoff-to-rank regression predictor and round advisory."""
-    st.markdown("## 📈 TNEA State Overall & Community Rank Predictor")
+    st.markdown("## TNEA State Overall & Community Rank Predictor")
     st.caption(
         "TNEA engineering seat allotments depend strictly on State Overall Merit Rank "
         "and Community Rank, not marks alone."
@@ -38,7 +38,7 @@ def render_rank_predictor_view() -> None:
 
     res = predict_tnea_rank(cutoff_val, comm_val)
 
-    st.markdown("### 🎯 Predicted Rank & Eligibility Results")
+    st.markdown("### Predicted Rank & Eligibility Results")
     m1, m2, m3 = st.columns(3)
 
     with m1:
@@ -59,11 +59,11 @@ def render_rank_predictor_view() -> None:
             delta_color="normal",
         )
 
-    st.info(f"💡 **Expert Round {res['round_number']} Strategy:**\n\n{res['strategy']}")
+    st.info(f"**Expert Round {res['round_number']} Strategy:**\n\n{res['strategy']}")
 
     st.divider()
 
-    st.markdown("### 📊 TNEA Rank Bracket Reference Model")
+    st.markdown("### TNEA Rank Bracket Reference Model")
     brackets_data = [
         {
             "Cutoff Range": "199.0 - 200.0",

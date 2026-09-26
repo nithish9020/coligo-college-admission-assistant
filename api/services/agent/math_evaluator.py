@@ -22,7 +22,7 @@ def calculate_tnea_cutoff(
     cutoff = round(maths + phy_component + chem_component, 2)
 
     explanation = (
-        f"🎯 **TNEA Cutoff Calculation**: {maths:g} (Maths) + "
+        f"**TNEA Cutoff Calculation**: {maths:g} (Maths) + "
         f"{phy_component:g} (Physics/2) + {chem_component:g} (Chemistry/2) = "
         f"**{cutoff:g} / 200.0**"
     )

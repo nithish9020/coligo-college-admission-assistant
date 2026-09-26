@@ -15,14 +15,14 @@ def render_choice_filling() -> None:
     token = st.session_state.token
 
     page_header(
-        "🎯",
+        "",
         "TNEA Choice Filling & Cutoff Engine",
         "Algorithmic 3-tier preference list generator (Dream, Target, Safe) and official cutoff database",
         "blue",
     )
 
     tab_rec, tab_search = st.tabs(
-        ["🚀 Choice Filling Generator", "🔍 Cutoff Database Explorer"]
+        ["Choice Filling Generator", "Cutoff Database Explorer"]
     )
 
     with tab_rec:
@@ -63,7 +63,7 @@ def render_choice_filling() -> None:
                 default=["CSE", "IT", "ECE"],
             )
 
-        if st.button("✨ Generate Choice Filling List", type="primary"):
+        if st.button("Generate Choice Filling List", type="primary"):
             try:
                 with st.spinner("Analyzing cutoff distributions across colleges..."):
                     recs = get_choice_recommendations(
@@ -80,7 +80,7 @@ def render_choice_filling() -> None:
                 col_amb, col_tgt, col_safe = st.columns(3)
 
                 with col_amb:
-                    st.markdown("#### 🌟 Ambitious (Dream)")
+                    st.markdown("#### Ambitious (Dream)")
                     st.caption("Reach colleges (Cutoff +0.1 to +3.0)")
                     amb = recs.get("ambitious", [])
                     if not amb:
@@ -93,13 +93,13 @@ def render_choice_filling() -> None:
                         )
                         st.markdown(
                             f"**{it['college_name']}**  \n"
-                            f"📌 {it['branch_name']}  \n"
+                            f"{it['branch_name']}  \n"
                             f"Closing: **{it['cutoff_mark']}** ({diff})"
                         )
                         st.divider()
 
                 with col_tgt:
-                    st.markdown("#### 🎯 Realistic (Target)")
+                    st.markdown("#### Realistic (Target)")
                     st.caption("Strong likelihood (Cutoff -2.5 to 0.0)")
                     tgt = recs.get("target", [])
                     if not tgt:
@@ -107,13 +107,13 @@ def render_choice_filling() -> None:
                     for it in tgt:
                         st.markdown(
                             f"**{it['college_name']}**  \n"
-                            f"📌 {it['branch_name']}  \n"
+                            f"{it['branch_name']}  \n"
                             f"Closing: **{it['cutoff_mark']}** ({it['difference']:g})"
                         )
                         st.divider()
 
                 with col_safe:
-                    st.markdown("#### 🛡️ Safe (Backup)")
+                    st.markdown("#### Safe (Backup)")
                     st.caption("Guaranteed safety (Cutoff -6.0 to -2.5)")
                     safe = recs.get("safe", [])
                     if not safe:
@@ -121,7 +121,7 @@ def render_choice_filling() -> None:
                     for it in safe:
                         st.markdown(
                             f"**{it['college_name']}**  \n"
-                            f"📌 {it['branch_name']}  \n"
+                            f"{it['branch_name']}  \n"
                             f"Closing: **{it['cutoff_mark']}** ({it['difference']:g})"
                         )
                         st.divider()
@@ -149,7 +149,7 @@ def render_choice_filling() -> None:
                 index=0,
             )
 
-        if st.button("🔍 Search Cutoffs"):
+        if st.button("Search Cutoffs"):
             try:
                 results = search_cutoffs(
                     college=search_col or None,

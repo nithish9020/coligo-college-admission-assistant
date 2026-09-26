@@ -48,7 +48,7 @@ async def critic_node(state: AgentState) -> dict[str, Any]:
             # Replace hallucinated section with verified official cutoff table
             corrected_text = (
                 f"{response_text}\n\n"
-                f"📋 *Verified Official TNEA Cutoff Table:*\n"
+                f"*Verified Official TNEA Cutoff Table:*\n"
                 f"{clean_table}"
             )
             return {
@@ -57,7 +57,7 @@ async def critic_node(state: AgentState) -> dict[str, Any]:
             }
 
         correction_notice = (
-            "\n\n⚠️ _Note: Please verify specific branch cutoff marks against "
+            "\n\n_Note: Please verify specific branch cutoff marks against "
             "official TNEA closing rank reports at tneaonline.org._"
         )
         return {

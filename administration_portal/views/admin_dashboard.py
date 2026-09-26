@@ -26,10 +26,10 @@ def render_admin_dashboard() -> None:
 
     render_stat_row(
         [
-            ("Total Colleges", len(colleges), "🏫", "Registered on platform"),
-            ("Active Colleges", active_colleges, "👤", "Currently active"),
-            ("Total Courses", total_courses, "📘", "Across all colleges"),
-            ("Total Brochures", total_brochures, "📄", "Uploaded in total"),
+            ("Total Colleges", len(colleges), "", "Registered on platform"),
+            ("Active Colleges", active_colleges, "", "Currently active"),
+            ("Total Courses", total_courses, "", "Across all colleges"),
+            ("Total Brochures", total_brochures, "", "Uploaded in total"),
         ]
     )
 
@@ -48,25 +48,25 @@ def render_admin_dashboard() -> None:
                 (
                     "Chat Threads",
                     conv.get("total_threads", 0),
-                    "💬",
+                    "",
                     "Student sessions",
                 ),
                 (
                     "Total Messages",
                     conv.get("total_messages", 0),
-                    "✉️",
+                    "",
                     f"{conv.get('avg_turns_per_thread', 0):.1f} avg turns/user",
                 ),
                 (
                     "Pending Escalations",
                     esc.get("pending", 0),
-                    "⚠️",
+                    "",
                     f"{esc.get('resolved', 0)} resolved",
                 ),
                 (
                     "RAG Chunks",
                     doc.get("total_chunks", 0),
-                    "📚",
+                    "",
                     f"Across {doc.get('total_documents', 0)} documents",
                 ),
             ]
@@ -127,7 +127,7 @@ def render_admin_dashboard() -> None:
     st.markdown("<div style='height:0.3rem'></div>", unsafe_allow_html=True)
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
     st.markdown(
-        '<div class="coligo-card-header">💬 Live Student Inquiries (WhatsApp & Web)</div>',
+        '<div class="coligo-card-header">Live Student Inquiries (WhatsApp & Web)</div>',
         unsafe_allow_html=True,
     )
     try:
@@ -141,9 +141,9 @@ def render_admin_dashboard() -> None:
                 sess = t.get("session_key", "")
                 is_wa = sess.startswith("whatsapp:")
                 channel_label = (
-                    f"📱 WhatsApp: {sess.replace('whatsapp:', '')}"
+                    f"WhatsApp: {sess.replace('whatsapp:', '')}"
                     if is_wa
-                    else f"🌐 Web Session: {sess}"
+                    else f"Web Session: {sess}"
                 )
                 col_a, col_b = st.columns([3, 1])
                 with col_a:
@@ -178,7 +178,7 @@ def render_admin_dashboard() -> None:
     st.markdown("<div style='height:0.3rem'></div>", unsafe_allow_html=True)
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
     st.markdown(
-        '<div class="coligo-card-header">🩺 System Health & Connectivity</div>',
+        '<div class="coligo-card-header">System Health & Connectivity</div>',
         unsafe_allow_html=True,
     )
     try:

@@ -74,7 +74,7 @@ COLLEGE_SPECS = {
 
 def render_compare_view() -> None:
     """Render interactive side-by-side college comparator and visual diff."""
-    st.markdown("## ⚖️ Head-to-Head College Comparator")
+    st.markdown("## Head-to-Head College Comparator")
     st.caption(
         "Direct side-by-side evaluation of cutoffs, packages, NIRF rankings, and "
         "department strengths to make the right choice-filling decision."
@@ -119,7 +119,7 @@ def render_compare_view() -> None:
     spec_b = COLLEGE_SPECS[college_b]
 
     # Institutional Summary Cards
-    st.markdown("### 🏛️ Institutional Highlights")
+    st.markdown("### Institutional Highlights")
     card_col1, card_col2 = st.columns(2)
 
     with card_col1:
@@ -129,12 +129,12 @@ def render_compare_view() -> None:
                 <h4 style="margin: 0 0 6px 0; color: #4F46E5;">{college_a}</h4>
                 <p style="margin: 0 0 8px 0; font-size: 0.9rem; color: #475569;">{spec_a["full_name"]}</p>
                 <div style="font-size: 0.88rem; line-height: 1.6;">
-                    📍 <strong>District:</strong> {spec_a["district"]}<br>
-                    🏆 <strong>NIRF Ranking:</strong> {spec_a["nirf_band"]}<br>
-                    🎖️ <strong>NAAC:</strong> {spec_a["naac"]}<br>
-                    💼 <strong>Highest Package:</strong> {spec_a["highest_ctc"]}<br>
-                    📈 <strong>Average CTC:</strong> {spec_a["avg_ctc"]}<br>
-                    ⭐ <strong>Key Strength:</strong> {spec_a["strengths"]}
+                    <strong>District:</strong> {spec_a["district"]}<br>
+                    <strong>NIRF Ranking:</strong> {spec_a["nirf_band"]}<br>
+                    <strong>NAAC:</strong> {spec_a["naac"]}<br>
+                    <strong>Highest Package:</strong> {spec_a["highest_ctc"]}<br>
+                    <strong>Average CTC:</strong> {spec_a["avg_ctc"]}<br>
+                    <strong>Key Strength:</strong> {spec_a["strengths"]}
                 </div>
             </div>
             """,
@@ -148,12 +148,12 @@ def render_compare_view() -> None:
                 <h4 style="margin: 0 0 6px 0; color: #06B6D4;">{college_b}</h4>
                 <p style="margin: 0 0 8px 0; font-size: 0.9rem; color: #475569;">{spec_b["full_name"]}</p>
                 <div style="font-size: 0.88rem; line-height: 1.6;">
-                    📍 <strong>District:</strong> {spec_b["district"]}<br>
-                    🏆 <strong>NIRF Ranking:</strong> {spec_b["nirf_band"]}<br>
-                    🎖️ <strong>NAAC:</strong> {spec_b["naac"]}<br>
-                    💼 <strong>Highest Package:</strong> {spec_b["highest_ctc"]}<br>
-                    📈 <strong>Average CTC:</strong> {spec_b["avg_ctc"]}<br>
-                    ⭐ <strong>Key Strength:</strong> {spec_b["strengths"]}
+                    <strong>District:</strong> {spec_b["district"]}<br>
+                    <strong>NIRF Ranking:</strong> {spec_b["nirf_band"]}<br>
+                    <strong>NAAC:</strong> {spec_b["naac"]}<br>
+                    <strong>Highest Package:</strong> {spec_b["highest_ctc"]}<br>
+                    <strong>Average CTC:</strong> {spec_b["avg_ctc"]}<br>
+                    <strong>Key Strength:</strong> {spec_b["strengths"]}
                 </div>
             </div>
             """,
@@ -161,12 +161,12 @@ def render_compare_view() -> None:
         )
 
     # Cutoff Comparison Visual Chart
-    st.markdown(f"### 📊 Cutoff Benchmark Comparison ({comm_filter} Quota)")
+    st.markdown(f"### Cutoff Benchmark Comparison ({comm_filter} Quota)")
     chart = build_head_to_head_chart(college_a, college_b, community=comm_filter)
     st.altair_chart(chart, use_container_width=True)
 
     # Branch Cutoff Table & Verdict
-    st.markdown("### 📋 Branch-by-Branch Comparison & Personalized Verdict")
+    st.markdown("### Branch-by-Branch Comparison & Personalized Verdict")
     branches = ["CSE", "IT", "AI & DS", "ECE", "Mech"]
     rows = []
 
@@ -225,7 +225,7 @@ def render_compare_view() -> None:
 
     # Recommendation Box
     st.info(
-        f"💡 **Counsellor Recommendation for Cutoff {cutoff_val:g} ({comm_val}):**\n\n"
+        f"**Counsellor Recommendation for Cutoff {cutoff_val:g} ({comm_val}):**\n\n"
         f"• If your priority is **Product Company Placements & Modern AI/Tech**: {college_a} offers aggressive placement training with Tier-1 recruiters.\n"
         f"• If your priority is **Core Engineering, Alumni Legacy & Research**: {college_b} has historic industry partnerships and deep faculty expertise."
     )

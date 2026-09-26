@@ -23,10 +23,10 @@ def is_greeting(text: str) -> bool:
 def get_welcome_message() -> str:
     """Return a warm, customizable WhatsApp welcome menu."""
     return (
-        "👋 *Hey there! Welcome to Coligo Admission Guide!*\n\n"
+        "*Hey there! Welcome to Coligo Admission Guide!*\n\n"
         "I'm your senior peer guide for Tamil Nadu Engineering Admissions (TNEA).\n"
         "I can help you explore courses, check cutoff marks, fees, and campus facilities!\n\n"
-        "💡 *What would you like to check today?*\n"
+        "*What would you like to check today?*\n"
         "• Type *Cutoff for ECE* (or your branch)\n"
         "• Type *Maths 90, Physics 85, Chemistry 80* to calculate your TNEA cutoff\n"
         "• Type *Fee Structure* to view college fees\n"
@@ -38,7 +38,7 @@ def get_course_list_menu_sections() -> List[dict]:
     """Structure sections for Meta WhatsApp List Selection Menus."""
     return [
         {
-            "title": "💻 Computer Science & IT",
+            "title": "Computer Science & IT",
             "rows": [
                 {
                     "id": "cse_info",
@@ -58,7 +58,7 @@ def get_course_list_menu_sections() -> List[dict]:
             ],
         },
         {
-            "title": "⚡ Electrical & Electronics",
+            "title": "Electrical & Electronics",
             "rows": [
                 {
                     "id": "ece_info",
@@ -73,7 +73,7 @@ def get_course_list_menu_sections() -> List[dict]:
             ],
         },
         {
-            "title": "⚙️ Mechanical & Civil",
+            "title": "Mechanical & Civil",
             "rows": [
                 {
                     "id": "mech_info",
@@ -94,7 +94,7 @@ def get_college_list_menu_sections() -> List[dict]:
     """Structure college selection sections for WhatsApp List Menus."""
     return [
         {
-            "title": "🏆 Coimbatore Autonomous",
+            "title": "Coimbatore Autonomous",
             "rows": [
                 {
                     "id": "col_skcet",
@@ -124,7 +124,7 @@ def get_college_list_menu_sections() -> List[dict]:
             ],
         },
         {
-            "title": "🏛️ Premier Chennai Colleges",
+            "title": "Premier Chennai Colleges",
             "rows": [
                 {
                     "id": "col_ceg",
@@ -271,7 +271,7 @@ def convert_markdown_tables_to_whatsapp(text: str) -> str:
                     if not row or not any(row):
                         continue
                     first_col = row[0].strip("*_")
-                    output_lines.append(f"🏛️ *{first_col}*")
+                    output_lines.append(f"*{first_col}*")
                     for j in range(1, len(row)):
                         if j < len(header_cells) and row[j]:
                             h_label = header_cells[j].strip("*_")
@@ -285,12 +285,22 @@ def convert_markdown_tables_to_whatsapp(text: str) -> str:
     return "\n".join(output_lines)
 
 
+EMOJI_PATTERN = re.compile(
+    r"[\U00010000-\U0010ffff]|[\u2600-\u27bf]|[\u2300-\u23ff]|[\u2b50-\u2b55]|[\u3030\u303d]|[\u2190-\u21ff]"
+)
+
+
+def strip_emojis(text: str) -> str:
+    """Strip all emojis from message text."""
+    return EMOJI_PATTERN.sub("", text)
+
+
 def format_whatsapp_response(query: str, answer: str, sources: List[str]) -> str:
     """Dynamically enhance WhatsApp response formatting based on query intent.
 
     Applies WhatsApp rich text styling (bold headers, bullet styling, and source tags).
     """
-    cleaned_answer = answer.strip()
+    cleaned_answer = strip_emojis(answer.strip())
 
     # 0. Convert any Markdown tables to clean mobile-native WhatsApp cards
     cleaned_answer = convert_markdown_tables_to_whatsapp(cleaned_answer)
@@ -305,16 +315,16 @@ def format_whatsapp_response(query: str, answer: str, sources: List[str]) -> str
     # 1. Automatic Cutoff Calculation if student typed marks
     calculated_cutoff = calculate_tnea_cutoff(query)
     if calculated_cutoff is not None:
-        calc_header = f"🎯 *Calculated TNEA Cutoff*: *{calculated_cutoff} / 200*\n\n"
+        calc_header = f"*Calculated TNEA Cutoff*: *{calculated_cutoff} / 200*\n\n"
         cleaned_answer = calc_header + cleaned_answer
 
     # 1b. Comparative Analysis Formatting
     elif any(
         k in lower_query for k in ("compare", "versus", "vs", "difference", "better")
     ):
-        if "📊 *Branch & Cutoff" not in cleaned_answer:
+        if "*Branch & Cutoff Comparative Analysis*" not in cleaned_answer:
             cleaned_answer = (
-                f"📊 *Branch & Cutoff Comparative Analysis*\n\n{cleaned_answer}"
+                f"*Branch & Cutoff Comparative Analysis*\n\n{cleaned_answer}"
             )
 
     # 2. Format Cutoff Query Responses
@@ -323,39 +333,34 @@ def format_whatsapp_response(query: str, answer: str, sources: List[str]) -> str
             neg in cleaned_answer.lower()
             for neg in ("don't have", "not available", "missing", "sorry")
         ):
-            hint = "\n\n💡 *TNEA Cutoff Formula*: `Maths + (Physics / 2) + (Chemistry / 2)` (Max 200)"
+            hint = "\n\n*TNEA Cutoff Formula*: `Maths + (Physics / 2) + (Chemistry / 2)` (Max 200)"
             if "TNEA Cutoff Formula" not in cleaned_answer:
                 cleaned_answer += hint
 
     # 3. Format Fee Query Responses (only if answer is actually about fees)
     elif any(
         k in lower_query for k in ("fee", "fees", "tuition", "hostel")
-    ) and not any(c in cleaned_answer for c in ("🎯", "📊", "Cutoff", "cutoff")):
-        if "💳 *Fee" not in cleaned_answer:
-            cleaned_answer = f"💳 *Fee Structure & Details*\n\n{cleaned_answer}"
+    ) and not any(c in cleaned_answer for c in ("Cutoff", "cutoff")):
+        if "*Fee Structure & Details*" not in cleaned_answer:
+            cleaned_answer = f"*Fee Structure & Details*\n\n{cleaned_answer}"
 
     # 4. Format Location / Travel Queries
     elif any(
         k in lower_query
         for k in ("location", "where", "address", "reach", "bus", "direction")
     ):
-        if "📍 *Campus Location*" not in cleaned_answer:
-            cleaned_answer = (
-                f"📍 *Campus Location & Transportation*\n\n{cleaned_answer}"
-            )
+        if "*Campus Location & Transportation*" not in cleaned_answer:
+            cleaned_answer = f"*Campus Location & Transportation*\n\n{cleaned_answer}"
 
     # 5. Format Course / Branch Queries
     elif any(
         k in lower_query
         for k in ("course", "branch", "cse", "ece", "mech", "eee", "it", "aids")
     ):
-        if "🎓 *Academic Program Information*" not in cleaned_answer:
-            cleaned_answer = f"🎓 *Academic Branch Details*\n\n{cleaned_answer}"
+        if "*Academic Branch Details*" not in cleaned_answer:
+            cleaned_answer = f"*Academic Branch Details*\n\n{cleaned_answer}"
 
-    # 6. Attach Source Document References (if available)
-    # The user requested to remove the source template from the final WhatsApp message.
-
-    return cleaned_answer
+    return strip_emojis(cleaned_answer)
 
 
 def calculate_admission_chance(
@@ -365,16 +370,16 @@ def calculate_admission_chance(
     margin = round(candidate_cutoff - closing_cutoff, 2)
     if margin >= 2.0:
         return (
-            "🟢 *Safe Choice*",
+            "*Safe Choice*",
             f"High chance! Your cutoff is +{margin:g} above last year's closing mark.",
         )
     elif margin >= -2.0:
         return (
-            "🟡 *Target Choice*",
+            "*Target Choice*",
             f"Competitive! Cutoff is within {abs(margin):g} marks of closing mark.",
         )
     return (
-        "🔴 *Reach Choice*",
+        "*Reach Choice*",
         f"Aspirational! Previous closing mark was {abs(margin):g} marks higher.",
     )
 

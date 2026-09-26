@@ -11,7 +11,7 @@ from api.services.choice_list_service import generate_choice_sheet_file
 
 def render_choice_sheet_view() -> None:
     """Render 3-tier choice filling recommendation table and downloadable official PDF."""
-    st.markdown("## 📋 Personalized 3-Tier TNEA Choice Filling Order")
+    st.markdown("## Personalized 3-Tier TNEA Choice Filling Order")
     st.caption(
         "Strategically partitioned recommendation designed to balance dream "
         "aspirational colleges with secure target and safety options."
@@ -29,7 +29,7 @@ def render_choice_sheet_view() -> None:
     with c3:
         st.write("")
         st.write("")
-        st.button("🔄 Regenerate Optimal Choices")
+        st.button("Regenerate Optimal Choices")
 
     # Generate choices from database
     async def _fetch_choices_pdf():
@@ -56,68 +56,68 @@ def render_choice_sheet_view() -> None:
     # Sample table data mirroring the 3 tiers
     choices_data = [
         {
-            "Tier": "🟠 Ambitious (Dream)",
+            "Tier": "Ambitious (Dream)",
             "College": "PSG College of Technology (2006)",
             "Branch": "Computer Science & Engg (CSE)",
             "Closing Cutoff": 197.0,
         },
         {
-            "Tier": "🟠 Ambitious (Dream)",
+            "Tier": "Ambitious (Dream)",
             "College": "PSG College of Technology (2006)",
             "Branch": "Information Technology (IT)",
             "Closing Cutoff": 195.5,
         },
         {
-            "Tier": "🟠 Ambitious (Dream)",
+            "Tier": "Ambitious (Dream)",
             "College": "Coimbatore Institute of Tech (2007)",
             "Branch": "Computer Science & Engg (CSE)",
             "Closing Cutoff": 194.0,
         },
         {
-            "Tier": "🟡 Target (Realistic)",
+            "Tier": "Target (Realistic)",
             "College": "Sri Krishna College of Engg (2722)",
             "Branch": "Computer Science & Engg (CSE)",
             "Closing Cutoff": 189.5,
         },
         {
-            "Tier": "🟡 Target (Realistic)",
+            "Tier": "Target (Realistic)",
             "College": "Sri Krishna College of Engg (2722)",
             "Branch": "AI & Data Science (AI & DS)",
             "Closing Cutoff": 187.5,
         },
         {
-            "Tier": "🟡 Target (Realistic)",
+            "Tier": "Target (Realistic)",
             "College": "Sri Krishna College of Engg (2722)",
             "Branch": "Information Technology (IT)",
             "Closing Cutoff": 188.0,
         },
         {
-            "Tier": "🟡 Target (Realistic)",
+            "Tier": "Target (Realistic)",
             "College": "Kumaraguru College of Tech (2712)",
             "Branch": "Computer Science & Engg (CSE)",
             "Closing Cutoff": 191.0,
         },
         {
-            "Tier": "🟢 Safe (Guaranteed)",
+            "Tier": "Safe (Guaranteed)",
             "College": "Sri Krishna College of Engg (2722)",
             "Branch": "Electronics & Communication (ECE)",
             "Closing Cutoff": 186.0,
         },
         {
-            "Tier": "🟢 Safe (Guaranteed)",
+            "Tier": "Safe (Guaranteed)",
             "College": "Sri Eshwar College of Engg (2739)",
             "Branch": "Computer Science & Engg (CSE)",
             "Closing Cutoff": 184.0,
         },
         {
-            "Tier": "🟢 Safe (Guaranteed)",
+            "Tier": "Safe (Guaranteed)",
             "College": "Bannari Amman Institute (2702)",
             "Branch": "Computer Science & Engg (CSE)",
             "Closing Cutoff": 183.5,
         },
     ]
 
-    st.markdown("### 🎯 Recommended Choice Filling Sequence")
+    st.markdown("### Recommended Choice Filling Sequence")
     df_choices = pd.DataFrame(choices_data)
     st.dataframe(df_choices, use_container_width=True, hide_index=True)
 
@@ -126,14 +126,14 @@ def render_choice_sheet_view() -> None:
     col_dl1, col_dl2 = st.columns([2, 1])
     with col_dl1:
         st.markdown(
-            "#### 📄 Official TNEA Choice Sheet (PDF)\n"
+            "#### Official TNEA Choice Sheet (PDF)\n"
             "This report is formatted specifically for easy reference during "
             "choice-locking on **tneaonline.org**."
         )
     with col_dl2:
         if pdf_ready:
             st.download_button(
-                label="📥 Download Choice Sheet PDF",
+                label="Download Choice Sheet PDF",
                 data=pdf_bytes,
                 file_name=f"TNEA_Choice_Sheet_{int(cutoff_val)}_{comm_val}.pdf",
                 mime="application/pdf",

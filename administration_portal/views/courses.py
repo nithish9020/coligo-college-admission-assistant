@@ -15,7 +15,6 @@ from utils.styling import (
     pill,
     render_footer,
     render_stat_row,
-    row_icon_html,
 )
 
 PROGRAM_LEVELS: list[str] = ["UG", "PG", "Diploma", "PhD"]
@@ -148,9 +147,7 @@ def render_courses() -> None:
 
     header_left, header_right = st.columns([4, 1.2])
     with header_left:
-        page_header(
-            "\U0001f4d8", "Courses", "Manage all courses offered by your college"
-        )
+        page_header("", "Courses", "Manage all courses offered by your college")
     with header_right:
         st.markdown("<div style='height:0.6rem'></div>", unsafe_allow_html=True)
         if st.button("+ Add New Course", type="primary", use_container_width=True):
@@ -173,21 +170,21 @@ def render_courses() -> None:
     draft_count = sum(1 for c in courses if c["status"] == "draft")
     render_stat_row(
         [
-            ("Total Courses", len(courses), "\U0001f4d8", "Active courses"),
-            ("Total Intake", total_intake, "\U0001f393", "Total seats"),
+            ("Total Courses", len(courses), "", "Active courses"),
+            ("Total Intake", total_intake, "", "Total seats"),
             (
                 "Average Duration",
                 common_duration,
-                "⌛",
+                "",
                 "Across all courses",
             ),
-            ("Draft Courses", draft_count, "\U0001f4c4", "Courses in draft"),
+            ("Draft Courses", draft_count, "", "Courses in draft"),
         ]
     )
 
     search = st.text_input(
         "Search courses",
-        placeholder="\U0001f50d  Search courses...",
+        placeholder="Search courses...",
         label_visibility="collapsed",
     )
     if search:
@@ -205,10 +202,8 @@ def render_courses() -> None:
     for course in courses:
         row = st.columns([3, 1, 1.2, 1, 1.3, 1])
         with row[0]:
-            course_icon = row_icon_html("\U0001f4bb", "purple")
             st.markdown(
                 f'<div style="display:flex;align-items:center;gap:10px;">'
-                f"{course_icon}"
                 f"<span>{course['course_name']}</span></div>",
                 unsafe_allow_html=True,
             )
@@ -223,10 +218,10 @@ def render_courses() -> None:
         row[4].markdown(badge(course["status"].capitalize()), unsafe_allow_html=True)
         with row[5]:
             e_col, d_col = st.columns(2)
-            if e_col.button("✏️", key=f"edit_course_{course['id']}"):
+            if e_col.button("Edit", key=f"edit_course_{course['id']}"):
                 st.session_state.course_editing_id = course["id"]
                 st.rerun()
-            if d_col.button("\U0001f5d1️", key=f"delete_course_{course['id']}"):
+            if d_col.button("Delete", key=f"delete_course_{course['id']}"):
                 try:
                     delete_course(token, course["id"])
                     st.rerun()

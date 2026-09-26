@@ -181,10 +181,10 @@ async def router_node(state: AgentState) -> dict[str, Any]:
     # 0. Check for off-topic prompt injections / non-admissions queries
     if _detect_off_topic(lower):
         redirect_msg = (
-            "👋 *I am your dedicated TNEA Admissions Assistant!*\n\n"
+            "*I am your dedicated TNEA Admissions Assistant!*\n\n"
             "I specialize exclusively in Tamil Nadu Engineering Admissions, college "
             "cutoffs, courses, and fee structures.\n\n"
-            "💡 *Ask me things like:*\n"
+            "*Ask me things like:*\n"
             "• *Can I get SKCET CSE with 185 cutoff?*\n"
             "• *What is the fee structure for Mechanical?*\n"
             "• *How to calculate my cutoff?*\n"

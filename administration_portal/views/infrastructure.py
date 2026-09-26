@@ -6,14 +6,14 @@ from utils.api_client import (
     list_facilities,
     update_facility,
 )
-from utils.styling import page_header, render_footer, row_icon_html
+from utils.styling import page_header, render_footer
 
 
 def render_infrastructure() -> None:
     token = st.session_state.token
 
     page_header(
-        "\U0001f3d7",
+        "",
         "Infrastructure & Facilities",
         "List the facilities available at your campus",
         "green",
@@ -57,10 +57,8 @@ def render_infrastructure() -> None:
         st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
         cols = st.columns([3, 1])
         with cols[0]:
-            facility_icon = row_icon_html("\U0001f3db️", "purple")
             st.markdown(
                 f'<div class="coligo-item-row">'
-                f"{facility_icon}"
                 f'<span class="coligo-item-title">{facility["name"]}</span></div>',
                 unsafe_allow_html=True,
             )
@@ -94,12 +92,10 @@ def render_infrastructure() -> None:
                     st.rerun()
             else:
                 e_col, d_col = st.columns(2)
-                if e_col.button("✏️ Edit", key=f"edit_btn_facility_{facility['id']}"):
+                if e_col.button("Edit", key=f"edit_btn_facility_{facility['id']}"):
                     st.session_state[edit_key] = True
                     st.rerun()
-                if d_col.button(
-                    "\U0001f5d1️ Delete", key=f"del_facility_{facility['id']}"
-                ):
+                if d_col.button("Delete", key=f"del_facility_{facility['id']}"):
                     try:
                         delete_facility(token, facility["id"])
                         st.rerun()

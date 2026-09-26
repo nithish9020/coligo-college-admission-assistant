@@ -97,10 +97,10 @@ Modern, scalable backend service providing API endpoints for college admission
 counseling, RAG document search, and user interactions.
 
 #### Key Features:
-* 🩺 **Health Checks**: Endpoint `/health` and `/health/detailed` for monitoring.
-* 💬 **WhatsApp Webhook**: `/webhook` receives and routes Meta Cloud API events.
-* 📚 **Interactive Swagger Documentation**: Available at `/docs`.
-* 📖 **ReDoc Documentation**: Available at `/redoc`.
+* **Health Checks**: Endpoint `/health` and `/health/detailed` for monitoring.
+* **WhatsApp Webhook**: `/webhook` receives and routes Meta Cloud API events.
+* **Interactive Swagger Documentation**: Available at `/docs`.
+* **ReDoc Documentation**: Available at `/redoc`.
 """,
     docs_url=settings.DOCS_URL,
     redoc_url=settings.REDOC_URL,

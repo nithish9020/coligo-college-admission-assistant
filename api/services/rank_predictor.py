@@ -174,16 +174,16 @@ def format_rank_prediction_message(cutoff: float, community: str = "BC") -> str:
     res = predict_tnea_rank(cutoff, community)
 
     return (
-        f"📈 *TNEA Rank & Counselling Round Prediction*\n\n"
+        f"*TNEA Rank & Counselling Round Prediction*\n\n"
         f"• *Your Cutoff:* *{res['cutoff']:g} / 200.0*\n"
         f"• *Community Quota:* *{res['community']}*\n\n"
-        f"🎯 *Predicted State Overall Rank:*\n"
+        f"*Predicted State Overall Rank:*\n"
         f"• *~{res['overall_rank_min']:,} to {res['overall_rank_max']:,}*\n\n"
-        f"🏷️ *Predicted Community Rank ({res['community']}):*\n"
+        f"*Predicted Community Rank ({res['community']}):*\n"
         f"• *~{res['community_rank_min']:,} to {res['community_rank_max']:,}*\n\n"
-        f"🏁 *Eligible Counselling Stage:*\n"
+        f"*Eligible Counselling Stage:*\n"
         f"• *ROUND {res['round_number']}* — _{res['round_name']}_\n\n"
-        f"💡 *Expert Round Strategy:*\n"
+        f"*Expert Round Strategy:*\n"
         f"{res['strategy']}\n\n"
         f"Would you like me to generate your *3-Tier Choice Filling Order* "
         f"for Round {res['round_number']}?"

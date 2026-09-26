@@ -38,7 +38,7 @@ BRANCH_OPTIONS = [
 
 def render_upward_simulator_view() -> None:
     """Render interactive TNEA Upward Movement decision simulator."""
-    st.markdown("## 🔄 TNEA Upward Movement & Vacancy Simulator")
+    st.markdown("## TNEA Upward Movement & Vacancy Simulator")
     st.caption(
         "Evaluate your tentative seat allotment, calculate upgrade probabilities "
         "for higher choices, and select the optimal counselling strategy."
@@ -48,7 +48,7 @@ def render_upward_simulator_view() -> None:
     default_comm = st.session_state.get("community", "BC")
 
     with st.container(border=True):
-        st.markdown("#### 1️⃣ Your Tentative Allotment Details")
+        st.markdown("#### 1. Your Tentative Allotment Details")
         c1, c2 = st.columns(2)
         with c1:
             college_sel = st.selectbox(
@@ -89,7 +89,7 @@ def render_upward_simulator_view() -> None:
         )
 
         st.button(
-            "🚀 Simulate Upward Movement Chances",
+            "Simulate Upward Movement Chances",
             type="primary",
             use_container_width=True,
         )
@@ -122,7 +122,7 @@ def render_upward_simulator_view() -> None:
 
     if sim_res:
         st.write("")
-        st.markdown("#### 2️⃣ Strategic Recommendation")
+        st.markdown("#### 2. Strategic Recommendation")
 
         rec_color = (
             "#059669" if "Option 2" in sim_res["recommended_option"] else "#2563EB"
@@ -138,7 +138,7 @@ def render_upward_simulator_view() -> None:
             unsafe_allow_html=True,
         )
 
-        st.markdown("#### 3️⃣ Upward Movement Target Breakdown")
+        st.markdown("#### 3. Upward Movement Target Breakdown")
         targets = sim_res.get("upward_targets", [])
         if targets:
             table_rows = []
@@ -150,7 +150,7 @@ def render_upward_simulator_view() -> None:
                         "Target Branch": t["branch_name"],
                         "2024 Cutoff": f"{t['cutoff_mark']:g}",
                         "Cutoff Gap": gap_str,
-                        "Likelihood": f"{t['probability_icon']} {t['probability_label']}",
+                        "Likelihood": f"{t['probability_label']}",
                         "Clearance Est.": f"{t['probability_pct']}%",
                     }
                 )
@@ -160,13 +160,13 @@ def render_upward_simulator_view() -> None:
             st.info("No higher cutoff target branches found for the chosen filters.")
 
         st.write("")
-        st.markdown("#### 4️⃣ Complete TNEA Round Decision Matrix")
+        st.markdown("#### 4. Complete TNEA Round Decision Matrix")
         m1, m2, m3 = st.columns(3)
         with m1:
             st.markdown(
                 """
                 <div style="background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 14px;">
-                    <div style="font-weight: 700; color: #334155;">1️⃣ Accept & Join</div>
+                    <div style="font-weight: 700; color: #334155;">1. Accept & Join</div>
                     <p style="font-size: 0.85rem; color: #64748B; margin-top: 6px;">
                         Locks your current seat immediately. Allotment order generated; you exit counselling.
                     </p>
@@ -179,7 +179,7 @@ def render_upward_simulator_view() -> None:
             st.markdown(
                 """
                 <div style="background: #F0FDF4; border: 1.5px solid #22C55E; border-radius: 8px; padding: 14px;">
-                    <div style="font-weight: 700; color: #166534;">2️⃣ Accept & Upward 🌟</div>
+                    <div style="font-weight: 700; color: #166534;">2. Accept & Upward</div>
                     <p style="font-size: 0.85rem; color: #15803D; margin-top: 6px;">
                         Retains current seat safely. If a choice ranked higher vacates, you are automatically upgraded!
                     </p>
@@ -192,7 +192,7 @@ def render_upward_simulator_view() -> None:
             st.markdown(
                 """
                 <div style="background: #FEF2F2; border: 1.5px solid #EF4444; border-radius: 8px; padding: 14px;">
-                    <div style="font-weight: 700; color: #991B1B;">3️⃣ Decline & Upward</div>
+                    <div style="font-weight: 700; color: #991B1B;">3. Decline & Upward</div>
                     <p style="font-size: 0.85rem; color: #B91C1C; margin-top: 6px;">
                         Rejects current seat completely. If higher choices don't vacate, you leave empty-handed!
                     </p>

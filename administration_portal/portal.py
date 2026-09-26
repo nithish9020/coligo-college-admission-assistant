@@ -43,7 +43,6 @@ from app.components.upward_simulator_view import render_upward_simulator_view
 
 st.set_page_config(
     page_title="Coligo — TNEA Admissions & College Hub",
-    page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded",
 )

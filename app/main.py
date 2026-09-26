@@ -16,7 +16,6 @@ from app.components.upward_simulator_view import render_upward_simulator_view
 # Configure page settings
 st.set_page_config(
     page_title="Coligo — TNEA Admissions Portal",
-    page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -75,21 +74,21 @@ def main() -> None:
     # Render sidebar and handle navigation
     selected_view = render_sidebar()
 
-    if selected_view == "💬 AI Admissions Chatbot":
+    if selected_view == "AI Admissions Chatbot":
         render_chat_view()
-    elif selected_view == "📊 Cutoff Visualizer & Graphs":
+    elif selected_view == "Cutoff Visualizer & Graphs":
         render_analytics_view()
-    elif selected_view == "⚖️ Head-to-Head College Comparator":
+    elif selected_view == "Head-to-Head College Comparator":
         render_compare_view()
-    elif selected_view == "🥧 Seat Matrix & Quota Pie Charts":
+    elif selected_view == "Seat Matrix & Quota Pie Charts":
         render_matrix_view()
-    elif selected_view == "💼 Placement & Recruiter Analytics":
+    elif selected_view == "Placement & Recruiter Analytics":
         render_placement_view()
-    elif selected_view == "📋 3-Tier Choice Sheet Builder":
+    elif selected_view == "3-Tier Choice Sheet Builder":
         render_choice_sheet_view()
-    elif selected_view == "📈 TNEA Rank & Round Predictor":
+    elif selected_view == "TNEA Rank & Round Predictor":
         render_rank_predictor_view()
-    elif selected_view == "🔄 Upward Movement Simulator":
+    elif selected_view == "Upward Movement Simulator":
         render_upward_simulator_view()
 
 

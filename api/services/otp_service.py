@@ -78,10 +78,10 @@ async def send_whatsapp_otp(phone: str) -> tuple[bool, str, int]:
     }
 
     message = (
-        "🔐 *Coligo Admissions Portal — Login Code*\n\n"
+        "*Coligo Admissions Portal — Login Code*\n\n"
         f"Your 6-digit verification code is: *{code}*\n\n"
-        "⏰ Valid for 5 minutes.\n"
-        "⚠️ Do not share this code with anyone."
+        "Valid for 5 minutes.\n"
+        "Do not share this code with anyone."
     )
 
     try:

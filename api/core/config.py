@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     CUTOFF_CACHE_TTL_SECONDS: int = 86400  # 24 hours
 
     # Speech & Voice Note Settings (Edge-TTS)
-    ENABLE_VOICE_RESPONSES: bool = True
+    ENABLE_VOICE_RESPONSES: bool = False
     DEFAULT_TAMIL_VOICE: str = "ta-IN-PallaviNeural"
     DEFAULT_ENGLISH_VOICE: str = "en-IN-NeerjaNeural"
 

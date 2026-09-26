@@ -32,7 +32,7 @@ def clean_text_for_speech(text: str) -> str:
     cleaned = re.sub(r"^[ \t]*[#•\-*+>][ \t]*", "", cleaned, flags=re.MULTILINE)
     # Remove emojis and special decorative symbols
     cleaned = re.sub(
-        r"[\U00010000-\U0010ffff]|[\u2600-\u27bf]|[\u2300-\u23ff]|🏛️|🟢|🌟|📊|🎓|💡|📞|📍|📄|🎙️|✅|⚠️|❌|📌",
+        r"[\U00010000-\U0010ffff]|[\u2600-\u27bf]|[\u2300-\u23ff]",
         "",
         cleaned,
     )

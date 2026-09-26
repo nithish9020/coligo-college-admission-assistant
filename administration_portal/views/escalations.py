@@ -10,7 +10,6 @@ from utils.styling import (
     badge,
     page_header,
     render_footer,
-    row_icon_html,
 )
 
 TEMPLATES = {
@@ -41,7 +40,7 @@ def render_escalations() -> None:
     token = st.session_state.token
 
     page_header(
-        "🎧",
+        "",
         "Counselor Live WhatsApp Takeover",
         "Two-way WhatsApp intervention desk for out-of-scope inquiries, sensitive queries, and personalized student counselling",
         "orange",
@@ -62,11 +61,11 @@ def render_escalations() -> None:
     # Metrics row
     m1, m2, m3 = st.columns(3)
     with m1:
-        st.metric("🔴 Pending Review", pending_count)
+        st.metric("Pending Review", pending_count)
     with m2:
-        st.metric("🟡 In Live Takeover (AI Paused)", takeover_count)
+        st.metric("In Live Takeover (AI Paused)", takeover_count)
     with m3:
-        st.metric("🟢 Resolved Inquiries", resolved_count)
+        st.metric("Resolved Inquiries", resolved_count)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -91,7 +90,7 @@ def render_escalations() -> None:
     else:
         filtered = escalations
 
-    st.markdown(f"#### 📥 Active Inquiries & Live Chat Queue ({len(filtered)})")
+    st.markdown(f"#### Active Inquiries & Live Chat Queue ({len(filtered)})")
 
     if not filtered:
         st.info("No escalations found in this queue category.")
@@ -115,9 +114,8 @@ def render_escalations() -> None:
             ):
                 col_info, col_status = st.columns([3, 1])
                 with col_info:
-                    sender_icon = row_icon_html("📱" if is_whatsapp else "💻", "purple")
                     st.markdown(
-                        f'<div class="coligo-item-row">{sender_icon}'
+                        f'<div class="coligo-item-row">'
                         f'<span class="coligo-item-title"><strong>Student Channel:</strong> {sender}</span></div>',
                         unsafe_allow_html=True,
                     )
@@ -129,11 +127,11 @@ def render_escalations() -> None:
                     )
 
                 st.markdown("**Student Inquiries / Conversation:**")
-                st.info(f"🗣️ {item.get('query_text')}")
+                st.info(f"{item.get('query_text')}")
 
                 if item.get("counselor_reply"):
                     st.markdown("**Previous Counselor Reply:**")
-                    st.success(f"👨‍🏫 {item.get('counselor_reply')}")
+                    st.success(f"{item.get('counselor_reply')}")
                     if item.get("resolved_at"):
                         st.caption(
                             f"Resolved at: {item['resolved_at'][:19].replace('T', ' ')}"
@@ -141,14 +139,14 @@ def render_escalations() -> None:
 
                 if status == "in_progress":
                     st.warning(
-                        "⏸️ **AI Bot Paused:** Automated bot replies are currently paused for this student "
+                        "**AI Bot Paused:** Automated bot replies are currently paused for this student "
                         "so you can chat freely without AI interference. When you resolve the ticket or the "
                         "student types */resume*, automated AI will resume."
                     )
 
                 if status in ("pending", "in_progress"):
                     st.markdown("---")
-                    st.markdown("##### 💬 Send Live WhatsApp Reply to Student")
+                    st.markdown("##### Send Live WhatsApp Reply to Student")
 
                     # Quick response template buttons
                     st.caption("Quick Reply Templates:")
@@ -157,16 +155,16 @@ def render_escalations() -> None:
                     if template_key not in st.session_state:
                         st.session_state[template_key] = ""
 
-                    if t1.button("🏫 Campus Visit", key=f"btn_tpl_cv_{esc_id}"):
+                    if t1.button("Campus Visit", key=f"btn_tpl_cv_{esc_id}"):
                         st.session_state[template_key] = TEMPLATES["campus_visit"]
                         st.rerun()
-                    if t2.button("📊 Cutoff Guidance", key=f"btn_tpl_cg_{esc_id}"):
+                    if t2.button("Cutoff Guidance", key=f"btn_tpl_cg_{esc_id}"):
                         st.session_state[template_key] = TEMPLATES["cutoff_guidance"]
                         st.rerun()
-                    if t3.button("💰 Fee & Scholarship", key=f"btn_tpl_fs_{esc_id}"):
+                    if t3.button("Fee & Scholarship", key=f"btn_tpl_fs_{esc_id}"):
                         st.session_state[template_key] = TEMPLATES["fees_scholarship"]
                         st.rerun()
-                    if t4.button("📞 Direct Call", key=f"btn_tpl_dc_{esc_id}"):
+                    if t4.button("Direct Call", key=f"btn_tpl_dc_{esc_id}"):
                         st.session_state[template_key] = TEMPLATES["direct_call"]
                         st.rerun()
 
@@ -182,7 +180,7 @@ def render_escalations() -> None:
 
                     with btn_col1:
                         if st.button(
-                            "📤 Send WhatsApp & Resolve",
+                            "Send WhatsApp & Resolve",
                             key=f"send_resolve_{esc_id}",
                             type="primary",
                             disabled=not reply_text.strip(),
@@ -197,10 +195,10 @@ def render_escalations() -> None:
                                 )
                                 if res.get("delivered_to_whatsapp"):
                                     st.success(
-                                        "✅ Message delivered to student's WhatsApp! Ticket resolved."
+                                        "Message delivered to student's WhatsApp! Ticket resolved."
                                     )
                                 else:
-                                    st.success("✅ Reply saved and ticket resolved.")
+                                    st.success("Reply saved and ticket resolved.")
                                 st.session_state[template_key] = ""
                                 st.rerun()
                             except APIError as e:
@@ -208,7 +206,7 @@ def render_escalations() -> None:
 
                     with btn_col2:
                         if st.button(
-                            "💬 Send & Keep in Takeover",
+                            "Send & Keep in Takeover",
                             key=f"send_takeover_{esc_id}",
                             disabled=not reply_text.strip(),
                         ):
@@ -222,11 +220,11 @@ def render_escalations() -> None:
                                 )
                                 if res.get("delivered_to_whatsapp"):
                                     st.success(
-                                        "✅ Message delivered! Session kept in live takeover."
+                                        "Message delivered! Session kept in live takeover."
                                     )
                                 else:
                                     st.success(
-                                        "✅ Reply saved! Session kept in live takeover."
+                                        "Reply saved! Session kept in live takeover."
                                     )
                                 st.session_state[template_key] = ""
                                 st.rerun()
@@ -246,9 +244,7 @@ def render_escalations() -> None:
                     st.markdown("---")
                     r_col1, _ = st.columns([1.5, 3])
                     with r_col1:
-                        if st.button(
-                            "🔄 Reopen / Takeover Chat", key=f"reopen_{esc_id}"
-                        ):
+                        if st.button("Reopen / Takeover Chat", key=f"reopen_{esc_id}"):
                             try:
                                 update_escalation_status(token, esc_id, "in_progress")
                                 st.success("Reopened chat in Live Takeover mode.")

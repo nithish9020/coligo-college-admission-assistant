@@ -1,7 +1,7 @@
 """Streamlit Chat & Agent Streaming Integration Service."""
 
 import asyncio
-import concurrent.futures
+import threading
 import time
 from typing import Any, Coroutine, Generator, cast
 
@@ -13,20 +13,30 @@ from api.services.student_profile_service import get_student_profile
 
 logger = get_logger(__name__)
 
+_bg_loop: asyncio.AbstractEventLoop | None = None
+_bg_thread: threading.Thread | None = None
+_bg_lock = threading.Lock()
+
+
+def _get_background_loop() -> asyncio.AbstractEventLoop:
+    global _bg_loop, _bg_thread
+    with _bg_lock:
+        if _bg_loop is None or _bg_loop.is_closed():
+            _bg_loop = asyncio.new_event_loop()
+            _bg_thread = threading.Thread(
+                target=_bg_loop.run_forever,
+                name="agent_streamer_bg_loop",
+                daemon=True,
+            )
+            _bg_thread.start()
+        return _bg_loop
+
 
 def _run_async_safely(coro: Coroutine[Any, Any, Any]) -> Any:
-    """Execute coroutine safely even if an asyncio loop is active in the current thread."""
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-
-    if loop and loop.is_running():
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(lambda: asyncio.run(coro))
-            return future.result()
-    else:
-        return asyncio.run(coro)
+    """Execute coroutine safely on the persistent background event loop."""
+    loop = _get_background_loop()
+    future = asyncio.run_coroutine_threadsafe(coro, loop)
+    return future.result()
 
 
 def stream_agent_response(
@@ -49,6 +59,9 @@ def stream_agent_response(
 
     try:
         answer, sources = _run_async_safely(_run_query())
+        from api.services.message_formatter import strip_emojis
+
+        answer = strip_emojis(answer)
     except Exception as e:
         logger.error(
             "agent_stream_execution_failed",

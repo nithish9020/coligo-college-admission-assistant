@@ -64,20 +64,20 @@ COLLEGE_CODES: dict[str, dict[str, str]] = {
 }
 
 TNEA_FORMULA_REPLY = (
-    "📊 *Official TNEA Cutoff Calculation (Out of 200 Marks):*\n\n"
+    "*Official TNEA Cutoff Calculation (Out of 200 Marks):*\n\n"
     "Cutoff = *Mathematics* + (*Physics* ÷ 2) + (*Chemistry* ÷ 2)\n\n"
     "• Mathematics: Max 100 marks (weightage: 100%)\n"
     "• Physics: Max 50 marks (Score out of 100 ÷ 2)\n"
     "• Chemistry: Max 50 marks (Score out of 100 ÷ 2)\n\n"
-    "💡 *Example:*\n"
+    "*Example:*\n"
     "If you scored Maths 96, Physics 90, Chemistry 88:\n"
-    "👉 96 + (90 ÷ 2) + (88 ÷ 2) = 96 + 45 + 44 = *185.0 / 200.0*\n\n"
+    "- 96 + (90 ÷ 2) + (88 ÷ 2) = 96 + 45 + 44 = *185.0 / 200.0*\n\n"
     "Simply reply with your subject marks (e.g. *Maths 95, Physics 90, Chemistry 88*) "
     "and I will calculate it and check your college chances!"
 )
 
 TNEA_DOCS_REPLY = (
-    "📋 *Official TNEA Certificate Verification Checklist:*\n\n"
+    "*Official TNEA Certificate Verification Checklist:*\n\n"
     "1. *10th Standard Mark Sheet* (Proof of Date of Birth)\n"
     "2. *11th & 12th (+2) Mark Sheets / Internet Copy*\n"
     "3. *Transfer Certificate (TC)* from last studied school\n"
@@ -92,7 +92,7 @@ TNEA_DOCS_REPLY = (
 )
 
 TNEA_PROCESS_REPLY = (
-    "🎓 *TNEA Engineering Admissions Step-by-Step Procedure:*\n\n"
+    "*TNEA Engineering Admissions Step-by-Step Procedure:*\n\n"
     "1. *Online Registration & Document Upload:* Register on tneaonline.org\n"
     "2. *Random Number & Rank List Publication:* State overall & community rank list\n"
     "3. *Online Choice Filling (3 Days):* Add preferred colleges and "
@@ -104,32 +104,32 @@ TNEA_PROCESS_REPLY = (
 )
 
 TNEA_SCHEDULE_REPLY = (
-    "📅 *Official TNEA Counselling Schedule & Round Architecture:*\n\n"
+    "*Official TNEA Counselling Schedule & Round Architecture:*\n\n"
     "• *Round 1:* Typically ranks 1 to 25,000 (Cutoff ~200.0 to 179.0)\n"
     "• *Round 2:* Typically ranks 25,001 to 65,000 (Cutoff ~178.9 to 145.0)\n"
     "• *Round 3:* Typically ranks 65,001 to 1,30,000 (Cutoff ~144.9 to 77.5)\n\n"
-    "🕒 *Each Round 5-Day Lifecycle:*\n"
+    "*Each Round 5-Day Lifecycle:*\n"
     "• *Days 1–3 (Choice Filling):* 3 full days to add & order college choices\n"
     "• *Day 4 (Tentative Allotment):* Result published by 10:00 AM\n"
     "• *Days 4–5 (Confirmation):* Confirm with Accept / Accept & Upward\n"
     "• *Day 6:* Final allotment release & college reporting date\n\n"
-    "💡 Reply with *Upward Movement* to understand how to upgrade your seat!"
+    "Reply with *Upward Movement* to understand how to upgrade your seat!"
 )
 
 TNEA_UPWARD_MOVEMENT_REPLY = (
-    "🚀 *How TNEA Upward Movement Works (The Golden Rule):*\n\n"
+    "*How TNEA Upward Movement Works (The Golden Rule):*\n\n"
     "When you receive your tentative allotment, you get 5 confirmation options:\n\n"
-    "1. ✅ *Accept and Join:* You are 100% happy with this seat and confirm "
+    "1. *Accept and Join:* You are 100% happy with this seat and confirm "
     "admission.\n"
-    "2. 🌟 *Accept and Upward (RECOMMENDED):* You KEEP your currently allotted "
+    "2. *Accept and Upward (RECOMMENDED):* You KEEP your currently allotted "
     "seat as a guaranteed backup, BUT if a higher-priority choice from your list "
     "becomes vacant, TNEA upgrades you automatically! You NEVER lose your "
     "current seat.\n"
-    "3. ❌ *Decline and Upward:* You reject the current seat and only wait for "
+    "3. *Decline and Upward:* You reject the current seat and only wait for "
     "higher choices.\n"
-    "4. ⏭️ *Decline and Next Round:* You skip to the next counselling round.\n"
-    "5. 🚪 *Quit:* You exit TNEA counselling.\n\n"
-    "💡 *Always select 'Accept and Upward' if you want a better college without "
+    "4. *Decline and Next Round:* You skip to the next counselling round.\n"
+    "5. *Quit:* You exit TNEA counselling.\n\n"
+    "*Always select 'Accept and Upward' if you want a better college without "
     "risking your seat!*"
 )
 
@@ -144,10 +144,10 @@ def match_instant_faq(query: str) -> Optional[Tuple[str, list[str]]]:
         for key, data in COLLEGE_CODES.items():
             if key in q:
                 ans = (
-                    f"🏫 *{data['name']}*\n\n"
+                    f"*{data['name']}*\n\n"
                     f"• *TNEA College Code:* *{data['code']}*\n"
                     f"• *Location:* {data['location']}\n\n"
-                    f"💡 Reply with *{key.upper()} cutoffs* or *fees* "
+                    f"Reply with *{key.upper()} cutoffs* or *fees* "
                     "to view detailed records!"
                 )
                 logger.info("instant_faq_hit", topic="college_code", college=key)
