@@ -1,12 +1,11 @@
 """3-Tier Choice Sheet Builder & Instant PDF Exporter Component."""
 
-import asyncio
-
 import pandas as pd
 import streamlit as st
 
 from api.core.database import async_session_factory
 from api.services.choice_list_service import generate_choice_sheet_file
+from app.services.agent_streamer import run_async_safely
 
 
 def render_choice_sheet_view() -> None:
@@ -44,7 +43,7 @@ def render_choice_sheet_view() -> None:
 
     with st.spinner("Generating 3-tier recommendations and compiling official PDF..."):
         try:
-            filepath, _ = asyncio.run(_fetch_choices_pdf())
+            filepath, _ = run_async_safely(_fetch_choices_pdf())
             with open(filepath, "rb") as f:
                 pdf_bytes = f.read()
             pdf_ready = True

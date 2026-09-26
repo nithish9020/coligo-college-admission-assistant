@@ -32,11 +32,14 @@ def _get_background_loop() -> asyncio.AbstractEventLoop:
         return _bg_loop
 
 
-def _run_async_safely(coro: Coroutine[Any, Any, Any]) -> Any:
+def run_async_safely(coro: Coroutine[Any, Any, Any]) -> Any:
     """Execute coroutine safely on the persistent background event loop."""
     loop = _get_background_loop()
     future = asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
+
+
+_run_async_safely = run_async_safely
 
 
 def stream_agent_response(

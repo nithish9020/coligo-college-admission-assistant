@@ -1,4 +1,3 @@
-import asyncio
 import sys
 from pathlib import Path
 
@@ -86,7 +85,11 @@ def render_login() -> None:
                     st.error("Please enter a valid 10-digit mobile number.")
                 else:
                     with st.spinner("Dispatching verification code via WhatsApp..."):
-                        success, msg, _ = asyncio.run(send_whatsapp_otp(phone_input))
+                        from app.services.agent_streamer import run_async_safely
+
+                        success, msg, _ = run_async_safely(
+                            send_whatsapp_otp(phone_input)
+                        )
                         if success:
                             st.session_state["otp_sent_to"] = normalize_phone(
                                 phone_input

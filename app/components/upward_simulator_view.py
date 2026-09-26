@@ -1,6 +1,5 @@
 """TNEA Upward Movement & Vacancy Clearance Simulator Component for Coligo."""
 
-import asyncio
 from typing import Any
 
 import pandas as pd
@@ -8,6 +7,7 @@ import streamlit as st
 
 from api.core.database import async_session_factory
 from api.services.upward_movement_simulator import simulate_upward_movement
+from app.services.agent_streamer import run_async_safely
 
 COLLEGE_OPTIONS = [
     "Sri Krishna College of Engineering and Technology (SKCET)",
@@ -116,7 +116,7 @@ def render_upward_simulator_view() -> None:
     sim_res = None
     with st.spinner("Analyzing cutoff margins and historical vacancy clearance..."):
         try:
-            sim_res = asyncio.run(_run_sim())
+            sim_res = run_async_safely(_run_sim())
         except Exception as e:
             st.error(f"Simulation error: {e}")
 
