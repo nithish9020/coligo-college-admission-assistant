@@ -1,0 +1,910 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw.com",
+  "elements": [
+    {
+      "id": "14bf6534ee82",
+      "type": "text",
+      "x": 60,
+      "y": 25,
+      "width": 1480,
+      "height": 45,
+      "text": "Coligo \u2014 Tool Calling: One Student Query",
+      "fontSize": 30,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "9212c2c20644",
+      "type": "text",
+      "x": 60,
+      "y": 70,
+      "width": 1480,
+      "height": 30,
+      "text": "\u201c184 cutoff \u2022 CSE \u2022 Coimbatore\u201d",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#6c757d",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "1ed6f691b930",
+      "type": "rectangle",
+      "x": 70,
+      "y": 140,
+      "width": 180,
+      "height": 80,
+      "strokeColor": "#25D366",
+      "backgroundColor": "#d3f9d8",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "520207124c12",
+      "type": "text",
+      "x": 78,
+      "y": 148,
+      "width": 164,
+      "height": 64,
+      "text": "Student / WhatsApp",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "dd4ff16ea2ba",
+      "type": "rectangle",
+      "x": 310,
+      "y": 140,
+      "width": 180,
+      "height": 80,
+      "strokeColor": "#1971c2",
+      "backgroundColor": "#e7f5ff",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "6e7bb0b0b9f4",
+      "type": "text",
+      "x": 318,
+      "y": 148,
+      "width": 164,
+      "height": 64,
+      "text": "FastAPI",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "7940c9c92b12",
+      "type": "rectangle",
+      "x": 550,
+      "y": 140,
+      "width": 190,
+      "height": 80,
+      "strokeColor": "#7950f2",
+      "backgroundColor": "#f3f0ff",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "b253b84038b8",
+      "type": "text",
+      "x": 558,
+      "y": 148,
+      "width": 174,
+      "height": 64,
+      "text": "Router",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "71df91509409",
+      "type": "rectangle",
+      "x": 800,
+      "y": 140,
+      "width": 220,
+      "height": 80,
+      "strokeColor": "#e8590c",
+      "backgroundColor": "#fff4e6",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "bc7a2e82bb1c",
+      "type": "text",
+      "x": 808,
+      "y": 148,
+      "width": 204,
+      "height": 64,
+      "text": "Agent LLM",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "d03624017da7",
+      "type": "arrow",
+      "x": 250,
+      "y": 180,
+      "width": 60,
+      "height": 0,
+      "strokeColor": "#495057",
+      "roughness": 0,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          0
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle"
+    },
+    {
+      "id": "84edcddc4ddd",
+      "type": "arrow",
+      "x": 490,
+      "y": 180,
+      "width": 60,
+      "height": 0,
+      "strokeColor": "#495057",
+      "roughness": 0,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          0
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle"
+    },
+    {
+      "id": "a50881dd4cc7",
+      "type": "arrow",
+      "x": 740,
+      "y": 180,
+      "width": 60,
+      "height": 0,
+      "strokeColor": "#495057",
+      "roughness": 0,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          0
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle"
+    },
+    {
+      "id": "beb2ad63b6a2",
+      "type": "rectangle",
+      "x": 1060,
+      "y": 125,
+      "width": 450,
+      "height": 320,
+      "strokeColor": "#e8590c",
+      "backgroundColor": "#fff9f0",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "90d105c87440",
+      "type": "text",
+      "x": 1068,
+      "y": 133,
+      "width": 434,
+      "height": 304,
+      "text": "TOOL LOOP",
+      "fontSize": 17,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "ba9058bd8720",
+      "type": "text",
+      "x": 1080,
+      "y": 155,
+      "width": 410,
+      "height": 30,
+      "text": "1. Decide \u2192 2. Execute \u2192 3. Return",
+      "fontSize": 16,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#e8590c",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "15018283bceb",
+      "type": "rectangle",
+      "x": 1090,
+      "y": 205,
+      "width": 175,
+      "height": 75,
+      "strokeColor": "#e8590c",
+      "backgroundColor": "#fff4e6",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "eb69a4aa6439",
+      "type": "text",
+      "x": 1098,
+      "y": 213,
+      "width": 159,
+      "height": 59,
+      "text": "Tool Call\nquery_cutoffs()",
+      "fontSize": 19,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "ff5f19ec1e56",
+      "type": "rectangle",
+      "x": 1320,
+      "y": 205,
+      "width": 150,
+      "height": 75,
+      "strokeColor": "#343a40",
+      "backgroundColor": "#f1f3f5",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "d76a0a3a8ec1",
+      "type": "text",
+      "x": 1328,
+      "y": 213,
+      "width": 134,
+      "height": 59,
+      "text": "Tool\nExecutor",
+      "fontSize": 19,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "f07093b33670",
+      "type": "arrow",
+      "x": 1265,
+      "y": 242,
+      "width": 55,
+      "height": 0,
+      "strokeColor": "#e8590c",
+      "roughness": 0,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          55,
+          0
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle"
+    },
+    {
+      "id": "cb208bf979bd",
+      "type": "rectangle",
+      "x": 1320,
+      "y": 315,
+      "width": 150,
+      "height": 75,
+      "strokeColor": "#1971c2",
+      "backgroundColor": "#e7f5ff",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "98108c47a128",
+      "type": "text",
+      "x": 1328,
+      "y": 323,
+      "width": 134,
+      "height": 59,
+      "text": "PostgreSQL\n+ pgvector",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "b6abe4871f81",
+      "type": "arrow",
+      "x": 1395,
+      "y": 280,
+      "width": 0,
+      "height": 35,
+      "strokeColor": "#1971c2",
+      "roughness": 0,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          35
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle"
+    },
+    {
+      "id": "71daa43070d9",
+      "type": "arrow",
+      "x": 1320,
+      "y": 390,
+      "width": -240,
+      "height": 0,
+      "strokeColor": "#2b8a3e",
+      "roughness": 0,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -240,
+          0
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle"
+    },
+    {
+      "id": "139601a043d1",
+      "type": "text",
+      "x": 1090,
+      "y": 395,
+      "width": 220,
+      "height": 25,
+      "text": "Tool result",
+      "fontSize": 15,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#2b8a3e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "0c92fdbbe4aa",
+      "type": "arrow",
+      "x": 1080,
+      "y": 390,
+      "width": -170,
+      "height": -165,
+      "strokeColor": "#2b8a3e",
+      "roughness": 0,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -170,
+          -165
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle"
+    },
+    {
+      "id": "af5409322c03",
+      "type": "text",
+      "x": 785,
+      "y": 245,
+      "width": 260,
+      "height": 35,
+      "text": "LLM sees tool result",
+      "fontSize": 16,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#e8590c",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "33a1f1492d53",
+      "type": "rectangle",
+      "x": 800,
+      "y": 300,
+      "width": 220,
+      "height": 70,
+      "strokeColor": "#7950f2",
+      "backgroundColor": "#f3f0ff",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "306813f3a7b9",
+      "type": "text",
+      "x": 808,
+      "y": 308,
+      "width": 204,
+      "height": 54,
+      "text": "Another tool?",
+      "fontSize": 19,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "44b17c7d2bcb",
+      "type": "arrow",
+      "x": 910,
+      "y": 220,
+      "width": 0,
+      "height": 80,
+      "strokeColor": "#7950f2",
+      "roughness": 0,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          80
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle"
+    },
+    {
+      "id": "41203db362ea",
+      "type": "text",
+      "x": 1030,
+      "y": 475,
+      "width": 470,
+      "height": 30,
+      "text": "If needed: call another tool \u2192 repeat",
+      "fontSize": 16,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#6c757d",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "a4209524799a",
+      "type": "rectangle",
+      "x": 560,
+      "y": 500,
+      "width": 220,
+      "height": 75,
+      "strokeColor": "#2b8a3e",
+      "backgroundColor": "#ebfbee",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "8f58b48cb05e",
+      "type": "text",
+      "x": 568,
+      "y": 508,
+      "width": 204,
+      "height": 59,
+      "text": "Final Answer",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "608e2906eb68",
+      "type": "rectangle",
+      "x": 850,
+      "y": 500,
+      "width": 220,
+      "height": 75,
+      "strokeColor": "#6741d9",
+      "backgroundColor": "#f3f0ff",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "1d94820153c2",
+      "type": "text",
+      "x": 858,
+      "y": 508,
+      "width": 204,
+      "height": 59,
+      "text": "Critic",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "a2f2523596ef",
+      "type": "rectangle",
+      "x": 1140,
+      "y": 500,
+      "width": 220,
+      "height": 75,
+      "strokeColor": "#25D366",
+      "backgroundColor": "#d3f9d8",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "331aec6d027a",
+      "type": "text",
+      "x": 1148,
+      "y": 508,
+      "width": 204,
+      "height": 59,
+      "text": "WhatsApp Reply",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "480a6d3576e5",
+      "type": "arrow",
+      "x": 1020,
+      "y": 335,
+      "width": -350,
+      "height": 165,
+      "strokeColor": "#2b8a3e",
+      "roughness": 0,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -350,
+          165
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle"
+    },
+    {
+      "id": "6c65f46be652",
+      "type": "arrow",
+      "x": 780,
+      "y": 537,
+      "width": 70,
+      "height": 0,
+      "strokeColor": "#6741d9",
+      "roughness": 0,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          70,
+          0
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle"
+    },
+    {
+      "id": "5ddb208fca7e",
+      "type": "arrow",
+      "x": 1070,
+      "y": 537,
+      "width": 70,
+      "height": 0,
+      "strokeColor": "#25D366",
+      "roughness": 0,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          70,
+          0
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle"
+    },
+    {
+      "id": "8410ba2c1e18",
+      "type": "rectangle",
+      "x": 850,
+      "y": 640,
+      "width": 220,
+      "height": 70,
+      "strokeColor": "#c92a2a",
+      "backgroundColor": "#fff5f5",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "47cb0480a253",
+      "type": "text",
+      "x": 858,
+      "y": 648,
+      "width": 204,
+      "height": 54,
+      "text": "Fail \u2192 Escalate",
+      "fontSize": 19,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "7d6086987abc",
+      "type": "arrow",
+      "x": 960,
+      "y": 575,
+      "width": 0,
+      "height": 65,
+      "strokeColor": "#c92a2a",
+      "roughness": 0,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          65
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle"
+    },
+    {
+      "id": "97a221b7c304",
+      "type": "text",
+      "x": 1090,
+      "y": 642,
+      "width": 290,
+      "height": 55,
+      "text": "Human / Admin",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#c92a2a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "7af0ef709f14",
+      "type": "rectangle",
+      "x": 180,
+      "y": 760,
+      "width": 1240,
+      "height": 70,
+      "strokeColor": "#343a40",
+      "backgroundColor": "#f8f9fa",
+      "fillStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "bf17a9c659dd",
+      "type": "text",
+      "x": 188,
+      "y": 768,
+      "width": 1224,
+      "height": 54,
+      "text": "KEY IDEA: LLM chooses the tool \u2192 backend executes it \u2192 result returns to LLM \u2192 LLM answers",
+      "fontSize": 22,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#1e1e2e",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "#ffffff",
+    "gridSize": 20,
+    "gridStep": 5,
+    "zoom": {
+      "value": 1
+    },
+    "scrollX": 0,
+    "scrollY": 0
+  },
+  "files": {}
+}
