@@ -296,7 +296,7 @@ def render_brochures() -> None:
     token = st.session_state.token
 
     page_header(
-        "\U0001f4c4",
+        "",
         "Brochures",
         "Upload and manage your college brochures (PDF only)",
         "orange",
@@ -354,7 +354,7 @@ def render_brochures() -> None:
             category = st.selectbox("Category", CATEGORIES)
         pdf_file = st.file_uploader("PDF File *", type=["pdf"])
 
-        if st.form_submit_button("\U0001f4e4 Upload Brochure", type="primary"):
+        if st.form_submit_button("Upload Brochure", type="primary"):
             if not title or pdf_file is None:
                 st.error("Title and a PDF file are both required.")
             else:
@@ -426,7 +426,7 @@ def render_brochures() -> None:
                     st.rerun()
         else:
             with row[0]:
-                brochure_icon = row_icon_html("\U0001f4c4", "orange")
+                brochure_icon = row_icon_html("B", "orange")
                 st.markdown(
                     f'<div class="coligo-item-row">'
                     f"{brochure_icon}"

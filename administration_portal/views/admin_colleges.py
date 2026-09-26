@@ -9,8 +9,8 @@ from utils.api_client import (
     list_facilities,
 )
 from utils.styling import (
+    avatar_html,
     badge,
-    icon_chip_html,
     page_header,
     render_footer,
     row_icon_html,
@@ -18,7 +18,7 @@ from utils.styling import (
 
 
 def _render_college_list() -> None:
-    page_header("\U0001f3eb", "Colleges", "All colleges registered on the platform")
+    page_header("", "Colleges", "All colleges registered on the platform")
 
     try:
         colleges = list_colleges(st.session_state.token)
@@ -33,7 +33,7 @@ def _render_college_list() -> None:
 
     search = st.text_input(
         "Search colleges",
-        placeholder="\U0001f50d  Search by name...",
+        placeholder="Search by name...",
         label_visibility="collapsed",
     )
     if search:
@@ -50,7 +50,7 @@ def _render_college_list() -> None:
     for c in colleges:
         row = st.columns([2.5, 2.5, 1, 1, 1, 1])
         with row[0]:
-            college_icon = row_icon_html("\U0001f3eb", "purple")
+            college_icon = avatar_html(c["college_name"])
             st.markdown(
                 f'<div class="coligo-item-row">'
                 f"{college_icon}"
@@ -83,7 +83,7 @@ def _render_college_detail(college_id: int) -> None:
         st.error(e.message)
         return
 
-    detail_icon = icon_chip_html("\U0001f3eb", "purple")
+    detail_icon = avatar_html(detail["college_name"])
     detail_badge = badge("Active" if detail["is_active"] else "Inactive")
     st.markdown(
         f'<div class="coligo-page-header">'
@@ -155,7 +155,7 @@ def _render_college_detail(college_id: int) -> None:
             for course in courses:
                 row = st.columns([3, 1, 1.2, 1, 1.3])
                 with row[0]:
-                    course_icon = row_icon_html("\U0001f4bb", "purple")
+                    course_icon = row_icon_html("C", "purple")
                     st.markdown(
                         f'<div class="coligo-item-row">'
                         f"{course_icon}"
@@ -191,7 +191,7 @@ def _render_college_detail(college_id: int) -> None:
             for b in brochures:
                 row = st.columns([3, 1.5, 1, 1.5, 1])
                 with row[0]:
-                    brochure_icon = row_icon_html("\U0001f4c4", "orange")
+                    brochure_icon = row_icon_html("B", "orange")
                     st.markdown(
                         f'<div class="coligo-item-row">'
                         f"{brochure_icon}"
@@ -205,7 +205,7 @@ def _render_college_detail(college_id: int) -> None:
                     try:
                         pdf_bytes = download_brochure(token, b["id"])
                         st.download_button(
-                            "\U0001f441️",
+                            "Download",
                             data=pdf_bytes,
                             file_name=f"{b['title']}.pdf",
                             mime="application/pdf",
@@ -225,7 +225,7 @@ def _render_college_detail(college_id: int) -> None:
             st.info("No facilities added by this college yet.")
         else:
             for f in facilities:
-                facility_icon = row_icon_html("\U0001f3db️", "green")
+                facility_icon = row_icon_html("F", "green")
                 st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
                 st.markdown(
                     f'<div class="coligo-item-row">'

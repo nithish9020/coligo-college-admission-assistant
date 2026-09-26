@@ -1,11 +1,11 @@
 import streamlit as st
 from utils.api_client import APIError, list_colleges
 from utils.styling import (
+    avatar_html,
     badge,
     page_header,
     render_footer,
     render_stat_row,
-    row_icon_html,
 )
 
 
@@ -16,9 +16,7 @@ def render_admin_dashboard() -> None:
         st.error(e.message)
         return
 
-    page_header(
-        "\U0001f3e0", "Admin Dashboard", "Overview across all registered colleges"
-    )
+    page_header("", "Admin Dashboard", "Overview across all registered colleges")
 
     total_courses = sum(c["course_count"] for c in colleges)
     total_brochures = sum(c["brochure_count"] for c in colleges)
@@ -77,7 +75,7 @@ def render_admin_dashboard() -> None:
     st.markdown("<div style='height:0.3rem'></div>", unsafe_allow_html=True)
     st.markdown('<div class="coligo-card">', unsafe_allow_html=True)
     st.markdown(
-        '<div class="coligo-card-header">\U0001f3eb Recent Colleges</div>',
+        '<div class="coligo-card-header">Recent Colleges</div>',
         unsafe_allow_html=True,
     )
 
@@ -102,7 +100,7 @@ def render_admin_dashboard() -> None:
         for c in recent:
             row = st.columns([2.5, 2, 1, 1, 1, 1])
             with row[0]:
-                college_icon = row_icon_html("\U0001f3eb", "purple")
+                college_icon = avatar_html(c["college_name"])
                 st.markdown(
                     f'<div class="coligo-item-row">'
                     f"{college_icon}"

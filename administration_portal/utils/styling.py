@@ -391,10 +391,15 @@ def avatar_html(name: str) -> str:
 
 def page_header(icon: str, title: str, subtitle: str, accent: str = "purple") -> None:
     bg, fg = ACCENTS.get(accent, ACCENTS["purple"])
+    chip_html = (
+        f'<div class="coligo-icon-chip" style="background:{bg};color:{fg};">{icon}</div>'
+        if icon
+        else ""
+    )
     st.markdown(
         f"""
         <div class="coligo-page-header">
-            <div class="coligo-icon-chip" style="background:{bg};color:{fg};">{icon}</div>
+            {chip_html}
             <div>
                 <h1>{title}</h1>
                 <div class="coligo-page-subtitle">{subtitle}</div>
