@@ -71,12 +71,14 @@ def prepare_spoken_summary(text: str, is_tamil: bool) -> str:
 async def synthesize_speech(
     text: str,
     voice: Optional[str] = None,
+    is_tamil: Optional[bool] = None,
 ) -> bytes | None:
     """Synthesize text into natural Tamil or Indian English neural audio bytes."""
     if not text or not text.strip():
         return None
 
-    is_tamil = contains_tamil(text)
+    if is_tamil is None:
+        is_tamil = contains_tamil(text)
     spoken_text = prepare_spoken_summary(text, is_tamil=is_tamil)
 
     if not voice:
@@ -110,12 +112,16 @@ async def synthesize_speech(
         return None
 
 
-async def send_voice_reply(to: str, answer_text: str) -> bool:
+async def send_voice_reply(
+    to: str,
+    answer_text: str,
+    is_tamil: Optional[bool] = None,
+) -> bool:
     """Synthesize spoken response, upload to WhatsApp Cloud API, and send voice note."""
     if not settings.ENABLE_VOICE_RESPONSES:
         return False
 
-    audio_bytes = await synthesize_speech(answer_text)
+    audio_bytes = await synthesize_speech(answer_text, is_tamil=is_tamil)
     if not audio_bytes:
         return False
 

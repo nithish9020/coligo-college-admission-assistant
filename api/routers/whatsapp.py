@@ -1313,12 +1313,20 @@ async def _answer_student_task(message: ParsedMessage) -> None:
             formatted_answer = format_whatsapp_response(query, answer, sources)
             await send_text(message.sender, formatted_answer)
 
-            # ── If incoming was voice, reply strictly via text message per specification ──
+            # ── If incoming was voice, send audio voice note reply ──
             if is_voice_message and settings.ENABLE_VOICE_RESPONSES:
                 try:
-                    from api.services.tts_service import send_voice_reply
+                    from api.services.tts_service import (
+                        contains_tamil,
+                        send_voice_reply,
+                    )
 
-                    await send_voice_reply(message.sender, formatted_answer)
+                    voice_tamil = contains_tamil(query) or contains_tamil(
+                        formatted_answer
+                    )
+                    await send_voice_reply(
+                        message.sender, formatted_answer, is_tamil=voice_tamil
+                    )
                 except Exception as tts_err:
                     logger.warning("voice_reply_dispatch_failed", error=str(tts_err))
 
