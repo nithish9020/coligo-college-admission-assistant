@@ -1,0 +1,902 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw.com",
+  "elements": [
+    {
+      "id": "ee4c1fbdf31a",
+      "type": "text",
+      "x": 40,
+      "y": 20,
+      "width": 1560,
+      "height": 45,
+      "text": "Coligo \u2014 WhatsApp Voice Note (STT & TTS) End-to-End Processing Architecture",
+      "fontSize": 28,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "14c09f292b04",
+      "type": "text",
+      "x": 40,
+      "y": 65,
+      "width": 1560,
+      "height": 30,
+      "text": "Live Trace Simulation: Inbound Voice Note (0:05) -> Whisper STT -> LangGraph RAG Agent -> Dual Text & Neural Voice Note Dispatch",
+      "fontSize": 16,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#475569",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "1f232d1b70e0",
+      "type": "rectangle",
+      "x": 60,
+      "y": 120,
+      "width": 340,
+      "height": 680,
+      "strokeColor": "#10b981",
+      "backgroundColor": "#ecfdf5",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "c2c710268798",
+      "type": "text",
+      "x": 70,
+      "y": 135,
+      "width": 320,
+      "height": 30,
+      "text": "1. INBOUND VOICE MESSAGE",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#047857",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "b41103c80948",
+      "type": "rectangle",
+      "x": 440,
+      "y": 120,
+      "width": 350,
+      "height": 680,
+      "strokeColor": "#0284c7",
+      "backgroundColor": "#f0f9ff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "6412e278acdc",
+      "type": "text",
+      "x": 450,
+      "y": 135,
+      "width": 330,
+      "height": 30,
+      "text": "2. TRANSCRIPTION & ECHO (STT)",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#0369a1",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "bbe4761c9160",
+      "type": "rectangle",
+      "x": 830,
+      "y": 120,
+      "width": 370,
+      "height": 680,
+      "strokeColor": "#7c3aed",
+      "backgroundColor": "#f5f3ff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "95429c2e8707",
+      "type": "text",
+      "x": 840,
+      "y": 135,
+      "width": 350,
+      "height": 30,
+      "text": "3. LANGGRAPH RAG REASONING",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#6d28d9",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "a015ce08123d",
+      "type": "rectangle",
+      "x": 1240,
+      "y": 120,
+      "width": 360,
+      "height": 680,
+      "strokeColor": "#ea580c",
+      "backgroundColor": "#fff7ed",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "2ac19395bea7",
+      "type": "text",
+      "x": 1250,
+      "y": 135,
+      "width": 340,
+      "height": 30,
+      "text": "4. DUAL TEXT & VOICE DISPATCH (TTS)",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "strokeColor": "#c2410c",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "4f4ec47ef3be",
+      "type": "rectangle",
+      "x": 80,
+      "y": 180,
+      "width": 300,
+      "height": 140,
+      "strokeColor": "#10b981",
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "68e853ee335f",
+      "type": "text",
+      "x": 90,
+      "y": 190,
+      "width": 280,
+      "height": 120,
+      "text": "Student WhatsApp Client\n\n\u2022 Records 5-second voice note:\n  'I want the SKCET CSE cutoff for every community.'\n\u2022 Audio format: OGG OPUS\n\u2022 Sent to Coligo WhatsApp Bot",
+      "fontSize": 14,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "3d8bcd02c709",
+      "type": "rectangle",
+      "x": 80,
+      "y": 360,
+      "width": 300,
+      "height": 160,
+      "strokeColor": "#10b981",
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "4f28e32423ee",
+      "type": "text",
+      "x": 90,
+      "y": 370,
+      "width": 280,
+      "height": 140,
+      "text": "Meta Cloud API (Graph v21.0)\n\n\u2022 Receives audio from user\n\u2022 Stores media temporarily on CDN\n\u2022 Fires Webhook POST to:\n  https://coligo...render.com/webhook\n\u2022 Payload: {\n    'type': 'audio',\n    'audio': {'id': 'media_12345'}\n  }",
+      "fontSize": 13,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "ac6cf5f1417a",
+      "type": "rectangle",
+      "x": 80,
+      "y": 560,
+      "width": 300,
+      "height": 110,
+      "strokeColor": "#10b981",
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "77306d4cc840",
+      "type": "text",
+      "x": 90,
+      "y": 570,
+      "width": 280,
+      "height": 90,
+      "text": "Security & Routing Filter\n\n\u2022 api/routers/whatsapp.py\n\u2022 Validates X-Hub-Signature-256\n\u2022 Resolves session: whatsapp:919876543210\n\u2022 Enqueues async background task",
+      "fontSize": 13,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "2e59072bd59f",
+      "type": "arrow",
+      "x": 230,
+      "y": 320,
+      "width": 1,
+      "height": 40,
+      "strokeColor": "#10b981",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          40
+        ]
+      ],
+      "endArrowhead": "arrow"
+    },
+    {
+      "id": "52bd91875cf1",
+      "type": "arrow",
+      "x": 230,
+      "y": 520,
+      "width": 1,
+      "height": 40,
+      "strokeColor": "#10b981",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          40
+        ]
+      ],
+      "endArrowhead": "arrow"
+    },
+    {
+      "id": "6eb7ef5751f4",
+      "type": "arrow",
+      "x": 380,
+      "y": 440,
+      "width": 60,
+      "height": 1,
+      "strokeColor": "#0284c7",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          0
+        ]
+      ],
+      "endArrowhead": "arrow"
+    },
+    {
+      "id": "4ed16a1bf717",
+      "type": "rectangle",
+      "x": 460,
+      "y": 180,
+      "width": 310,
+      "height": 140,
+      "strokeColor": "#0284c7",
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "eb16539b3d11",
+      "type": "text",
+      "x": 470,
+      "y": 190,
+      "width": 290,
+      "height": 120,
+      "text": "Media Ingestion & Download\n\n\u2022 api/services/audio_service.py\n\u2022 Queries Meta Graph API for media URL\n\u2022 Downloads binary audio payload\n\u2022 Validates size (< 16 MB)\n\u2022 Retains OGG bytes in memory buffer",
+      "fontSize": 13,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "e0a206b236b3",
+      "type": "rectangle",
+      "x": 460,
+      "y": 360,
+      "width": 310,
+      "height": 150,
+      "strokeColor": "#0284c7",
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "ce39c87f0b30",
+      "type": "text",
+      "x": 470,
+      "y": 370,
+      "width": 290,
+      "height": 130,
+      "text": "Speech-to-Text (STT) Engine\n\n\u2022 Groq Whisper (whisper-large-v3-turbo)\n\u2022 Fallback: Gemini 1.5 Flash Audio\n\u2022 Transcribes English, Tamil & Tanglish\n\u2022 Output Text:\n  'I want the SKCET CSE cutoff for every community.'",
+      "fontSize": 13,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "94998a3c2345",
+      "type": "rectangle",
+      "x": 460,
+      "y": 550,
+      "width": 310,
+      "height": 130,
+      "strokeColor": "#0284c7",
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "0e98b6ced70c",
+      "type": "text",
+      "x": 470,
+      "y": 560,
+      "width": 290,
+      "height": 110,
+      "text": "Instant WhatsApp Transcript Echo\n\n\u2022 Immediate reassuring feedback to student\n\u2022 Outbound text dispatch:\n  Voice note transcript:\n  'I want the SKCET CSE cutoff for every community.'\n\u2022 Sent via api/services/whatsapp_service.py",
+      "fontSize": 13,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "40dc2d8a7d41",
+      "type": "arrow",
+      "x": 615,
+      "y": 320,
+      "width": 1,
+      "height": 40,
+      "strokeColor": "#0284c7",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          40
+        ]
+      ],
+      "endArrowhead": "arrow"
+    },
+    {
+      "id": "b1ad19c58df0",
+      "type": "arrow",
+      "x": 615,
+      "y": 510,
+      "width": 1,
+      "height": 40,
+      "strokeColor": "#0284c7",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          40
+        ]
+      ],
+      "endArrowhead": "arrow"
+    },
+    {
+      "id": "2a3b0bc4d368",
+      "type": "arrow",
+      "x": 770,
+      "y": 435,
+      "width": 60,
+      "height": 1,
+      "strokeColor": "#7c3aed",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          0
+        ]
+      ],
+      "endArrowhead": "arrow"
+    },
+    {
+      "id": "933a4a2f8eac",
+      "type": "rectangle",
+      "x": 850,
+      "y": 180,
+      "width": 330,
+      "height": 130,
+      "strokeColor": "#7c3aed",
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "6afa01aedd9c",
+      "type": "text",
+      "x": 860,
+      "y": 190,
+      "width": 310,
+      "height": 110,
+      "text": "Router Node (api/services/agent/nodes/router.py)\n\n\u2022 Intent: cutoff_query\n\u2022 College: Sri Krishna College of Engg (SKCET)\n\u2022 Branch: CSE\n\u2022 Community: All Categories (OC, BC, BCM, MBC, SC, ST)\n\u2022 Language: English detected",
+      "fontSize": 13,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "4e34b810ed84",
+      "type": "rectangle",
+      "x": 850,
+      "y": 350,
+      "width": 330,
+      "height": 140,
+      "strokeColor": "#7c3aed",
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "8b5af7348f24",
+      "type": "text",
+      "x": 860,
+      "y": 360,
+      "width": 310,
+      "height": 120,
+      "text": "Tool Agent & Database Retrieval\n\n\u2022 Tool: query_college_cutoffs(college='SKCET', branch='CSE')\n\u2022 PostgreSQL + pgvector query:\n  - OC: 192\n  - BC: 189.5\n  - BCM: 189\n  - MBC: 186.5\n\u2022 Fetches verified TNEA counselling closing marks",
+      "fontSize": 13,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "db69636b1b9e",
+      "type": "rectangle",
+      "x": 850,
+      "y": 530,
+      "width": 330,
+      "height": 150,
+      "strokeColor": "#7c3aed",
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "139a82140de6",
+      "type": "text",
+      "x": 860,
+      "y": 540,
+      "width": 310,
+      "height": 130,
+      "text": "Synthesizer Node\n\n\u2022 Synthesizes professional response:\n  'SKCET \u2013 Computer Science & Engineering Cutoffs:\n   \u2022 OC \u2013 192\n   \u2022 BC \u2013 189.5\n   \u2022 BCM \u2013 189\n   \u2022 MBC \u2013 186.5'\n\u2022 Strict Plain Text (Zero Emojis Enforced)",
+      "fontSize": 13,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "e932746c66fc",
+      "type": "arrow",
+      "x": 1015,
+      "y": 310,
+      "width": 1,
+      "height": 40,
+      "strokeColor": "#7c3aed",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          40
+        ]
+      ],
+      "endArrowhead": "arrow"
+    },
+    {
+      "id": "c3bebe9aaad0",
+      "type": "arrow",
+      "x": 1015,
+      "y": 490,
+      "width": 1,
+      "height": 40,
+      "strokeColor": "#7c3aed",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          40
+        ]
+      ],
+      "endArrowhead": "arrow"
+    },
+    {
+      "id": "fd1a3ba10363",
+      "type": "arrow",
+      "x": 1180,
+      "y": 605,
+      "width": 60,
+      "height": 1,
+      "strokeColor": "#ea580c",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          0
+        ]
+      ],
+      "endArrowhead": "arrow"
+    },
+    {
+      "id": "a5c84f298d55",
+      "type": "rectangle",
+      "x": 1260,
+      "y": 180,
+      "width": 320,
+      "height": 150,
+      "strokeColor": "#ea580c",
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "7ad300e8fb7a",
+      "type": "text",
+      "x": 1270,
+      "y": 190,
+      "width": 300,
+      "height": 130,
+      "text": "Branch A: Written Text & Quick Actions\n\n\u2022 Formats full detailed markdown response\n\u2022 send_text(sender, formatted_answer)\n\u2022 Appends interactive Quick Action buttons:\n  [ 3-Tier Choice List ]\n  [ Fee Details ]\n  [ Compare College ]\n\u2022 Delivered instantly to WhatsApp chat",
+      "fontSize": 13,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "6f81f2b47eaa",
+      "type": "rectangle",
+      "x": 1260,
+      "y": 360,
+      "width": 320,
+      "height": 160,
+      "strokeColor": "#ea580c",
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "1ca1c71e0830",
+      "type": "text",
+      "x": 1270,
+      "y": 370,
+      "width": 300,
+      "height": 140,
+      "text": "Branch B: Neural Speech Synthesis (TTS)\n\n\u2022 api/services/tts_service.py\n\u2022 ENABLE_VOICE_RESPONSES = True\n\u2022 prepare_spoken_summary() extracts spoken text\n\u2022 Voice selection: en-IN-NeerjaNeural (or ta-IN-PallaviNeural)\n\u2022 Edge-TTS streams high-fidelity neural audio\n\u2022 Byte length: ~70-130 KB",
+      "fontSize": 13,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "5bf164a3f452",
+      "type": "rectangle",
+      "x": 1260,
+      "y": 550,
+      "width": 320,
+      "height": 140,
+      "strokeColor": "#ea580c",
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "c1acfeb75a51",
+      "type": "text",
+      "x": 1270,
+      "y": 560,
+      "width": 300,
+      "height": 120,
+      "text": "Outbound WhatsApp Voice Note Delivery\n\n\u2022 upload_media(audio_bytes, mime_type='audio/mpeg')\n\u2022 Meta returns media_id: 1644575737297388\n\u2022 send_audio(to='919876543210', media_id)\n\u2022 Student receives real voice note playback in WhatsApp chat!",
+      "fontSize": 13,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "8d2a341b9caf",
+      "type": "arrow",
+      "x": 1420,
+      "y": 330,
+      "width": 1,
+      "height": 30,
+      "strokeColor": "#ea580c",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          30
+        ]
+      ],
+      "endArrowhead": "arrow"
+    },
+    {
+      "id": "a27c26552b2f",
+      "type": "arrow",
+      "x": 1420,
+      "y": 520,
+      "width": 1,
+      "height": 30,
+      "strokeColor": "#ea580c",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          30
+        ]
+      ],
+      "endArrowhead": "arrow"
+    },
+    {
+      "id": "2d5427221a2e",
+      "type": "rectangle",
+      "x": 60,
+      "y": 830,
+      "width": 1540,
+      "height": 90,
+      "strokeColor": "#0f172a",
+      "backgroundColor": "#f8fafc",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "7e4c304a21f2",
+      "type": "text",
+      "x": 80,
+      "y": 840,
+      "width": 1500,
+      "height": 70,
+      "text": "SIMULATION VERIFICATION & KEY TAKEAWAYS:\n1. When student speaks English or Tamil, Groq Whisper transcribes it and sends an immediate transcript echo.\n2. LangGraph RAG Agent retrieves official TNEA cutoffs and formats the exact text answer without emojis.\n3. Outbound dispatch sends BOTH the structured written text table AND the synthesized neural voice note (MP3/OGG) to WhatsApp.",
+      "fontSize": 14,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "middle",
+      "strokeColor": "#0f172a",
+      "fillStyle": "solid",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "opacity": 100
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "#ffffff",
+    "gridSize": 20,
+    "gridStep": 5,
+    "zoom": {
+      "value": 1
+    },
+    "scrollX": 0,
+    "scrollY": 0
+  },
+  "files": {}
+}
